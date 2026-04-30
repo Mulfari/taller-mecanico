@@ -182,9 +182,12 @@ export default function OrdenesPage() {
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <button className="text-gray-500 hover:text-[#e94560] text-xs transition-colors">
+                      <Link
+                        href={`/dashboard/ordenes/${order.id}`}
+                        className="text-gray-500 hover:text-[#e94560] text-xs transition-colors"
+                      >
                         Ver →
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))
