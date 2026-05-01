@@ -516,12 +516,11 @@ export default function CotizacionesClient({
                           </button>
                         )}
                         <Link
-                          href={`/cotizacion/${quote.id}`}
-                          target="_blank"
+                          href={`/dashboard/cotizaciones/${quote.id}`}
                           className="inline-flex items-center gap-1 text-gray-500 hover:text-[#e94560] text-xs transition-colors"
-                          title="Ver vista del cliente"
+                          title="Ver e imprimir cotización"
                         >
-                          Ver <IconChevronRight />
+                          Detalle <IconChevronRight />
                         </Link>
                       </div>
                     </td>
