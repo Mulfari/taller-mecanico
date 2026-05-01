@@ -134,7 +134,7 @@ export default async function HomePage() {
                 Agendar Cita
               </Link>
               <Link
-                href="/seguimiento"
+                href="/mi-vehiculo"
                 className="border border-[#e94560]/40 hover:border-[#e94560] text-gray-300 hover:text-white font-semibold px-8 py-3.5 rounded-lg transition-colors text-center"
               >
                 Estado de mi Vehículo
