@@ -28,6 +28,7 @@ interface Props {
   clients: Client[];
   mechanics: Mechanic[];
   vehiclesByClient: Record<string, Vehicle[]>;
+  defaultClientId?: string;
 }
 
 const STATUS_OPTIONS: { value: WorkOrderStatus; label: string }[] = [
@@ -197,8 +198,8 @@ function AddVehicleForm({ onSave, onCancel, clientId }: AddVehicleFormProps) {
   );
 }
 
-export default function NuevaOrdenForm({ clients, mechanics, vehiclesByClient }: Props) {
-  const [clientId, setClientId] = useState("");
+export default function NuevaOrdenForm({ clients, mechanics, vehiclesByClient, defaultClientId = "" }: Props) {
+  const [clientId, setClientId] = useState(defaultClientId);
   const [vehicleId, setVehicleId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
