@@ -116,6 +116,20 @@ export async function updateWorkOrderNotes(
   revalidatePath(`/dashboard/ordenes/${orderId}`);
 }
 
+export async function reassignMechanic(orderId: string, mechanicId: string | null) {
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("work_orders")
+    .update({ mechanic_id: mechanicId })
+    .eq("id", orderId);
+
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/dashboard/ordenes/${orderId}`);
+  revalidatePath("/dashboard/ordenes");
+}
+
 export async function generateInvoiceFromWorkOrder(orderId: string): Promise<string> {
   const supabase = await createClient();
 

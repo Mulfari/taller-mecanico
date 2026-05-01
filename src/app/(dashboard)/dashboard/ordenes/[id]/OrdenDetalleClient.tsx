@@ -10,6 +10,7 @@ import {
   removeWorkOrderItem,
   generateInvoiceFromWorkOrder,
   updateWorkOrderNotes,
+  reassignMechanic,
 } from "../actions";
 
 const STATUS_STEPS: WorkOrderStatus[] = ["received", "diagnosing", "repairing", "ready", "delivered"];
@@ -197,7 +198,18 @@ function AddItemForm({ onAdd, onCancel }: { onAdd: (item: Omit<{ type: WorkOrder
   );
 }
 
-export default function OrdenDetalleClient({ order: initialOrder }: { order: WorkOrderWithRelations }) {
+interface Mechanic {
+  id: string;
+  full_name: string | null;
+}
+
+export default function OrdenDetalleClient({
+  order: initialOrder,
+  mechanics = [],
+}: {
+  order: WorkOrderWithRelations;
+  mechanics?: Mechanic[];
+}) {
   const router = useRouter();
   const [status, setStatus] = useState<WorkOrderStatus>(initialOrder.status);
   const [items, setItems] = useState(initialOrder.items);
@@ -211,6 +223,9 @@ export default function OrdenDetalleClient({ order: initialOrder }: { order: Wor
   );
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
+  const [mechanicId, setMechanicId] = useState(initialOrder.mechanic_id ?? "");
+  const [savingMechanic, setSavingMechanic] = useState(false);
+  const [mechanicSaved, setMechanicSaved] = useState(false);
 
   const currentIdx = STATUS_STEPS.indexOf(status);
   const nextStatus = currentIdx < STATUS_STEPS.length - 1 ? STATUS_STEPS[currentIdx + 1] : null;
@@ -262,6 +277,20 @@ export default function OrdenDetalleClient({ order: initialOrder }: { order: Wor
         setError(err instanceof Error ? err.message : "Error al eliminar el ítem");
       }
     });
+  }
+
+  async function handleSaveMechanic() {
+    setSavingMechanic(true);
+    setError(null);
+    try {
+      await reassignMechanic(initialOrder.id, mechanicId || null);
+      setMechanicSaved(true);
+      setTimeout(() => setMechanicSaved(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al reasignar mecánico");
+    } finally {
+      setSavingMechanic(false);
+    }
   }
 
   async function handleSaveNotes() {
@@ -402,7 +431,59 @@ export default function OrdenDetalleClient({ order: initialOrder }: { order: Wor
               <p className="text-xs uppercase tracking-wide font-medium">Asignación y fechas</p>
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <InfoRow label="Mecánico" value={initialOrder.mechanic?.full_name ?? "Sin asignar"} />
+              {/* Mechanic inline reassignment */}
+              <div className="col-span-2">
+                <p className="text-gray-500 text-xs mb-1.5">Mecánico asignado</p>
+                {mechanics.length > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <select
+                        value={mechanicId}
+                        onChange={(e) => setMechanicId(e.target.value)}
+                        className="w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors appearance-none"
+                        aria-label="Mecánico asignado"
+                      >
+                        <option value="">Sin asignar</option>
+                        {mechanics.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.full_name ?? m.id}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                        <IconChevronDown />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSaveMechanic}
+                      disabled={savingMechanic}
+                      className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed bg-[#e94560]/10 hover:bg-[#e94560]/20 text-[#e94560]"
+                    >
+                      {savingMechanic ? (
+                        <>
+                          <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                          </svg>
+                          Guardando…
+                        </>
+                      ) : mechanicSaved ? (
+                        <>
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Guardado
+                        </>
+                      ) : (
+                        "Guardar"
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-gray-200 text-sm">{initialOrder.mechanic?.full_name ?? "Sin asignar"}</p>
+                )}
+              </div>
               <InfoRow label="Recibido" value={fmtDate(initialOrder.received_at)} />
               <InfoRow label="Entrega estimada" value={initialOrder.estimated_delivery ? fmtDate(initialOrder.estimated_delivery) : "—"} />
               <InfoRow label="Entregado" value={initialOrder.delivered_at ? fmtDate(initialOrder.delivered_at) : "—"} />
