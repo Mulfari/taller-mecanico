@@ -66,6 +66,38 @@ function IconSpinner() {
   );
 }
 
+function IconLogout() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+    </svg>
+  );
+}
+
+function LogoutButton() {
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
+
+  return (
+    <div className="bg-[#16213e] border border-white/10 rounded-xl p-4">
+      <button
+        onClick={handleLogout}
+        disabled={loggingOut}
+        className="flex items-center gap-2 text-red-400 hover:text-red-300 disabled:opacity-60 text-sm font-medium transition-colors"
+      >
+        {loggingOut ? <IconSpinner /> : <IconLogout />}
+        {loggingOut ? "Cerrando sesión…" : "Cerrar sesión"}
+      </button>
+    </div>
+  );
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface Stats {
@@ -368,6 +400,9 @@ export default function CuentaPage() {
             </Link>
           ))}
         </div>
+
+        {/* Logout */}
+        <LogoutButton />
 
       </div>
     </div>
