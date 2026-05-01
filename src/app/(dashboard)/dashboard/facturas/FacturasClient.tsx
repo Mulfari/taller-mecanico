@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import type { InvoiceStatus } from "@/types/database";
+import { updateInvoiceStatus } from "./actions";
 
 interface InvoiceRow {
   id: string;
@@ -49,8 +50,27 @@ const fmtDate = (d: string) =>
     year: "numeric",
   });
 
-export default function FacturasClient({ facturas }: { facturas: InvoiceRow[] }) {
+export default function FacturasClient({ facturas: initialFacturas }: { facturas: InvoiceRow[] }) {
   const [activeFilter, setActiveFilter] = useState<InvoiceStatus | "all">("all");
+  const [facturas, setFacturas] = useState(initialFacturas);
+  const [actionPending, setActionPending] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
+
+  async function handleStatusChange(id: string, status: InvoiceStatus) {
+    setActionPending(id);
+    try {
+      await updateInvoiceStatus(id, status);
+      setFacturas((prev) =>
+        prev.map((f) =>
+          f.id === id
+            ? { ...f, status, paid_at: status === "paid" ? new Date().toISOString() : f.paid_at }
+            : f
+        )
+      );
+    } finally {
+      setActionPending(null);
+    }
+  }
 
   const filtered =
     activeFilter === "all"
@@ -146,6 +166,7 @@ export default function FacturasClient({ facturas }: { facturas: InvoiceRow[] })
                 <th className="text-left py-3 px-4 font-medium">Estado</th>
                 <th className="text-left py-3 px-4 font-medium">Fecha</th>
                 <th className="text-right py-3 px-4 font-medium">Total</th>
+                <th className="py-3 px-4" />
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -218,6 +239,40 @@ export default function FacturasClient({ facturas }: { facturas: InvoiceRow[] })
                           <p className="text-gray-600 text-xs mt-0.5">
                             IVA {fmt(factura.tax)}
                           </p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center justify-end gap-2">
+                        {factura.status === "draft" && (
+                          <button
+                            onClick={() => handleStatusChange(factura.id, "sent")}
+                            disabled={actionPending === factura.id}
+                            className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 disabled:opacity-50 transition-colors whitespace-nowrap"
+                            title="Marcar como enviada"
+                          >
+                            {actionPending === factura.id ? (
+                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                            )}
+                            Enviar
+                          </button>
+                        )}
+                        {factura.status === "sent" && (
+                          <button
+                            onClick={() => handleStatusChange(factura.id, "paid")}
+                            disabled={actionPending === factura.id}
+                            className="inline-flex items-center gap-1 text-xs text-green-400 hover:text-green-300 disabled:opacity-50 transition-colors whitespace-nowrap"
+                            title="Marcar como pagada"
+                          >
+                            {actionPending === factura.id ? (
+                              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+                            ) : (
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            )}
+                            Cobrada
+                          </button>
                         )}
                       </div>
                     </td>
