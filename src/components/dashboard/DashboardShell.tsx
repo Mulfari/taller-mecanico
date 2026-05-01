@@ -13,6 +13,7 @@ const navItems = [
   { href: "/dashboard/clientes", label: "Clientes", icon: "👥" },
   { href: "/dashboard/citas", label: "Agenda", icon: "📅" },
   { href: "/dashboard/cotizaciones", label: "Cotizaciones", icon: "📋" },
+  { href: "/dashboard/facturas", label: "Facturas", icon: "🧾" },
   { href: "/dashboard/reportes", label: "Reportes", icon: "📊" },
   { href: "/dashboard/configuracion", label: "Configuración", icon: "⚙" },
 ];
