@@ -102,7 +102,7 @@ export async function removeWorkOrderItem(itemId: string, orderId: string) {
 
 export async function updateWorkOrderNotes(
   orderId: string,
-  fields: { diagnosis?: string; final_cost?: number }
+  fields: { diagnosis?: string; final_cost?: number; estimated_delivery?: string | null }
 ) {
   const supabase = await createClient();
 
@@ -114,6 +114,7 @@ export async function updateWorkOrderNotes(
   if (error) throw new Error(error.message);
 
   revalidatePath(`/dashboard/ordenes/${orderId}`);
+  revalidatePath("/dashboard");
 }
 
 export async function reassignMechanic(orderId: string, mechanicId: string | null) {

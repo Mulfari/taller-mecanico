@@ -337,6 +337,11 @@ export default function OrdenDetalleClient({
   const [mechanicId, setMechanicId] = useState(initialOrder.mechanic_id ?? "");
   const [savingMechanic, setSavingMechanic] = useState(false);
   const [mechanicSaved, setMechanicSaved] = useState(false);
+  const [estimatedDelivery, setEstimatedDelivery] = useState(
+    initialOrder.estimated_delivery
+      ? new Date(initialOrder.estimated_delivery).toISOString().split("T")[0]
+      : ""
+  );
 
   const currentIdx = STATUS_STEPS.indexOf(status);
   const nextStatus = currentIdx < STATUS_STEPS.length - 1 ? STATUS_STEPS[currentIdx + 1] : null;
@@ -411,6 +416,9 @@ export default function OrdenDetalleClient({
       await updateWorkOrderNotes(initialOrder.id, {
         diagnosis: diagnosis || undefined,
         final_cost: finalCost ? parseFloat(finalCost) : undefined,
+        estimated_delivery: estimatedDelivery
+          ? new Date(estimatedDelivery + "T12:00:00").toISOString()
+          : null,
       });
       setNotesSaved(true);
       setTimeout(() => setNotesSaved(false), 3000);
@@ -596,7 +604,16 @@ export default function OrdenDetalleClient({
                 )}
               </div>
               <InfoRow label="Recibido" value={fmtDate(initialOrder.received_at)} />
-              <InfoRow label="Entrega estimada" value={initialOrder.estimated_delivery ? fmtDate(initialOrder.estimated_delivery) : "—"} />
+              <div>
+                <p className="text-gray-500 text-xs mb-1">Entrega estimada</p>
+                <input
+                  type="date"
+                  value={estimatedDelivery}
+                  onChange={(e) => setEstimatedDelivery(e.target.value)}
+                  className="w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-1.5 text-white text-sm focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors"
+                  aria-label="Fecha de entrega estimada"
+                />
+              </div>
               <InfoRow label="Entregado" value={initialOrder.delivered_at ? fmtDate(initialOrder.delivered_at) : "—"} />
             </div>
           </div>
