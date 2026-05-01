@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import AddVehicleModal from "./AddVehicleModal";
+import EditClientButton from "./EditClientButton";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 function IconArrowLeft() {
@@ -101,7 +102,10 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
 
       {/* Contact info */}
       <div className="bg-[#16213e] border border-white/10 rounded-xl p-5">
-        <h2 className="text-white font-semibold mb-4">Datos de contacto</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-white font-semibold">Datos de contacto</h2>
+          <EditClientButton clientId={id} fullName={client.full_name ?? ""} phone={client.phone ?? ""} />
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Correo</p>
