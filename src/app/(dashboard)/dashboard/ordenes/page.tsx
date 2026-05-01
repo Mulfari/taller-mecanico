@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { getWorkOrders } from "@/lib/supabase/queries/work-orders";
 import OrdenesClient from "./OrdenesClient";
+import type { WorkOrderStatus } from "@/types/database";
 
 export const metadata = { title: "Órdenes de Trabajo — TallerPro" };
+
+const VALID_STATUSES: WorkOrderStatus[] = ["received", "diagnosing", "repairing", "ready", "delivered"];
 
 function IconPlus() {
   return (
@@ -12,7 +15,18 @@ function IconPlus() {
   );
 }
 
-export default async function OrdenesPage() {
+export default async function OrdenesPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const params = await searchParams;
+  const statusParam = params.status;
+  const initialFilter: WorkOrderStatus | "all" =
+    statusParam && (VALID_STATUSES as string[]).includes(statusParam)
+      ? (statusParam as WorkOrderStatus)
+      : "all";
+
   const orders = await getWorkOrders();
 
   return (
@@ -31,7 +45,7 @@ export default async function OrdenesPage() {
         </Link>
       </div>
 
-      <OrdenesClient orders={orders} />
+      <OrdenesClient orders={orders} initialFilter={initialFilter} />
     </div>
   );
 }

@@ -54,8 +54,14 @@ function StatusBadge({ status }: { status: WorkOrderStatus }) {
   );
 }
 
-export default function OrdenesClient({ orders }: { orders: WorkOrderListItem[] }) {
-  const [activeFilter, setActiveFilter] = useState<WorkOrderStatus | "all">("all");
+export default function OrdenesClient({
+  orders,
+  initialFilter = "all",
+}: {
+  orders: WorkOrderListItem[];
+  initialFilter?: WorkOrderStatus | "all";
+}) {
+  const [activeFilter, setActiveFilter] = useState<WorkOrderStatus | "all">(initialFilter);
   const [search, setSearch] = useState("");
 
   const q = search.trim().toLowerCase();
