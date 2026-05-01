@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 interface Props {
   vehicleId: string
@@ -10,13 +11,40 @@ interface Props {
 export default function VehiculoContactForm({ vehicleId, vehicleName }: Props) {
   const [form, setForm] = useState({ nombre: "", telefono: "", email: "", mensaje: "" })
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle")
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setStatus("sending")
-    // In a real implementation this would call a Supabase function or API route.
-    // For now we simulate a successful submission.
-    await new Promise((r) => setTimeout(r, 800))
+    setErrorMsg(null)
+
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const { error } = await supabase.from("quotes").insert({
+      client_id: user?.id ?? null,
+      vehicle_id: null,
+      items: [
+        {
+          vehicle_sale_id: vehicleId,
+          vehicle_name: vehicleName,
+          nombre: form.nombre,
+          telefono: form.telefono,
+          email: form.email || null,
+          mensaje: form.mensaje || null,
+        },
+      ],
+      total: 0,
+      status: "draft",
+      valid_until: null,
+    })
+
+    if (error) {
+      setErrorMsg("Ocurrió un error al enviar tu consulta. Por favor intentá de nuevo.")
+      setStatus("error")
+      return
+    }
+
     setStatus("sent")
   }
 
@@ -30,7 +58,7 @@ export default function VehiculoContactForm({ vehicleId, vehicleName }: Props) {
         <svg className="w-10 h-10 text-green-400 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <p className="text-white font-semibold">¡Mensaje enviado!</p>
+        <p className="text-white font-semibold">¡Consulta enviada!</p>
         <p className="text-gray-400 text-sm mt-1">Nos pondremos en contacto contigo a la brevedad.</p>
       </div>
     )
@@ -38,9 +66,6 @@ export default function VehiculoContactForm({ vehicleId, vehicleName }: Props) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <input type="hidden" name="vehicle_id" value={vehicleId} />
-      <input type="hidden" name="vehicle_name" value={vehicleName} />
-
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs text-gray-400 mb-1.5" htmlFor="nombre">
@@ -105,7 +130,7 @@ export default function VehiculoContactForm({ vehicleId, vehicleName }: Props) {
       </div>
 
       {status === "error" && (
-        <p className="text-red-400 text-sm">Ocurrió un error. Por favor intentá de nuevo.</p>
+        <p className="text-red-400 text-sm">{errorMsg}</p>
       )}
 
       <button
