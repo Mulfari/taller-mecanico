@@ -244,6 +244,12 @@ export default function FacturasClient({ facturas: initialFacturas }: { facturas
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center justify-end gap-2">
+                        <Link
+                          href={`/dashboard/facturas/${factura.id}`}
+                          className="text-gray-500 hover:text-[#e94560] text-xs transition-colors"
+                        >
+                          Ver →
+                        </Link>
                         {factura.status === "draft" && (
                           <button
                             onClick={() => handleStatusChange(factura.id, "sent")}
