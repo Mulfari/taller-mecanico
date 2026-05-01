@@ -3,7 +3,7 @@
 import { useState, useMemo, useTransition } from "react";
 import type { Inventory } from "@/types/database";
 import { toast, ConfirmDialog, EmptyState } from "@/components/ui";
-import { createInventoryItem, updateInventoryItem, deleteInventoryItem } from "./actions";
+import { createInventoryItem, updateInventoryItem, deleteInventoryItem, adjustStock } from "./actions";
 
 function IconSearch() {
   return (
@@ -70,6 +70,14 @@ function getStockStatus(item: Inventory): StockStatus {
   return "ok";
 }
 
+function IconMinus() {
+  return (
+    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M20 12H4" />
+    </svg>
+  );
+}
+
 function StockBadge({ item }: { item: Inventory }) {
   const status = getStockStatus(item);
   const map: Record<StockStatus, { label: string; className: string }> = {
@@ -95,17 +103,93 @@ interface NewItemForm {
   name: string; sku: string; category: string; brand: string;
   quantity: string; min_stock: string; cost_price: string;
   sell_price: string; location: string; supplier: string;
+  compatible_brands_input: string;
 }
 
 const EMPTY_FORM: NewItemForm = {
   name: "", sku: "", category: "", brand: "", quantity: "",
   min_stock: "", cost_price: "", sell_price: "", location: "", supplier: "",
+  compatible_brands_input: "",
 };
+
+const CAR_BRANDS = [
+  "Toyota", "Honda", "Ford", "Chevrolet", "Volkswagen", "Nissan", "Hyundai",
+  "Kia", "BMW", "Mercedes-Benz", "Audi", "Mazda", "Subaru", "Mitsubishi",
+  "Peugeot", "Renault", "Fiat", "Jeep", "Ram", "Dodge",
+];
+
+function BrandsTagInput({
+  tags,
+  onAdd,
+  onRemove,
+  inputValue,
+  onInputChange,
+}: {
+  tags: string[];
+  onAdd: (brand: string) => void;
+  onRemove: (brand: string) => void;
+  inputValue: string;
+  onInputChange: (v: string) => void;
+}) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if ((e.key === "Enter" || e.key === ",") && inputValue.trim()) {
+      e.preventDefault();
+      const val = inputValue.trim().replace(/,$/, "");
+      if (val && !tags.includes(val)) onAdd(val);
+      onInputChange("");
+    } else if (e.key === "Backspace" && !inputValue && tags.length > 0) {
+      onRemove(tags[tags.length - 1]);
+    }
+  }
+
+  const suggestions = CAR_BRANDS.filter(
+    (b) => b.toLowerCase().includes(inputValue.toLowerCase()) && !tags.includes(b)
+  ).slice(0, 5);
+
+  return (
+    <div className="space-y-2">
+      <div className="min-h-[42px] flex flex-wrap gap-1.5 bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2 focus-within:border-[#e94560]/60 focus-within:ring-1 focus-within:ring-[#e94560]/30 transition-colors">
+        {tags.map((tag) => (
+          <span key={tag} className="inline-flex items-center gap-1 bg-[#e94560]/15 text-[#e94560] text-xs font-medium px-2 py-0.5 rounded-full">
+            {tag}
+            <button type="button" onClick={() => onRemove(tag)} className="hover:text-white transition-colors" aria-label={`Quitar ${tag}`}>
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </span>
+        ))}
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => onInputChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={tags.length === 0 ? "Ej. Toyota, Honda…" : ""}
+          className="flex-1 min-w-[120px] bg-transparent text-white text-sm placeholder-gray-600 focus:outline-none"
+        />
+      </div>
+      {inputValue && suggestions.length > 0 && (
+        <div className="bg-[#1a1a2e] border border-white/10 rounded-lg overflow-hidden">
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => { onAdd(s); onInputChange(""); }}
+              className="w-full text-left px-3 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+      <p className="text-gray-600 text-xs">Presioná Enter o coma para agregar. Backspace para eliminar el último.</p>
+    </div>
+  );
+}
 
 const CATEGORIES = ["Filtros", "Frenos", "Encendido", "Lubricantes", "Suspension", "Motor", "Electrico", "Carroceria", "Otro"];
 
 function AddItemModal({ onClose, onAdd }: { onClose: () => void; onAdd: () => void }) {
   const [form, setForm] = useState<NewItemForm>(EMPTY_FORM);
+  const [compatibleBrands, setCompatibleBrands] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Partial<NewItemForm>>({});
 
@@ -142,6 +226,7 @@ function AddItemModal({ onClose, onAdd }: { onClose: () => void; onAdd: () => vo
         sell_price: Number(form.sell_price),
         location: form.location.trim(),
         supplier: form.supplier.trim(),
+        compatible_brands: compatibleBrands,
       });
       toast("Repuesto agregado correctamente", "success");
       onAdd();
@@ -226,6 +311,17 @@ function AddItemModal({ onClose, onAdd }: { onClose: () => void; onAdd: () => vo
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Proveedor</label>
               <input className={inputClass} placeholder="Ej. AutoPartes MX" value={form.supplier} onChange={(e) => set("supplier", e.target.value)} />
             </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Compatible con (marcas de autos)</label>
+              <BrandsTagInput
+                tags={compatibleBrands}
+                onAdd={(b) => setCompatibleBrands((prev) => [...prev, b])}
+                onRemove={(b) => setCompatibleBrands((prev) => prev.filter((x) => x !== b))}
+                inputValue={form.compatible_brands_input}
+                onInputChange={(v) => set("compatible_brands_input", v)}
+              />
+            </div>
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -254,6 +350,13 @@ function EditItemModal({ item, onClose, onSaved }: { item: Inventory; onClose: (
     sell_price: String(item.sell_price),
     location: item.location ?? "",
     supplier: item.supplier ?? "",
+    compatible_brands_input: "",
+  });
+  const [compatibleBrands, setCompatibleBrands] = useState<string[]>(() => {
+    const raw = (item as unknown as { compatible_brands?: unknown }).compatible_brands;
+    if (Array.isArray(raw)) return raw as string[];
+    if (typeof raw === "string" && raw) return raw.split(",").map((s: string) => s.trim());
+    return [];
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Partial<NewItemForm>>({});
@@ -291,6 +394,7 @@ function EditItemModal({ item, onClose, onSaved }: { item: Inventory; onClose: (
         sell_price: Number(form.sell_price),
         location: form.location.trim(),
         supplier: form.supplier.trim(),
+        compatible_brands: compatibleBrands,
       });
       toast("Repuesto actualizado correctamente", "success");
       onSaved();
@@ -375,6 +479,17 @@ function EditItemModal({ item, onClose, onSaved }: { item: Inventory; onClose: (
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Proveedor</label>
               <input className={inputClass} placeholder="Ej. AutoPartes MX" value={form.supplier} onChange={(e) => set("supplier", e.target.value)} />
             </div>
+
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Compatible con (marcas de autos)</label>
+              <BrandsTagInput
+                tags={compatibleBrands}
+                onAdd={(b) => setCompatibleBrands((prev) => [...prev, b])}
+                onRemove={(b) => setCompatibleBrands((prev) => prev.filter((x) => x !== b))}
+                inputValue={form.compatible_brands_input}
+                onInputChange={(v) => set("compatible_brands_input", v)}
+              />
+            </div>
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -391,6 +506,53 @@ function EditItemModal({ item, onClose, onSaved }: { item: Inventory; onClose: (
   );
 }
 
+// ── Inline stock adjuster ──────────────────────────────────────────────────
+
+function StockAdjuster({ item, onAdjusted }: { item: Inventory; onAdjusted: (id: string, newQty: number) => void }) {
+  const [busy, setBusy] = useState(false);
+
+  async function handleAdjust(delta: number) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const newQty = await adjustStock(item.id, delta);
+      onAdjusted(item.id, newQty);
+    } catch {
+      toast("Error al ajustar el stock", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const status = getStockStatus(item);
+  const qtyColor = status === "agotado" ? "text-red-400" : status === "bajo" ? "text-yellow-400" : "text-white";
+
+  return (
+    <div className="flex items-center justify-end gap-1.5">
+      <button
+        onClick={() => handleAdjust(-1)}
+        disabled={busy || item.quantity === 0}
+        className="w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        aria-label={`Reducir stock de ${item.name}`}
+      >
+        <IconMinus />
+      </button>
+      <span className={`font-medium tabular-nums w-8 text-center ${qtyColor}`}>
+        {item.quantity}
+      </span>
+      <button
+        onClick={() => handleAdjust(1)}
+        disabled={busy}
+        className="w-6 h-6 rounded flex items-center justify-center text-gray-500 hover:text-white hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        aria-label={`Aumentar stock de ${item.name}`}
+      >
+        <IconPlus />
+      </button>
+      <span className="text-gray-600 text-xs ml-0.5">/ {item.min_stock} mín</span>
+    </div>
+  );
+}
+
 export default function InventarioClient({ initialItems }: { initialItems: Inventory[] }) {
   const [items, setItems] = useState<Inventory[]>(initialItems);
   const [search, setSearch] = useState("");
@@ -403,6 +565,10 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
 
   const categories = useMemo(() => [...new Set(items.map((i) => i.category).filter(Boolean))].sort() as string[], [items]);
   const brands = useMemo(() => [...new Set(items.map((i) => i.brand).filter(Boolean))].sort() as string[], [items]);
+
+  function handleStockAdjusted(id: string, newQty: number) {
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, quantity: newQty } : i));
+  }
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -565,10 +731,7 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
                       <td className="py-3 px-4 text-gray-300">{item.category ?? <span className="text-gray-600">—</span>}</td>
                       <td className="py-3 px-4 text-gray-300">{item.brand ?? <span className="text-gray-600">—</span>}</td>
                       <td className="py-3 px-4 text-right">
-                        <span className={`font-medium ${status === "agotado" ? "text-red-400" : status === "bajo" ? "text-yellow-400" : "text-white"}`}>
-                          {item.quantity}
-                        </span>
-                        <span className="text-gray-600 text-xs ml-1">/ {item.min_stock} mín</span>
+                        <StockAdjuster item={item} onAdjusted={handleStockAdjusted} />
                       </td>
                       <td className="py-3 px-4 text-right text-white">
                         ${item.sell_price.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
