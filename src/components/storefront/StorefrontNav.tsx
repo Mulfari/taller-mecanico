@@ -10,6 +10,7 @@ const navLinks = [
   { href: "/vehiculos", label: "Vehículos en Venta" },
   { href: "/citas", label: "Agendar Cita" },
   { href: "/mi-vehiculo", label: "Mi Vehículo" },
+  { href: "/historial", label: "Mi Historial" },
 ];
 
 interface Props {
