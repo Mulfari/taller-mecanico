@@ -1,57 +1,16 @@
 import type { Metadata } from "next";
+import type { WorkOrderListItem } from "@/types/database";
+import {
+  getDashboardMetrics,
+  getRecentOrders,
+  getUpcomingAppointments,
+} from "@/lib/supabase/queries/work-orders";
 
 export const metadata: Metadata = { title: "Panel Principal — TallerPro" };
 
-// --- Types matching DB schema ---
 type WorkOrderStatus = "received" | "diagnosing" | "repairing" | "ready" | "delivered";
 type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled";
 
-interface RecentOrder {
-  id: string;
-  client: string;
-  vehicle: string;
-  plate: string;
-  status: WorkOrderStatus;
-  mechanic: string;
-  received_at: string;
-  estimated_cost: number;
-}
-
-interface UpcomingAppointment {
-  id: string;
-  client: string;
-  vehicle: string;
-  date: string;
-  time_slot: string;
-  service_type: string;
-  status: AppointmentStatus;
-}
-
-// --- Mock data (swap for Supabase queries later) ---
-const METRICS = {
-  activeOrders: 8,
-  pendingAppointments: 5,
-  vehiclesForSale: 12,
-  lowStockItems: 3,
-};
-
-const RECENT_ORDERS: RecentOrder[] = [
-  { id: "OT-0041", client: "Carlos Mendoza", vehicle: "Toyota Corolla 2019", plate: "ABC-123", status: "repairing", mechanic: "Luis García", received_at: "2026-04-29", estimated_cost: 4500 },
-  { id: "OT-0040", client: "Ana Rodríguez", vehicle: "Honda Civic 2021", plate: "XYZ-789", status: "diagnosing", mechanic: "Pedro Soto", received_at: "2026-04-29", estimated_cost: 1200 },
-  { id: "OT-0039", client: "Miguel Torres", vehicle: "Nissan Sentra 2018", plate: "DEF-456", status: "ready", mechanic: "Luis García", received_at: "2026-04-28", estimated_cost: 2800 },
-  { id: "OT-0038", client: "Laura Jiménez", vehicle: "Chevrolet Spark 2020", plate: "GHI-321", status: "received", mechanic: "—", received_at: "2026-04-30", estimated_cost: 0 },
-  { id: "OT-0037", client: "Roberto Díaz", vehicle: "Ford Focus 2017", plate: "JKL-654", status: "repairing", mechanic: "Pedro Soto", received_at: "2026-04-27", estimated_cost: 6200 },
-];
-
-const UPCOMING_APPOINTMENTS: UpcomingAppointment[] = [
-  { id: "CIT-0021", client: "Sofía Vargas", vehicle: "Kia Sportage 2022", date: "2026-04-30", time_slot: "10:00", service_type: "Cambio de aceite", status: "confirmed" },
-  { id: "CIT-0022", client: "Andrés Morales", vehicle: "Hyundai Tucson 2020", date: "2026-04-30", time_slot: "11:30", service_type: "Revisión de frenos", status: "confirmed" },
-  { id: "CIT-0023", client: "Patricia Núñez", vehicle: "Mazda 3 2019", date: "2026-04-30", time_slot: "14:00", service_type: "Diagnóstico general", status: "pending" },
-  { id: "CIT-0024", client: "Fernando Castro", vehicle: "Volkswagen Jetta 2021", date: "2026-05-01", time_slot: "09:00", service_type: "Alineación y balanceo", status: "confirmed" },
-  { id: "CIT-0025", client: "Isabel Reyes", vehicle: "Renault Logan 2018", date: "2026-05-01", time_slot: "10:30", service_type: "Cambio de correa", status: "pending" },
-];
-
-// --- Status helpers ---
 const ORDER_STATUS_LABELS: Record<WorkOrderStatus, string> = {
   received: "Recibido",
   diagnosing: "Diagnóstico",
@@ -90,7 +49,6 @@ function StatusBadge({ label, color }: { label: string; color: string }) {
   );
 }
 
-// --- Metric card icons ---
 function IconWrench() {
   return (
     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -127,7 +85,6 @@ function IconAlert() {
   );
 }
 
-// --- Metric card ---
 interface MetricCardProps {
   label: string;
   value: number;
@@ -152,7 +109,6 @@ function MetricCard({ label, value, icon, accentClass, bgClass, note }: MetricCa
   );
 }
 
-// --- Section header ---
 function SectionHeader({ title, href, linkLabel }: { title: string; href: string; linkLabel: string }) {
   return (
     <div className="flex items-center justify-between mb-4">
@@ -162,16 +118,21 @@ function SectionHeader({ title, href, linkLabel }: { title: string; href: string
   );
 }
 
-// --- Main page ---
-export default function DashboardPage() {
+export default async function DashboardPage() {
   const today = new Date().toLocaleDateString("es-MX", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
-  const metrics: MetricCardProps[] = [
+  const [metrics, recentOrders, upcomingAppointments] = await Promise.all([
+    getDashboardMetrics(),
+    getRecentOrders(5),
+    getUpcomingAppointments(5),
+  ]);
+
+  const metricCards: MetricCardProps[] = [
     {
       label: "Órdenes Activas",
-      value: METRICS.activeOrders,
+      value: metrics.activeOrders,
       icon: <IconWrench />,
       accentClass: "text-[#e94560]",
       bgClass: "bg-[#e94560]/10",
@@ -179,7 +140,7 @@ export default function DashboardPage() {
     },
     {
       label: "Citas Pendientes",
-      value: METRICS.pendingAppointments,
+      value: metrics.pendingAppointments,
       icon: <IconCalendar />,
       accentClass: "text-blue-400",
       bgClass: "bg-blue-500/10",
@@ -187,7 +148,7 @@ export default function DashboardPage() {
     },
     {
       label: "Vehículos en Venta",
-      value: METRICS.vehiclesForSale,
+      value: metrics.vehiclesForSale,
       icon: <IconCar />,
       accentClass: "text-yellow-400",
       bgClass: "bg-yellow-500/10",
@@ -195,7 +156,7 @@ export default function DashboardPage() {
     },
     {
       label: "Stock Bajo",
-      value: METRICS.lowStockItems,
+      value: metrics.lowStockItems,
       icon: <IconAlert />,
       accentClass: "text-orange-400",
       bgClass: "bg-orange-500/10",
@@ -205,97 +166,113 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Panel Principal</h1>
         <p className="text-gray-500 text-sm mt-1 capitalize">{today}</p>
       </div>
 
-      {/* Metric cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {metrics.map((m) => (
+        {metricCards.map((m) => (
           <MetricCard key={m.label} {...m} />
         ))}
       </div>
 
-      {/* Bottom grid: orders + appointments */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
-        {/* Recent orders — wider column */}
-        <div className="xl:col-span-3 bg-[#16213e] border border-white/10 rounded-xl p-5">
+        {/* Recent orders */}
+        <div className="lg:col-span-3 bg-[#16213e] border border-white/10 rounded-xl p-5">
           <SectionHeader title="Órdenes Recientes" href="/dashboard/ordenes" linkLabel="Ver todas →" />
-          <div className="overflow-x-auto -mx-1">
-            <table className="w-full text-sm min-w-[520px]">
-              <thead>
-                <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/5">
-                  <th className="text-left pb-3 px-1 font-medium">OT / Cliente</th>
-                  <th className="text-left pb-3 px-1 font-medium">Vehículo</th>
-                  <th className="text-left pb-3 px-1 font-medium">Estado</th>
-                  <th className="text-right pb-3 px-1 font-medium">Costo Est.</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {RECENT_ORDERS.map((order) => (
-                  <tr key={order.id} className="hover:bg-white/3 transition-colors">
-                    <td className="py-3 px-1">
-                      <p className="text-[#e94560] font-mono text-xs">{order.id}</p>
-                      <p className="text-white font-medium mt-0.5">{order.client}</p>
-                    </td>
-                    <td className="py-3 px-1">
-                      <p className="text-gray-300">{order.vehicle}</p>
-                      <p className="text-gray-500 text-xs mt-0.5">{order.plate}</p>
-                    </td>
-                    <td className="py-3 px-1">
-                      <StatusBadge
-                        label={ORDER_STATUS_LABELS[order.status]}
-                        color={ORDER_STATUS_COLORS[order.status]}
-                      />
-                    </td>
-                    <td className="py-3 px-1 text-right">
-                      {order.estimated_cost > 0 ? (
-                        <span className="text-gray-300 font-medium">
-                          ${order.estimated_cost.toLocaleString("es-MX")}
-                        </span>
-                      ) : (
-                        <span className="text-gray-600">—</span>
-                      )}
-                    </td>
+          {recentOrders.length === 0 ? (
+            <p className="text-gray-500 text-sm py-8 text-center">No hay órdenes registradas.</p>
+          ) : (
+            <div className="overflow-x-auto -mx-1">
+              <table className="w-full text-sm min-w-[520px]">
+                <thead>
+                  <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/5">
+                    <th className="text-left pb-3 px-1 font-medium">OT / Cliente</th>
+                    <th className="text-left pb-3 px-1 font-medium">Vehículo</th>
+                    <th className="text-left pb-3 px-1 font-medium">Estado</th>
+                    <th className="text-right pb-3 px-1 font-medium">Costo Est.</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {recentOrders.map((order: WorkOrderListItem) => (
+                    <tr key={order.id} className="hover:bg-white/[0.03] transition-colors">
+                      <td className="py-3 px-1">
+                        <p className="text-[#e94560] font-mono text-xs">
+                          OT-{order.id.slice(0, 6).toUpperCase()}
+                        </p>
+                        <p className="text-white font-medium mt-0.5">
+                          {order.client.full_name ?? "—"}
+                        </p>
+                      </td>
+                      <td className="py-3 px-1">
+                        <p className="text-gray-300">
+                          {order.vehicle.brand} {order.vehicle.model} {order.vehicle.year}
+                        </p>
+                        <p className="text-gray-500 text-xs mt-0.5">
+                          {order.vehicle.plate ?? "—"}
+                        </p>
+                      </td>
+                      <td className="py-3 px-1">
+                        <StatusBadge
+                          label={ORDER_STATUS_LABELS[order.status]}
+                          color={ORDER_STATUS_COLORS[order.status]}
+                        />
+                      </td>
+                      <td className="py-3 px-1 text-right">
+                        {order.estimated_cost && order.estimated_cost > 0 ? (
+                          <span className="text-gray-300 font-medium">
+                            ${order.estimated_cost.toLocaleString("es-MX")}
+                          </span>
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {/* Upcoming appointments — narrower column */}
-        <div className="xl:col-span-2 bg-[#16213e] border border-white/10 rounded-xl p-5">
+        {/* Upcoming appointments */}
+        <div className="lg:col-span-2 bg-[#16213e] border border-white/10 rounded-xl p-5">
           <SectionHeader title="Próximas Citas" href="/dashboard/citas" linkLabel="Ver agenda →" />
-          <ul className="space-y-3">
-            {UPCOMING_APPOINTMENTS.map((appt) => (
-              <li key={appt.id} className="flex items-start gap-3 p-3 rounded-lg bg-white/3 hover:bg-white/5 transition-colors">
-                {/* Time block */}
-                <div className="shrink-0 text-center bg-[#1a1a2e] rounded-lg px-2.5 py-1.5 min-w-[52px]">
-                  <p className="text-[#e94560] font-bold text-sm leading-none">{appt.time_slot}</p>
-                  <p className="text-gray-500 text-xs mt-1 leading-none">
-                    {new Date(appt.date + "T00:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
-                  </p>
-                </div>
-                {/* Details */}
-                <div className="min-w-0 flex-1">
-                  <p className="text-white text-sm font-medium truncate">{appt.client}</p>
-                  <p className="text-gray-400 text-xs truncate mt-0.5">{appt.service_type}</p>
-                  <p className="text-gray-600 text-xs truncate">{appt.vehicle}</p>
-                </div>
-                {/* Status */}
-                <div className="shrink-0">
-                  <StatusBadge
-                    label={APPT_STATUS_LABELS[appt.status]}
-                    color={APPT_STATUS_COLORS[appt.status]}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
+          {upcomingAppointments.length === 0 ? (
+            <p className="text-gray-500 text-sm py-8 text-center">No hay citas próximas.</p>
+          ) : (
+            <ul className="space-y-3">
+              {upcomingAppointments.map((appt) => {
+                const clientName = (appt.client as { full_name: string | null } | null)?.full_name ?? "—";
+                const vehicleLabel = appt.vehicle
+                  ? `${(appt.vehicle as { brand: string }).brand} ${(appt.vehicle as { model: string }).model} ${(appt.vehicle as { year: number }).year}`
+                  : "—";
+                return (
+                  <li key={appt.id} className="flex items-start gap-3 p-3 rounded-lg bg-white/[0.03] hover:bg-white/5 transition-colors">
+                    <div className="shrink-0 text-center bg-[#1a1a2e] rounded-lg px-2.5 py-1.5 min-w-[52px]">
+                      <p className="text-[#e94560] font-bold text-sm leading-none">{appt.time_slot}</p>
+                      <p className="text-gray-500 text-xs mt-1 leading-none">
+                        {new Date(appt.date + "T00:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
+                      </p>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white text-sm font-medium truncate">{clientName}</p>
+                      <p className="text-gray-400 text-xs truncate mt-0.5">{appt.service_type}</p>
+                      <p className="text-gray-600 text-xs truncate">{vehicleLabel}</p>
+                    </div>
+                    <div className="shrink-0">
+                      <StatusBadge
+                        label={APPT_STATUS_LABELS[appt.status as AppointmentStatus]}
+                        color={APPT_STATUS_COLORS[appt.status as AppointmentStatus]}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </div>
 
       </div>
