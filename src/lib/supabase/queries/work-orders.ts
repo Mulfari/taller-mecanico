@@ -146,3 +146,38 @@ export async function getUpcomingAppointments(limit = 5) {
   if (error) throw error;
   return data ?? [];
 }
+
+export async function getLowStockItems(limit = 8) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("inventory")
+    .select("id, name, sku, quantity, min_stock, category")
+    .order("name");
+  if (error) throw error;
+  const low = (data ?? []).filter((item) => item.quantity <= item.min_stock);
+  return low.slice(0, limit) as {
+    id: string;
+    name: string;
+    sku: string | null;
+    quantity: number;
+    min_stock: number;
+    category: string | null;
+  }[];
+}
+
+export async function getReadyOrders(limit = 5): Promise<WorkOrderListItem[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("work_orders")
+    .select(`
+      *,
+      client:profiles!work_orders_client_id_fkey(id, full_name),
+      vehicle:vehicles!work_orders_vehicle_id_fkey(id, brand, model, year, plate),
+      mechanic:profiles!work_orders_mechanic_id_fkey(id, full_name)
+    `)
+    .eq("status", "ready")
+    .order("created_at", { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as WorkOrderListItem[];
+}

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import type { WorkOrderListItem } from "@/types/database";
+import Link from "next/link";
 import {
   getDashboardMetrics,
   getRecentOrders,
   getUpcomingAppointments,
+  getLowStockItems,
+  getReadyOrders,
 } from "@/lib/supabase/queries/work-orders";
 
 export const metadata: Metadata = { title: "Panel Principal — TallerPro" };
@@ -123,10 +126,12 @@ export default async function DashboardPage() {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
-  const [metrics, recentOrders, upcomingAppointments] = await Promise.all([
+  const [metrics, recentOrders, upcomingAppointments, lowStockItems, readyOrders] = await Promise.all([
     getDashboardMetrics(),
     getRecentOrders(5),
     getUpcomingAppointments(5),
+    getLowStockItems(8),
+    getReadyOrders(5),
   ]);
 
   const metricCards: MetricCardProps[] = [
@@ -276,6 +281,102 @@ export default async function DashboardPage() {
         </div>
 
       </div>
+
+      {/* Alerts row: ready orders + low stock */}
+      {(readyOrders.length > 0 || lowStockItems.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+          {/* Orders ready for pickup */}
+          {readyOrders.length > 0 && (
+            <div className="bg-[#16213e] border border-green-500/20 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" aria-hidden="true" />
+                  <h2 className="text-white font-semibold text-base">Listos para recoger</h2>
+                  <span className="text-xs bg-green-500/20 text-green-300 px-2 py-0.5 rounded-full font-medium">
+                    {readyOrders.length}
+                  </span>
+                </div>
+                <Link href="/dashboard/ordenes?status=ready" className="text-[#e94560] text-sm hover:underline">
+                  Ver todas →
+                </Link>
+              </div>
+              <ul className="space-y-2">
+                {readyOrders.map((order) => (
+                  <li key={order.id}>
+                    <Link
+                      href={`/dashboard/ordenes/${order.id}`}
+                      className="flex items-center justify-between p-3 rounded-lg bg-green-500/5 border border-green-500/10 hover:border-green-500/30 hover:bg-green-500/10 transition-colors group"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-green-400 font-mono text-xs">
+                            OT-{order.id.slice(0, 6).toUpperCase()}
+                          </span>
+                          <span className="text-white text-sm font-medium truncate">
+                            {order.client.full_name ?? "—"}
+                          </span>
+                        </div>
+                        <p className="text-gray-500 text-xs mt-0.5 truncate">
+                          {order.vehicle.brand} {order.vehicle.model} {order.vehicle.year}
+                          {order.vehicle.plate ? ` · ${order.vehicle.plate}` : ""}
+                        </p>
+                      </div>
+                      <svg className="w-4 h-4 text-gray-600 group-hover:text-green-400 transition-colors shrink-0 ml-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Low stock alerts */}
+          {lowStockItems.length > 0 && (
+            <div className="bg-[#16213e] border border-orange-500/20 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                  </svg>
+                  <h2 className="text-white font-semibold text-base">Stock bajo</h2>
+                  <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full font-medium">
+                    {lowStockItems.length}
+                  </span>
+                </div>
+                <Link href="/dashboard/inventario" className="text-[#e94560] text-sm hover:underline">
+                  Ver inventario →
+                </Link>
+              </div>
+              <ul className="space-y-2">
+                {lowStockItems.map((item) => (
+                  <li key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-orange-500/5 border border-orange-500/10">
+                    <div className="min-w-0">
+                      <p className="text-white text-sm font-medium truncate">{item.name}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {item.category && (
+                          <span className="text-gray-600 text-xs">{item.category}</span>
+                        )}
+                        {item.sku && (
+                          <span className="text-gray-700 text-xs font-mono">{item.sku}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="shrink-0 ml-3 text-right">
+                      <p className={`text-sm font-bold ${item.quantity === 0 ? "text-red-400" : "text-orange-400"}`}>
+                        {item.quantity === 0 ? "Sin stock" : `${item.quantity} uds.`}
+                      </p>
+                      <p className="text-gray-600 text-xs">mín. {item.min_stock}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+        </div>
+      )}
     </div>
   );
 }
