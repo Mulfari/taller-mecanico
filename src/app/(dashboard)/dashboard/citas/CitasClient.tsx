@@ -3,7 +3,50 @@
 import { useState, useMemo, useTransition } from "react";
 import type { AppointmentWithRelations } from "@/lib/supabase/queries/appointments";
 import type { AppointmentStatus } from "@/types/database";
-import { updateAppointmentStatusAction } from "./actions";
+import { updateAppointmentStatusAction, createAppointmentAction } from "./actions";
+
+// ── Prop types ─────────────────────────────────────────────────────────────
+
+interface ClientOption {
+  id: string;
+  full_name: string | null;
+  email: string;
+  phone: string | null;
+}
+
+interface VehicleOption {
+  id: string;
+  owner_id: string;
+  brand: string;
+  model: string;
+  year: number;
+  plate: string | null;
+}
+
+const inputClass =
+  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors";
+const selectClass =
+  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors appearance-none";
+
+const SERVICE_TYPES = [
+  "Mantenimiento preventivo",
+  "Cambio de aceite",
+  "Revisión de frenos",
+  "Alineación y balanceo",
+  "Diagnóstico general",
+  "Reparación de motor",
+  "Reparación de transmisión",
+  "Servicio de aire acondicionado",
+  "Revisión eléctrica",
+  "Otro",
+];
+
+const TIME_SLOTS = [
+  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+  "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
+  "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+  "17:00", "17:30",
+];
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 
@@ -51,6 +94,22 @@ function IconX() {
   return (
     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function IconPlus() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
+
+function IconChevronDown() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
     </svg>
   );
 }
@@ -233,6 +292,255 @@ function MiniCalendar({ selected, onSelect, appointmentDates }: MiniCalendarProp
   );
 }
 
+// ── New Cita Modal ─────────────────────────────────────────────────────────
+
+function NewCitaModal({
+  clients,
+  vehicles,
+  onClose,
+  onSaved,
+}: {
+  clients: ClientOption[];
+  vehicles: VehicleOption[];
+  onClose: () => void;
+  onSaved: (appt: AppointmentWithRelations) => void;
+}) {
+  const [clientId, setClientId] = useState("");
+  const [vehicleId, setVehicleId] = useState("");
+  const [date, setDate] = useState(toDateKey(new Date()));
+  const [timeSlot, setTimeSlot] = useState("09:00");
+  const [serviceType, setServiceType] = useState("");
+  const [customService, setCustomService] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const clientVehicles = useMemo(
+    () => vehicles.filter((v) => v.owner_id === clientId),
+    [vehicles, clientId]
+  );
+
+  function handleClientChange(id: string) {
+    setClientId(id);
+    setVehicleId("");
+  }
+
+  const finalService = serviceType === "Otro" ? customService.trim() : serviceType;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!clientId || !date || !timeSlot || !finalService) {
+      setError("Completa los campos obligatorios.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await createAppointmentAction({
+        client_id: clientId,
+        vehicle_id: vehicleId || null,
+        date,
+        time_slot: timeSlot,
+        service_type: finalService,
+        notes: notes.trim() || null,
+      });
+      const client = clients.find((c) => c.id === clientId) ?? null;
+      const vehicle = clientVehicles.find((v) => v.id === vehicleId) ?? null;
+      onSaved({
+        id: crypto.randomUUID(),
+        client_id: clientId,
+        vehicle_id: vehicleId || null,
+        date,
+        time_slot: timeSlot,
+        service_type: finalService,
+        status: "confirmed",
+        notes: notes.trim() || null,
+        created_at: new Date().toISOString(),
+        client: client ? { id: client.id, full_name: client.full_name, phone: client.phone } : null,
+        vehicle: vehicle ? { id: vehicle.id, brand: vehicle.brand, model: vehicle.model, year: vehicle.year, plate: vehicle.plate } : null,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar la cita.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl my-8">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <h2 className="text-white font-semibold text-lg">Nueva cita</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label="Cerrar">
+            <IconX />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Cliente */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Cliente <span className="text-[#e94560]">*</span>
+            </label>
+            <div className="relative">
+              <select
+                className={selectClass}
+                value={clientId}
+                onChange={(e) => handleClientChange(e.target.value)}
+                required
+              >
+                <option value="">Seleccionar cliente…</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.full_name ?? c.email}{c.phone ? ` — ${c.phone}` : ""}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+                <IconChevronDown />
+              </div>
+            </div>
+          </div>
+
+          {/* Vehículo */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Vehículo</label>
+            <div className="relative">
+              <select
+                className={`${selectClass} disabled:opacity-40 disabled:cursor-not-allowed`}
+                value={vehicleId}
+                onChange={(e) => setVehicleId(e.target.value)}
+                disabled={!clientId}
+              >
+                <option value="">{clientId ? "Sin vehículo específico" : "Primero selecciona un cliente"}</option>
+                {clientVehicles.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.brand} {v.model} {v.year}{v.plate ? ` — ${v.plate}` : ""}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+                <IconChevronDown />
+              </div>
+            </div>
+          </div>
+
+          {/* Fecha y hora */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Fecha <span className="text-[#e94560]">*</span>
+              </label>
+              <input
+                type="date"
+                className={inputClass}
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Hora <span className="text-[#e94560]">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  className={selectClass}
+                  value={timeSlot}
+                  onChange={(e) => setTimeSlot(e.target.value)}
+                >
+                  {TIME_SLOTS.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+                  <IconChevronDown />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tipo de servicio */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Tipo de servicio <span className="text-[#e94560]">*</span>
+            </label>
+            <div className="relative">
+              <select
+                className={selectClass}
+                value={serviceType}
+                onChange={(e) => setServiceType(e.target.value)}
+                required
+              >
+                <option value="">Seleccionar servicio…</option>
+                {SERVICE_TYPES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+                <IconChevronDown />
+              </div>
+            </div>
+            {serviceType === "Otro" && (
+              <input
+                type="text"
+                className={`${inputClass} mt-2`}
+                placeholder="Describe el servicio…"
+                value={customService}
+                onChange={(e) => setCustomService(e.target.value)}
+                required
+              />
+            )}
+          </div>
+
+          {/* Notas */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Notas</label>
+            <textarea
+              rows={2}
+              className={`${inputClass} resize-none`}
+              placeholder="Observaciones adicionales…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white hover:border-white/20 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+            >
+              {saving ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Guardando…
+                </>
+              ) : "Crear cita"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 const FILTER_TABS: { key: AppointmentStatus | "all"; label: string }[] = [
@@ -243,13 +551,22 @@ const FILTER_TABS: { key: AppointmentStatus | "all"; label: string }[] = [
   { key: "cancelled", label: "Canceladas" },
 ];
 
-export default function CitasClient({ appointments: initial }: { appointments: AppointmentWithRelations[] }) {
+export default function CitasClient({
+  appointments: initial,
+  clients,
+  vehicles,
+}: {
+  appointments: AppointmentWithRelations[];
+  clients: ClientOption[];
+  vehicles: VehicleOption[];
+}) {
   const today = toDateKey(new Date());
   const [appointments, setAppointments] = useState(initial);
   const [selectedDate, setSelectedDate] = useState(today);
   const [activeFilter, setActiveFilter] = useState<AppointmentStatus | "all">("all");
   const [isPending, startTransition] = useTransition();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [showNewCita, setShowNewCita] = useState(false);
 
   const appointmentDates = useMemo(
     () => new Set(appointments.map((a) => a.date)),
@@ -308,6 +625,13 @@ export default function CitasClient({ appointments: initial }: { appointments: A
             <span className="text-green-400">{todayStats.completed} completadas</span>
           </p>
         </div>
+        <button
+          onClick={() => setShowNewCita(true)}
+          className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          <IconPlus />
+          Nueva cita
+        </button>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-6">
