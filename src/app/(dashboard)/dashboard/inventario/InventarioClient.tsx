@@ -3,7 +3,7 @@
 import { useState, useMemo, useTransition } from "react";
 import type { Inventory } from "@/types/database";
 import { toast, ConfirmDialog, EmptyState } from "@/components/ui";
-import { createInventoryItem, deleteInventoryItem } from "./actions";
+import { createInventoryItem, updateInventoryItem, deleteInventoryItem } from "./actions";
 
 function IconSearch() {
   return (
@@ -41,6 +41,14 @@ function IconChevronDown() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
+
+function IconPencil() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
     </svg>
   );
 }
@@ -234,6 +242,155 @@ function AddItemModal({ onClose, onAdd }: { onClose: () => void; onAdd: () => vo
   );
 }
 
+function EditItemModal({ item, onClose, onSaved }: { item: Inventory; onClose: () => void; onSaved: () => void }) {
+  const [form, setForm] = useState<NewItemForm>({
+    name: item.name,
+    sku: item.sku,
+    category: item.category ?? "",
+    brand: item.brand ?? "",
+    quantity: String(item.quantity),
+    min_stock: String(item.min_stock),
+    cost_price: item.cost_price != null ? String(item.cost_price) : "",
+    sell_price: String(item.sell_price),
+    location: item.location ?? "",
+    supplier: item.supplier ?? "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState<Partial<NewItemForm>>({});
+
+  function set(field: keyof NewItemForm, value: string) {
+    setForm((f) => ({ ...f, [field]: value }));
+    setErrors((e) => ({ ...e, [field]: undefined }));
+  }
+
+  function validate(): boolean {
+    const e: Partial<NewItemForm> = {};
+    if (!form.name.trim()) e.name = "Requerido";
+    if (!form.sku.trim()) e.sku = "Requerido";
+    if (!form.category) e.category = "Requerido";
+    if (!form.quantity || isNaN(Number(form.quantity))) e.quantity = "Número válido";
+    if (!form.min_stock || isNaN(Number(form.min_stock))) e.min_stock = "Número válido";
+    if (!form.sell_price || isNaN(Number(form.sell_price))) e.sell_price = "Número válido";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!validate()) return;
+    setSaving(true);
+    try {
+      await updateInventoryItem(item.id, {
+        name: form.name.trim(),
+        sku: form.sku.trim(),
+        category: form.category,
+        brand: form.brand.trim(),
+        quantity: Number(form.quantity),
+        min_stock: Number(form.min_stock),
+        cost_price: form.cost_price ? Number(form.cost_price) : null,
+        sell_price: Number(form.sell_price),
+        location: form.location.trim(),
+        supplier: form.supplier.trim(),
+      });
+      toast("Repuesto actualizado correctamente", "success");
+      onSaved();
+    } catch {
+      toast("Error al actualizar el repuesto", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <h2 className="text-white font-semibold text-lg">Editar repuesto</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label="Cerrar">
+            <IconX />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4 max-h-[80vh] overflow-y-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Nombre <span className="text-[#e94560]">*</span></label>
+              <input className={inputClass} placeholder="Ej. Filtro de aceite" value={form.name} onChange={(e) => set("name", e.target.value)} />
+              {errors.name && <p className="text-red-400 text-xs mt-1">{errors.name}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">SKU <span className="text-[#e94560]">*</span></label>
+              <input className={inputClass} placeholder="FIL-ACE-001" value={form.sku} onChange={(e) => set("sku", e.target.value)} />
+              {errors.sku && <p className="text-red-400 text-xs mt-1">{errors.sku}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Categoría <span className="text-[#e94560]">*</span></label>
+              <div className="relative">
+                <select className={selectClass} value={form.category} onChange={(e) => set("category", e.target.value)}>
+                  <option value="">Seleccionar</option>
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500"><IconChevronDown /></div>
+              </div>
+              {errors.category && <p className="text-red-400 text-xs mt-1">{errors.category}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Marca</label>
+              <input className={inputClass} placeholder="Ej. Bosch" value={form.brand} onChange={(e) => set("brand", e.target.value)} />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Cantidad <span className="text-[#e94560]">*</span></label>
+              <input type="number" min="0" className={inputClass} placeholder="0" value={form.quantity} onChange={(e) => set("quantity", e.target.value)} />
+              {errors.quantity && <p className="text-red-400 text-xs mt-1">{errors.quantity}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Stock mínimo <span className="text-[#e94560]">*</span></label>
+              <input type="number" min="0" className={inputClass} placeholder="0" value={form.min_stock} onChange={(e) => set("min_stock", e.target.value)} />
+              {errors.min_stock && <p className="text-red-400 text-xs mt-1">{errors.min_stock}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Precio costo</label>
+              <input type="number" min="0" step="0.01" className={inputClass} placeholder="0.00" value={form.cost_price} onChange={(e) => set("cost_price", e.target.value)} />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Precio venta <span className="text-[#e94560]">*</span></label>
+              <input type="number" min="0" step="0.01" className={inputClass} placeholder="0.00" value={form.sell_price} onChange={(e) => set("sell_price", e.target.value)} />
+              {errors.sell_price && <p className="text-red-400 text-xs mt-1">{errors.sell_price}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Ubicación</label>
+              <input className={inputClass} placeholder="Ej. A1" value={form.location} onChange={(e) => set("location", e.target.value)} />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Proveedor</label>
+              <input className={inputClass} placeholder="Ej. AutoPartes MX" value={form.supplier} onChange={(e) => set("supplier", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white hover:border-white/20 transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
+              {saving ? <><IconSpinner /> Guardando…</> : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function InventarioClient({ initialItems }: { initialItems: Inventory[] }) {
   const [items, setItems] = useState<Inventory[]>(initialItems);
   const [search, setSearch] = useState("");
@@ -241,6 +398,7 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
   const [filterBrand, setFilterBrand] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Inventory | null>(null);
+  const [editTarget, setEditTarget] = useState<Inventory | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const categories = useMemo(() => [...new Set(items.map((i) => i.category).filter(Boolean))].sort() as string[], [items]);
@@ -261,7 +419,13 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
   function handleAdded() {
     setShowModal(false);
     startTransition(() => {
-      // Server revalidated via action; reload items from server by refreshing
+      window.location.reload();
+    });
+  }
+
+  function handleEditSaved() {
+    setEditTarget(null);
+    startTransition(() => {
       window.location.reload();
     });
   }
@@ -413,13 +577,22 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
                         <StockBadge item={item} />
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => setDeleteTarget(item)}
-                          className="text-gray-600 hover:text-red-400 transition-colors"
-                          aria-label={`Eliminar ${item.name}`}
-                        >
-                          <IconX />
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setEditTarget(item)}
+                            className="text-gray-600 hover:text-blue-400 transition-colors"
+                            aria-label={`Editar ${item.name}`}
+                          >
+                            <IconPencil />
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget(item)}
+                            className="text-gray-600 hover:text-red-400 transition-colors"
+                            aria-label={`Eliminar ${item.name}`}
+                          >
+                            <IconX />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -437,6 +610,14 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
       </div>
 
       {showModal && <AddItemModal onClose={() => setShowModal(false)} onAdd={handleAdded} />}
+
+      {editTarget && (
+        <EditItemModal
+          item={editTarget}
+          onClose={() => setEditTarget(null)}
+          onSaved={handleEditSaved}
+        />
+      )}
 
       {deleteTarget && (
         <ConfirmDialog
