@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { WorkOrderWithRelations, WorkOrderStatus, WorkOrderItemType } from "@/types/database";
 import {
   advanceWorkOrderStatus,
   addWorkOrderItem,
   removeWorkOrderItem,
+  generateInvoiceFromWorkOrder,
 } from "../actions";
 
 const STATUS_STEPS: WorkOrderStatus[] = ["received", "diagnosing", "repairing", "ready", "delivered"];
@@ -195,11 +197,13 @@ function AddItemForm({ onAdd, onCancel }: { onAdd: (item: Omit<{ type: WorkOrder
 }
 
 export default function OrdenDetalleClient({ order: initialOrder }: { order: WorkOrderWithRelations }) {
+  const router = useRouter();
   const [status, setStatus] = useState<WorkOrderStatus>(initialOrder.status);
   const [items, setItems] = useState(initialOrder.items);
   const [showAddItem, setShowAddItem] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
 
   const currentIdx = STATUS_STEPS.indexOf(status);
   const nextStatus = currentIdx < STATUS_STEPS.length - 1 ? STATUS_STEPS[currentIdx + 1] : null;
@@ -253,6 +257,18 @@ export default function OrdenDetalleClient({ order: initialOrder }: { order: Wor
     });
   }
 
+  async function handleGenerateInvoice() {
+    setGeneratingInvoice(true);
+    setError(null);
+    try {
+      const invoiceId = await generateInvoiceFromWorkOrder(initialOrder.id);
+      router.push(`/dashboard/facturas?highlight=${invoiceId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al generar la factura");
+      setGeneratingInvoice(false);
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
@@ -271,23 +287,50 @@ export default function OrdenDetalleClient({ order: initialOrder }: { order: Wor
             <p className="text-gray-500 text-sm mt-0.5 truncate max-w-sm">{initialOrder.description}</p>
           </div>
         </div>
-        {nextLabel && (
-          <button
-            onClick={handleAdvanceStatus}
-            disabled={isPending}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors shrink-0"
-          >
-            {isPending ? (
-              <>
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
-                Actualizando…
-              </>
-            ) : nextLabel}
-          </button>
-        )}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Generate invoice button — shown once order has items */}
+          {items.length > 0 && (
+            <button
+              onClick={handleGenerateInvoice}
+              disabled={generatingInvoice || isPending}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 disabled:opacity-60 disabled:cursor-not-allowed text-gray-300 text-sm font-medium transition-colors"
+            >
+              {generatingInvoice ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Generando…
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  Generar factura
+                </>
+              )}
+            </button>
+          )}
+          {nextLabel && (
+            <button
+              onClick={handleAdvanceStatus}
+              disabled={isPending}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+            >
+              {isPending ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Actualizando…
+                </>
+              ) : nextLabel}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && (

@@ -115,3 +115,63 @@ export async function updateWorkOrderNotes(
 
   revalidatePath(`/dashboard/ordenes/${orderId}`);
 }
+
+export async function generateInvoiceFromWorkOrder(orderId: string): Promise<string> {
+  const supabase = await createClient();
+
+  // Return existing invoice if already generated
+  const { data: existing } = await supabase
+    .from("invoices")
+    .select("id")
+    .eq("work_order_id", orderId)
+    .maybeSingle();
+
+  if (existing) return existing.id;
+
+  const { data: order, error: orderError } = await supabase
+    .from("work_orders")
+    .select("id, client_id, work_order_items(*)")
+    .eq("id", orderId)
+    .single();
+
+  if (orderError || !order) throw new Error("Orden no encontrada");
+
+  const items = (order.work_order_items ?? []) as {
+    type: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+  }[];
+
+  const subtotal = items.reduce((sum, i) => sum + i.total, 0);
+  const tax = 0;
+  const total = subtotal + tax;
+
+  const { data: invoice, error } = await supabase
+    .from("invoices")
+    .insert({
+      work_order_id: orderId,
+      client_id: order.client_id,
+      items: items.map((i) => ({
+        type: i.type,
+        description: i.description,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        total: i.total,
+      })),
+      subtotal,
+      tax,
+      total,
+      status: "draft",
+    })
+    .select("id")
+    .single();
+
+  if (error || !invoice) throw new Error(error?.message ?? "Error al crear la factura");
+
+  revalidatePath("/dashboard/facturas");
+  revalidatePath(`/dashboard/ordenes/${orderId}`);
+
+  return invoice.id;
+}
