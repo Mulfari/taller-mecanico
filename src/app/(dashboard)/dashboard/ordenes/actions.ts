@@ -130,6 +130,28 @@ export async function reassignMechanic(orderId: string, mechanicId: string | nul
   revalidatePath("/dashboard/ordenes");
 }
 
+export async function createVehicleForClient(
+  clientId: string,
+  data: { brand: string; model: string; year: number; plate: string }
+): Promise<{ id: string; brand: string; model: string; year: number; plate: string | null }> {
+  const supabase = await createClient();
+  const { data: vehicle, error } = await supabase
+    .from("vehicles")
+    .insert({
+      owner_id: clientId,
+      brand: data.brand.trim(),
+      model: data.model.trim(),
+      year: data.year,
+      plate: data.plate.trim() || null,
+    })
+    .select("id, brand, model, year, plate")
+    .single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/clientes");
+  revalidatePath("/dashboard/ordenes/nueva");
+  return vehicle;
+}
+
 export async function generateInvoiceFromWorkOrder(orderId: string): Promise<string> {
   const supabase = await createClient();
 

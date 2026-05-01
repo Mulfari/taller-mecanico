@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
-import { createWorkOrder } from "../actions";
+import { createWorkOrder, createVehicleForClient } from "../actions";
 import type { WorkOrderStatus } from "@/types/database";
 
 interface Client {
@@ -62,17 +62,166 @@ function ChevronDown() {
   );
 }
 
+interface AddVehicleFormProps {
+  onSave: (vehicle: Vehicle) => void;
+  onCancel: () => void;
+  clientId: string;
+}
+
+function AddVehicleForm({ onSave, onCancel, clientId }: AddVehicleFormProps) {
+  const [brand, setBrand] = useState("");
+  const [model, setModel] = useState("");
+  const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [plate, setPlate] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaving(true);
+    try {
+      const vehicle = await createVehicleForClient(clientId, {
+        brand,
+        model,
+        year: parseInt(year, 10),
+        plate,
+      });
+      onSave(vehicle);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al crear el vehículo");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="mt-3 bg-[#1a1a2e] border border-[#e94560]/30 rounded-xl p-4 space-y-3"
+    >
+      <p className="text-white text-sm font-medium">Agregar vehículo</p>
+
+      {error && (
+        <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          {error}
+        </p>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs text-gray-400 mb-1" htmlFor="v-brand">
+            Marca *
+          </label>
+          <input
+            id="v-brand"
+            type="text"
+            required
+            value={brand}
+            onChange={(e) => setBrand(e.target.value)}
+            placeholder="Ej. Toyota"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-400 mb-1" htmlFor="v-model">
+            Modelo *
+          </label>
+          <input
+            id="v-model"
+            type="text"
+            required
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            placeholder="Ej. Corolla"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-400 mb-1" htmlFor="v-year">
+            Año *
+          </label>
+          <input
+            id="v-year"
+            type="number"
+            required
+            min="1900"
+            max={new Date().getFullYear() + 1}
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-gray-400 mb-1" htmlFor="v-plate">
+            Placa
+          </label>
+          <input
+            id="v-plate"
+            type="text"
+            value={plate}
+            onChange={(e) => setPlate(e.target.value)}
+            placeholder="Ej. ABC-123"
+            className={inputClass}
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2 pt-1">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white hover:border-white/20 transition-colors"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          disabled={saving}
+          className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium transition-colors"
+        >
+          {saving ? (
+            <>
+              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              Guardando…
+            </>
+          ) : (
+            "Guardar vehículo"
+          )}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 export default function NuevaOrdenForm({ clients, mechanics, vehiclesByClient }: Props) {
   const [clientId, setClientId] = useState("");
   const [vehicleId, setVehicleId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [localVehicles, setLocalVehicles] = useState<Record<string, Vehicle[]>>({});
+  const [showAddVehicle, setShowAddVehicle] = useState(false);
 
-  const clientVehicles = clientId ? (vehiclesByClient[clientId] ?? []) : [];
+  const serverVehicles = clientId ? (vehiclesByClient[clientId] ?? []) : [];
+  const extraVehicles = clientId ? (localVehicles[clientId] ?? []) : [];
+  const clientVehicles = [...serverVehicles, ...extraVehicles];
 
   function handleClientChange(id: string) {
     setClientId(id);
     setVehicleId("");
+    setShowAddVehicle(false);
+  }
+
+  function handleVehicleAdded(vehicle: Vehicle) {
+    setLocalVehicles((prev) => ({
+      ...prev,
+      [clientId]: [...(prev[clientId] ?? []), vehicle],
+    }));
+    setVehicleId(vehicle.id);
+    setShowAddVehicle(false);
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -147,8 +296,28 @@ export default function NuevaOrdenForm({ clients, mechanics, vehiclesByClient }:
             </select>
             <ChevronDown />
           </div>
-          {clientId && clientVehicles.length === 0 && (
-            <p className="text-gray-600 text-xs mt-1.5">Este cliente no tiene vehículos registrados.</p>
+
+          {/* Add vehicle prompt */}
+          {clientId && !showAddVehicle && (
+            <button
+              type="button"
+              onClick={() => setShowAddVehicle(true)}
+              className="mt-2 inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-[#e94560] transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              {clientVehicles.length === 0 ? "Este cliente no tiene vehículos — agregar uno" : "Agregar vehículo"}
+            </button>
+          )}
+
+          {/* Inline add vehicle form */}
+          {clientId && showAddVehicle && (
+            <AddVehicleForm
+              clientId={clientId}
+              onSave={handleVehicleAdded}
+              onCancel={() => setShowAddVehicle(false)}
+            />
           )}
         </div>
       </div>
