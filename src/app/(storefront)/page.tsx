@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
+import { createClient } from "@/lib/supabase/server";
 
 // --- Icons ---
 function WrenchIcon() {
@@ -59,11 +61,6 @@ const services = [
   { icon: <CarIcon />, title: "Mantenimiento Preventivo", desc: "Planes de mantenimiento personalizados según marca, modelo y kilometraje." },
 ];
 
-const featuredVehicles = [
-  { brand: "Toyota", model: "Corolla", year: 2021, price: 18500, mileage: 32000, fuel: "Gasolina", transmission: "Automático", color: "Blanco" },
-  { brand: "Honda", model: "Civic", year: 2020, price: 17200, mileage: 45000, fuel: "Gasolina", transmission: "Manual", color: "Gris" },
-  { brand: "Chevrolet", model: "Tracker", year: 2022, price: 22900, mileage: 18000, fuel: "Gasolina", transmission: "Automático", color: "Rojo" },
-];
 
 const reasons = [
   { icon: "🔧", title: "Técnicos Certificados", desc: "Más de 15 años de experiencia. Nuestro equipo está certificado por los principales fabricantes." },
@@ -73,7 +70,31 @@ const reasons = [
 ];
 
 // --- Page ---
-export default function HomePage() {
+export default async function HomePage() {
+  const supabase = await createClient();
+
+  const { data: featuredVehicles } = await supabase
+    .from("vehicles_for_sale")
+    .select("id, brand, model, year, price, mileage, fuel_type, transmission, color")
+    .eq("status", "available")
+    .order("created_at", { ascending: false })
+    .limit(3);
+
+  const vehicleIds = featuredVehicles?.map((v) => v.id) ?? [];
+  const { data: photos } = vehicleIds.length
+    ? await supabase
+        .from("vehicle_photos")
+        .select("vehicle_sale_id, url, order")
+        .in("vehicle_sale_id", vehicleIds)
+        .order("order")
+    : { data: [] };
+
+  const photoByVehicle: Record<string, string> = {};
+  for (const p of photos ?? []) {
+    if (p.vehicle_sale_id && !photoByVehicle[p.vehicle_sale_id]) {
+      photoByVehicle[p.vehicle_sale_id] = p.url;
+    }
+  }
   return (
     <>
       {/* HERO */}
@@ -184,39 +205,67 @@ export default function HomePage() {
               Revisados y certificados por nuestros técnicos. Garantía incluida en todos los modelos.
             </p>
           </div>
+          {(featuredVehicles ?? []).length === 0 ? (
+            <div className="col-span-3 text-center py-12">
+              <p className="text-gray-500 text-sm">No hay vehículos disponibles en este momento.</p>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredVehicles.map((v) => (
-              <div
-                key={`${v.brand}-${v.model}-${v.year}`}
+            {(featuredVehicles ?? []).map((v) => {
+              const mainPhoto = photoByVehicle[v.id];
+              return (
+              <Link
+                key={v.id}
+                href={`/vehiculos/${v.id}`}
                 className="bg-[#16213e] border border-white/5 rounded-xl overflow-hidden hover:border-[#e94560]/30 transition-colors group"
               >
-                <div className="h-48 bg-gradient-to-br from-[#16213e] to-[#0d1117] flex items-center justify-center border-b border-white/5">
-                  <svg className="w-20 h-20 text-gray-700 group-hover:text-[#e94560]/30 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
-                  </svg>
+                <div className="relative h-48 bg-gradient-to-br from-[#16213e] to-[#0d1117] flex items-center justify-center border-b border-white/5 overflow-hidden">
+                  {mainPhoto ? (
+                    <Image
+                      src={mainPhoto}
+                      alt={`${v.brand} ${v.model} ${v.year}`}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  ) : (
+                    <svg className="w-20 h-20 text-gray-700 group-hover:text-[#e94560]/30 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+                    </svg>
+                  )}
                 </div>
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-white font-bold text-lg">{v.brand} {v.model}</h3>
-                      <p className="text-gray-500 text-sm">{v.year} · {v.color}</p>
+                      <h3 className="text-white font-bold text-lg group-hover:text-[#e94560] transition-colors">{v.brand} {v.model}</h3>
+                      <p className="text-gray-500 text-sm">{v.year}{v.color ? ` · ${v.color}` : ""}</p>
                     </div>
-                    <span className="text-[#e94560] font-bold text-lg">${v.price.toLocaleString("es")}</span>
+                    {v.price != null && (
+                      <span className="text-[#e94560] font-bold text-lg">${v.price.toLocaleString("es-MX")}</span>
+                    )}
                   </div>
                   <div className="flex flex-wrap gap-2 mb-4">
-                    {[v.transmission, v.fuel, `${(v.mileage / 1000).toFixed(0)}k km`].map((tag) => (
-                      <span key={tag} className="bg-[#1a1a2e] text-gray-400 text-xs px-2.5 py-1 rounded-full border border-white/5">
-                        {tag}
-                      </span>
-                    ))}
+                    {[
+                      v.transmission,
+                      v.fuel_type,
+                      v.mileage != null ? `${(v.mileage / 1000).toFixed(0)}k km` : null,
+                    ]
+                      .filter(Boolean)
+                      .map((tag) => (
+                        <span key={tag} className="bg-[#1a1a2e] text-gray-400 text-xs px-2.5 py-1 rounded-full border border-white/5">
+                          {tag}
+                        </span>
+                      ))}
                   </div>
-                  <Link href="/vehiculos" className="block text-center border border-[#e94560]/40 hover:border-[#e94560] hover:bg-[#e94560]/10 text-gray-300 hover:text-white text-sm font-medium py-2 rounded-lg transition-colors">
+                  <div className="block text-center border border-[#e94560]/40 group-hover:border-[#e94560] group-hover:bg-[#e94560]/10 text-gray-300 group-hover:text-white text-sm font-medium py-2 rounded-lg transition-colors">
                     Ver detalles
-                  </Link>
+                  </div>
                 </div>
-              </div>
-            ))}
+              </Link>
+              );
+            })}
           </div>
+          )}
           <div className="text-center mt-10">
             <Link href="/vehiculos" className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white font-semibold px-8 py-3 rounded-lg transition-colors">
               Ver todos los vehículos
