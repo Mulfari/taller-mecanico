@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 const navLinks = [
   { href: "/servicios", label: "Servicios" },
@@ -19,8 +21,104 @@ interface Props {
   logoUrl: string | null;
 }
 
+function UserMenu({ user, onClose }: { user: User; onClose: () => void }) {
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
+
+  const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Mi cuenta";
+  const initials = displayName.slice(0, 2).toUpperCase();
+
+  return (
+    <div className="absolute right-0 top-full mt-2 w-56 bg-[#16213e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+      <div className="px-4 py-3 border-b border-white/5">
+        <p className="text-white text-sm font-medium truncate">{displayName}</p>
+        <p className="text-gray-500 text-xs truncate mt-0.5">{user.email}</p>
+      </div>
+      <div className="py-1">
+        <Link
+          href="/mi-vehiculo"
+          onClick={onClose}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+          </svg>
+          Mi vehículo
+        </Link>
+        <Link
+          href="/historial"
+          onClick={onClose}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Mi historial
+        </Link>
+        <Link
+          href="/citas"
+          onClick={onClose}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          Mis citas
+        </Link>
+      </div>
+      <div className="border-t border-white/5 py-1">
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-colors disabled:opacity-60"
+        >
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+          </svg>
+          {loggingOut ? "Cerrando sesión…" : "Cerrar sesión"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function StorefrontNav({ shopName, logoUrl }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    function handleClick(e: MouseEvent) {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-user-menu]")) setUserMenuOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [userMenuOpen]);
+
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mi cuenta";
+  const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
     <header className="bg-[#16213e] border-b border-[#e94560]/20 sticky top-0 z-50">
@@ -49,20 +147,46 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
             ))}
           </nav>
 
-          {/* Desktop CTA */}
+          {/* Desktop auth area */}
           <div className="hidden md:flex items-center gap-3">
-            <Link
-              href="/login"
-              className="text-gray-300 hover:text-white text-sm font-medium transition-colors"
-            >
-              Iniciar sesión
-            </Link>
-            <Link
-              href="/registro"
-              className="bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            >
-              Registrarse
-            </Link>
+            {authLoading ? (
+              <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
+            ) : user ? (
+              <div className="relative" data-user-menu>
+                <button
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  className="flex items-center gap-2 text-sm text-gray-300 hover:text-white transition-colors"
+                  aria-expanded={userMenuOpen}
+                  aria-haspopup="true"
+                >
+                  <span className="w-8 h-8 rounded-full bg-[#e94560]/20 border border-[#e94560]/30 flex items-center justify-center text-[#e94560] text-xs font-bold">
+                    {initials}
+                  </span>
+                  <span className="max-w-[120px] truncate">{displayName}</span>
+                  <svg className={`w-4 h-4 transition-transform ${userMenuOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {userMenuOpen && (
+                  <UserMenu user={user} onClose={() => setUserMenuOpen(false)} />
+                )}
+              </div>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-gray-300 hover:text-white text-sm font-medium transition-colors"
+                >
+                  Iniciar sesión
+                </Link>
+                <Link
+                  href="/registro"
+                  className="bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                >
+                  Registrarse
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile hamburger */}
@@ -97,20 +221,44 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
               </Link>
             ))}
             <div className="border-t border-[#e94560]/20 mt-2 pt-3 flex flex-col gap-2">
-              <Link
-                href="/login"
-                className="text-gray-300 hover:text-white text-sm font-medium py-2 transition-colors"
-                onClick={() => setMenuOpen(false)}
-              >
-                Iniciar sesión
-              </Link>
-              <Link
-                href="/registro"
-                className="bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors text-center"
-                onClick={() => setMenuOpen(false)}
-              >
-                Registrarse
-              </Link>
+              {user ? (
+                <>
+                  <div className="flex items-center gap-2 py-1">
+                    <span className="w-7 h-7 rounded-full bg-[#e94560]/20 border border-[#e94560]/30 flex items-center justify-center text-[#e94560] text-xs font-bold shrink-0">
+                      {initials}
+                    </span>
+                    <span className="text-gray-300 text-sm truncate">{displayName}</span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      setMenuOpen(false);
+                      const supabase = createClient();
+                      await supabase.auth.signOut();
+                      window.location.href = "/";
+                    }}
+                    className="text-left text-red-400 hover:text-red-300 text-sm font-medium py-2 transition-colors"
+                  >
+                    Cerrar sesión
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="text-gray-300 hover:text-white text-sm font-medium py-2 transition-colors"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Iniciar sesión
+                  </Link>
+                  <Link
+                    href="/registro"
+                    className="bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors text-center"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    Registrarse
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
         </div>
