@@ -189,7 +189,7 @@ function AddItemModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: I
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-300 mb-1.5">Nombre <span className="text-[#e94560]">*</span></label>
               <input className={inputClass} placeholder="Ej. Filtro de aceite" value={form.name} onChange={(e) => set("name", e.target.value)} />
@@ -306,7 +306,7 @@ export default function InventarioPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Inventario</h1>
           <p className="text-gray-500 text-sm mt-1">
@@ -321,7 +321,7 @@ export default function InventarioPage() {
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          className="shrink-0 inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
         >
           <IconPlus />
           Nuevo repuesto

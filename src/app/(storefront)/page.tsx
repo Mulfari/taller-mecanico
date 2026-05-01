@@ -121,15 +121,15 @@ export default function HomePage() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-6 mt-12 pt-10 border-t border-white/10">
+            <div className="grid grid-cols-3 gap-3 sm:gap-6 mt-12 pt-10 border-t border-white/10">
               {[
                 { value: "+2.500", label: "Clientes atendidos" },
                 { value: "15 años", label: "De experiencia" },
                 { value: "98%", label: "Satisfacción" },
               ].map((stat) => (
                 <div key={stat.label}>
-                  <p className="text-2xl sm:text-3xl font-bold text-white">{stat.value}</p>
-                  <p className="text-gray-500 text-sm mt-1">{stat.label}</p>
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
+                  <p className="text-gray-500 text-xs sm:text-sm mt-1">{stat.label}</p>
                 </div>
               ))}
             </div>

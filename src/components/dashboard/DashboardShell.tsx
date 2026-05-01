@@ -26,7 +26,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       {/* Sidebar overlay (mobile) */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/60 z-20 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -37,7 +37,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           fixed top-0 left-0 h-full w-64 bg-[#16213e] border-r border-[#e94560]/20 z-30
           flex flex-col transition-transform duration-300
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          lg:translate-x-0 lg:static lg:z-auto
+          md:translate-x-0 md:static md:z-auto
         `}
       >
         {/* Logo */}
@@ -47,7 +47,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             Taller<span className="text-[#e94560]">Pro</span>
           </span>
           <button
-            className="ml-auto text-gray-400 hover:text-white lg:hidden"
+            className="ml-auto text-gray-400 hover:text-white md:hidden"
             onClick={() => setSidebarOpen(false)}
             aria-label="Cerrar menú"
           >
@@ -103,7 +103,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         <header className="h-16 bg-[#16213e] border-b border-[#e94560]/20 flex items-center px-4 sm:px-6 gap-4 shrink-0">
           {/* Hamburger (mobile) */}
           <button
-            className="lg:hidden text-gray-400 hover:text-white p-1"
+            className="md:hidden text-gray-400 hover:text-white p-1"
             onClick={() => setSidebarOpen(true)}
             aria-label="Abrir menú"
           >

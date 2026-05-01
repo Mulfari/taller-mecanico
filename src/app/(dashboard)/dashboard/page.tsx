@@ -219,7 +219,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Bottom grid: orders + appointments */}
-      <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
 
         {/* Recent orders — wider column */}
         <div className="xl:col-span-3 bg-[#16213e] border border-white/10 rounded-xl p-5">
