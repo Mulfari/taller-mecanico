@@ -247,7 +247,7 @@ export default function CuentaPage() {
               { icon: <IconCar />, label: "Vehículos", value: stats.vehicles, href: "/mi-vehiculo" },
               { icon: <IconClipboard />, label: "Órdenes activas", value: stats.activeOrders, href: "/mi-vehiculo" },
               { icon: <IconClipboard />, label: "Total servicios", value: stats.totalOrders, href: "/historial" },
-              { icon: <IconCalendar />, label: "Citas próximas", value: stats.upcomingAppointments, href: "/citas" },
+              { icon: <IconCalendar />, label: "Citas próximas", value: stats.upcomingAppointments, href: "/mis-citas" },
             ].map((stat) => (
               <Link
                 key={stat.label}
@@ -347,6 +347,7 @@ export default function CuentaPage() {
           {[
             { href: "/mi-vehiculo", icon: <IconCar />, label: "Estado de mis vehículos", desc: "Seguí el progreso de las órdenes en tiempo real" },
             { href: "/historial", icon: <IconClipboard />, label: "Historial de servicios", desc: "Todos los trabajos realizados en tus vehículos" },
+            { href: "/mis-citas", icon: <IconCalendar />, label: "Mis citas", desc: "Revisá y gestioná tus turnos agendados" },
             { href: "/citas", icon: <IconCalendar />, label: "Agendar una cita", desc: "Reservá un turno para tu próximo servicio" },
           ].map((item) => (
             <Link
