@@ -6,17 +6,19 @@ import { useCallback } from "react"
 interface Props {
   categorias: string[]
   marcas: string[]
+  compatibleMarcas: string[]
   currentParams: {
     q?: string
     categoria?: string
     marca?: string
+    compatible_con?: string
     precio_min?: string
     precio_max?: string
     pagina?: string
   }
 }
 
-export default function RepuestosFilters({ categorias, marcas, currentParams }: Props) {
+export default function RepuestosFilters({ categorias, marcas, compatibleMarcas, currentParams }: Props) {
   const router = useRouter()
   const pathname = usePathname()
 
@@ -26,6 +28,7 @@ export default function RepuestosFilters({ categorias, marcas, currentParams }: 
       if (currentParams.q) params.set("q", currentParams.q)
       if (currentParams.categoria) params.set("categoria", currentParams.categoria)
       if (currentParams.marca) params.set("marca", currentParams.marca)
+      if (currentParams.compatible_con) params.set("compatible_con", currentParams.compatible_con)
       if (currentParams.precio_min) params.set("precio_min", currentParams.precio_min)
       if (currentParams.precio_max) params.set("precio_max", currentParams.precio_max)
 
@@ -48,6 +51,7 @@ export default function RepuestosFilters({ categorias, marcas, currentParams }: 
     currentParams.q ||
     currentParams.categoria ||
     currentParams.marca ||
+    currentParams.compatible_con ||
     currentParams.precio_min ||
     currentParams.precio_max
 
@@ -159,6 +163,43 @@ export default function RepuestosFilters({ categorias, marcas, currentParams }: 
                 onClick={() => updateParam("marca", m)}
                 className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${
                   currentParams.marca === m
+                    ? "text-[#e94560] bg-[#e94560]/10"
+                    : "text-gray-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                {m}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Compatible con (marca de auto) */}
+      {compatibleMarcas.length > 0 && (
+        <div
+          className="rounded-xl border border-white/5 p-4"
+          style={{ backgroundColor: "#16213e" }}
+        >
+          <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">
+            Compatible con
+          </h3>
+          <div className="space-y-1.5">
+            <button
+              onClick={() => updateParam("compatible_con", "")}
+              className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${
+                !currentParams.compatible_con
+                  ? "text-[#e94560] bg-[#e94560]/10"
+                  : "text-gray-400 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              Todas las marcas
+            </button>
+            {compatibleMarcas.map((m) => (
+              <button
+                key={m}
+                onClick={() => updateParam("compatible_con", m)}
+                className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${
+                  currentParams.compatible_con === m
                     ? "text-[#e94560] bg-[#e94560]/10"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}

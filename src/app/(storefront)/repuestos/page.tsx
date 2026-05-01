@@ -9,6 +9,7 @@ interface SearchParams extends Record<string, string | undefined> {
   q?: string
   categoria?: string
   marca?: string
+  compatible_con?: string
   precio_min?: string
   precio_max?: string
   pagina?: string
@@ -35,6 +36,7 @@ export default async function RepuestosPage({
   if (params.q) query = query.ilike("name", `%${params.q}%`)
   if (params.categoria) query = query.eq("category", params.categoria)
   if (params.marca) query = query.eq("brand", params.marca)
+  if (params.compatible_con) query = query.ilike("compatible_brands", `%${params.compatible_con}%`)
   if (params.precio_min) query = query.gte("sell_price", parseFloat(params.precio_min))
   if (params.precio_max) query = query.lte("sell_price", parseFloat(params.precio_max))
 
@@ -42,13 +44,29 @@ export default async function RepuestosPage({
     .order("name")
     .range(offset, offset + PAGE_SIZE - 1)
 
-  const [{ data: catRows }, { data: brandRows }] = await Promise.all([
+  const [{ data: catRows }, { data: brandRows }, { data: compatRows }] = await Promise.all([
     supabase.from("inventory").select("category").not("category", "is", null).gt("quantity", 0),
     supabase.from("inventory").select("brand").not("brand", "is", null).gt("quantity", 0),
+    supabase.from("inventory").select("compatible_brands").not("compatible_brands", "is", null).gt("quantity", 0),
   ])
 
   const categorias = [...new Set(catRows?.map((r) => r.category as string) ?? [])].sort()
   const marcas = [...new Set(brandRows?.map((r) => r.brand as string) ?? [])].sort()
+
+  // Parse compatible_brands (stored as JSONB array or comma-separated string)
+  const compatibleMarcas = [
+    ...new Set(
+      (compatRows ?? []).flatMap((r) => {
+        const val = r.compatible_brands
+        if (Array.isArray(val)) return val as string[]
+        if (typeof val === "string" && val.trim()) {
+          // Handle JSON array string or comma-separated
+          try { return JSON.parse(val) as string[] } catch { return val.split(",").map((s: string) => s.trim()) }
+        }
+        return []
+      })
+    ),
+  ].sort()
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE)
 
   return (
@@ -68,6 +86,7 @@ export default async function RepuestosPage({
             <RepuestosFilters
               categorias={categorias}
               marcas={marcas}
+              compatibleMarcas={compatibleMarcas}
               currentParams={params}
             />
           </aside>
