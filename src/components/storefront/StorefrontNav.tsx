@@ -9,6 +9,7 @@ const navLinks = [
   { href: "/repuestos", label: "Repuestos" },
   { href: "/vehiculos", label: "Vehículos en Venta" },
   { href: "/citas", label: "Agendar Cita" },
+  { href: "/seguimiento", label: "Seguimiento" },
   { href: "/mi-vehiculo", label: "Mi Vehículo" },
   { href: "/historial", label: "Mi Historial" },
 ];
