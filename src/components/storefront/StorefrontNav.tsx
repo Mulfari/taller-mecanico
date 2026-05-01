@@ -2,16 +2,22 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const navLinks = [
   { href: "/servicios", label: "Servicios" },
   { href: "/repuestos", label: "Repuestos" },
   { href: "/vehiculos", label: "Vehículos en Venta" },
   { href: "/citas", label: "Agendar Cita" },
-  { href: "/seguimiento", label: "Mi Vehículo" },
+  { href: "/mi-vehiculo", label: "Mi Vehículo" },
 ];
 
-export default function StorefrontNav() {
+interface Props {
+  shopName: string;
+  logoUrl: string | null;
+}
+
+export default function StorefrontNav({ shopName, logoUrl }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -20,10 +26,12 @@ export default function StorefrontNav() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <span className="text-[#e94560] text-2xl">⚙</span>
-            <span className="text-white font-bold text-xl tracking-tight">
-              Taller<span className="text-[#e94560]">Pro</span>
-            </span>
+            {logoUrl ? (
+              <Image src={logoUrl} alt={shopName} width={32} height={32} className="object-contain rounded" />
+            ) : (
+              <span className="text-[#e94560] text-2xl">⚙</span>
+            )}
+            <span className="text-white font-bold text-xl tracking-tight">{shopName}</span>
           </Link>
 
           {/* Desktop nav */}
