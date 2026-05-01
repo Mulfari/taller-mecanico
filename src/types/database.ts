@@ -30,6 +30,22 @@ export interface Vehicle {
   created_at: string;
 }
 
+export interface Inventory {
+  id: string;
+  name: string;
+  sku: string;
+  category: string | null;
+  brand: string | null;
+  compatible_brands: string[] | null;
+  quantity: number;
+  min_stock: number;
+  cost_price: number | null;
+  sell_price: number;
+  location: string | null;
+  supplier: string | null;
+  created_at: string;
+}
+
 export interface WorkOrder {
   id: string;
   vehicle_id: string;
