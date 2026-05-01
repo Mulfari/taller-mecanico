@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import AddVehicleModal from "./AddVehicleModal";
 import EditClientButton from "./EditClientButton";
+import EditVehicleButton from "./EditVehicleModal";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 function IconArrowLeft() {
@@ -151,8 +152,8 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
         ) : (
           <div className="divide-y divide-white/5">
             {vehicles.map((v) => (
-              <div key={v.id} className="px-5 py-4 flex flex-wrap gap-x-8 gap-y-2">
-                <div>
+              <div key={v.id} className="px-5 py-4 flex flex-wrap gap-x-8 gap-y-2 items-start">
+                <div className="flex-1 min-w-0">
                   <p className="text-white font-medium">{v.brand} {v.model} {v.year}</p>
                   {v.plate && <p className="text-gray-500 text-xs mt-0.5">Placa: {v.plate}</p>}
                 </div>
@@ -161,6 +162,7 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
                   {v.mileage > 0 && <span>{v.mileage.toLocaleString("es-MX")} km</span>}
                   {v.vin && <span className="font-mono text-xs text-gray-600">VIN: {v.vin}</span>}
                 </div>
+                <EditVehicleButton vehicle={v} clientId={id} />
               </div>
             ))}
           </div>

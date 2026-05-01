@@ -40,3 +40,26 @@ export async function addVehicle(
   if (error) throw new Error(error.message);
   revalidatePath(`/dashboard/clientes/${clientId}`);
 }
+
+export async function updateVehicle(
+  vehicleId: string,
+  clientId: string,
+  data: { brand: string; model: string; year: number; plate: string; color: string; vin: string; mileage: number }
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("vehicles")
+    .update({
+      brand: data.brand,
+      model: data.model,
+      year: data.year,
+      plate: data.plate || null,
+      color: data.color || null,
+      vin: data.vin || null,
+      mileage: data.mileage || 0,
+    })
+    .eq("id", vehicleId);
+
+  if (error) throw new Error(error.message);
+  revalidatePath(`/dashboard/clientes/${clientId}`);
+}
