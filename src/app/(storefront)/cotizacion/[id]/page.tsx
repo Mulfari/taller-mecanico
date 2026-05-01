@@ -31,63 +31,6 @@ interface Quote {
   vehicle: { brand: string; model: string; year: number; plate: string | null } | null;
 }
 
-// ── Mock data (swap for Supabase query later) ──────────────────────────────
-
-const MOCK_QUOTES: Quote[] = [
-  {
-    id: "q1",
-    status: "sent",
-    total: 910,
-    valid_until: "2026-05-15",
-    created_at: "2026-04-30",
-    items: [
-      { id: "qi1", type: "labor", description: "Cambio de aceite y filtro", quantity: 1, unit_price: 350, total: 350 },
-      { id: "qi2", type: "part",  description: "Filtro de aceite",          quantity: 1, unit_price: 180, total: 180 },
-      { id: "qi3", type: "part",  description: "Aceite motor 5W-30 (1L)",   quantity: 4, unit_price: 95,  total: 380 },
-    ],
-    client: { full_name: "Carlos Mendoza", email: "carlos.mendoza@email.com" },
-    vehicle: { brand: "Toyota", model: "Corolla", year: 2019, plate: "ABC-123" },
-  },
-  {
-    id: "q2",
-    status: "accepted",
-    total: 1150,
-    valid_until: "2026-05-10",
-    created_at: "2026-04-28",
-    items: [
-      { id: "qi4", type: "labor", description: "Revisión de frenos",  quantity: 1, unit_price: 500, total: 500 },
-      { id: "qi5", type: "part",  description: "Pastillas de freno",  quantity: 1, unit_price: 650, total: 650 },
-    ],
-    client: { full_name: "Ana Rodríguez", email: "ana.rodriguez@email.com" },
-    vehicle: { brand: "Nissan", model: "Sentra", year: 2020, plate: "GHI-789" },
-  },
-  {
-    id: "q3",
-    status: "draft",
-    total: 400,
-    valid_until: null,
-    created_at: "2026-04-29",
-    items: [
-      { id: "qi6", type: "labor", description: "Diagnóstico general", quantity: 1, unit_price: 400, total: 400 },
-    ],
-    client: { full_name: "Miguel Torres", email: "miguel.torres@email.com" },
-    vehicle: { brand: "Chevrolet", model: "Aveo", year: 2018, plate: "JKL-012" },
-  },
-  {
-    id: "q4",
-    status: "rejected",
-    total: 2000,
-    valid_until: "2026-05-01",
-    created_at: "2026-04-25",
-    items: [
-      { id: "qi7", type: "labor", description: "Cambio de batería",   quantity: 1, unit_price: 200, total: 200 },
-      { id: "qi8", type: "part",  description: "Batería 12V 60Ah",    quantity: 1, unit_price: 1800, total: 1800 },
-    ],
-    client: { full_name: "Laura Jiménez", email: "laura.jimenez@email.com" },
-    vehicle: { brand: "Ford", model: "Focus", year: 2022, plate: "MNO-345" },
-  },
-];
-
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const STATUS_LABELS: Record<QuoteStatus, string> = {
@@ -222,31 +165,52 @@ export default function CotizacionPublicaPage() {
   const [notFound, setNotFound] = useState(false);
   const [confirm, setConfirm] = useState<"accept" | "reject" | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  // Supabase client in ref — swap mock lookup for real query later
   const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
 
   useEffect(() => {
     supabaseRef.current = createClient();
-    // swap for: supabase.from("quotes").select("..., client:profiles(...), vehicle:vehicles(...)").eq("id", id).single()
-    const found = MOCK_QUOTES.find((q) => q.id === id) ?? null;
-    setTimeout(() => {
-      if (found) {
-        setQuote(found);
-      } else {
-        setNotFound(true);
-      }
-      setLoading(false);
-    }, 400);
+    const supabase = supabaseRef.current;
+
+    supabase
+      .from("quotes")
+      .select(
+        `id, status, total, valid_until, created_at, items,
+         client:profiles(full_name, email),
+         vehicle:vehicles(brand, model, year, plate)`
+      )
+      .eq("id", id)
+      .single()
+      .then(({ data, error }) => {
+        if (error || !data) {
+          setNotFound(true);
+        } else {
+          setQuote(data as unknown as Quote);
+        }
+        setLoading(false);
+      });
   }, [id]);
 
   async function handleAction(action: "accept" | "reject") {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+
     setActionLoading(true);
-    // swap for: supabase.from("quotes").update({ status: action === "accept" ? "accepted" : "rejected" }).eq("id", id)
-    await new Promise((r) => setTimeout(r, 800));
-    setQuote((prev) =>
-      prev ? { ...prev, status: action === "accept" ? "accepted" : "rejected" } : prev
-    );
+    setActionError(null);
+
+    const newStatus = action === "accept" ? "accepted" : "rejected";
+    const { error } = await supabase
+      .from("quotes")
+      .update({ status: newStatus })
+      .eq("id", id);
+
+    if (error) {
+      setActionError("No se pudo procesar tu respuesta. Intenta de nuevo.");
+    } else {
+      setQuote((prev) => prev ? { ...prev, status: newStatus } : prev);
+    }
+
     setActionLoading(false);
     setConfirm(null);
   }
@@ -298,8 +262,9 @@ export default function CotizacionPublicaPage() {
     );
   }
 
-  const laborItems = quote.items.filter((i) => i.type === "labor");
-  const partItems  = quote.items.filter((i) => i.type === "part");
+  const items: QuoteItem[] = Array.isArray(quote.items) ? quote.items : [];
+  const laborItems = items.filter((i) => i.type === "labor");
+  const partItems  = items.filter((i) => i.type === "part");
   const canRespond = quote.status === "sent";
   const isExpired  = quote.valid_until
     ? new Date(quote.valid_until + "T23:59:59") < new Date()
@@ -363,8 +328,8 @@ export default function CotizacionPublicaPage() {
               Mano de obra
             </p>
             <div className="space-y-2">
-              {laborItems.map((item) => (
-                <div key={item.id} className="flex justify-between items-start gap-4 text-sm">
+              {laborItems.map((item, idx) => (
+                <div key={item.id ?? idx} className="flex justify-between items-start gap-4 text-sm">
                   <span className="text-gray-300">{item.description}</span>
                   <span className="text-gray-400 shrink-0 tabular-nums">{fmt(item.total)}</span>
                 </div>
@@ -379,8 +344,8 @@ export default function CotizacionPublicaPage() {
               Repuestos y materiales
             </p>
             <div className="space-y-2">
-              {partItems.map((item) => (
-                <div key={item.id} className="flex justify-between items-start gap-4 text-sm">
+              {partItems.map((item, idx) => (
+                <div key={item.id ?? idx} className="flex justify-between items-start gap-4 text-sm">
                   <span className="text-gray-300">
                     {item.description}
                     {item.quantity > 1 && (
@@ -391,6 +356,12 @@ export default function CotizacionPublicaPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {items.length === 0 && (
+          <div className="p-5 text-center text-gray-600 text-sm">
+            Sin ítems registrados.
           </div>
         )}
 
@@ -416,6 +387,14 @@ export default function CotizacionPublicaPage() {
           {isExpired
             ? `Esta cotización venció el ${formatDate(quote.valid_until)}.`
             : `Válida hasta el ${formatDate(quote.valid_until)}.`}
+        </div>
+      )}
+
+      {/* Action error */}
+      {actionError && (
+        <div className="flex items-center gap-2 text-sm px-4 py-3 rounded-xl mb-4 bg-red-500/10 border border-red-500/20 text-red-400">
+          <IconX />
+          {actionError}
         </div>
       )}
 
