@@ -145,11 +145,43 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function AddItemForm({ onAdd, onCancel }: { onAdd: (item: Omit<{ type: WorkOrderItemType; description: string; quantity: number; unit_price: number; total: number }, never>) => void; onCancel: () => void }) {
+interface InventoryOption {
+  id: string;
+  name: string;
+  sku: string | null;
+  sell_price: number | null;
+  quantity: number;
+}
+
+function AddItemForm({
+  onAdd,
+  onCancel,
+  inventoryItems = [],
+}: {
+  onAdd: (item: { type: WorkOrderItemType; description: string; quantity: number; unit_price: number; total: number }) => void;
+  onCancel: () => void;
+  inventoryItems?: InventoryOption[];
+}) {
   const [type, setType] = useState<WorkOrderItemType>("labor");
   const [description, setDescription] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [unitPrice, setUnitPrice] = useState("");
+  const [inventorySearch, setInventorySearch] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const filtered = inventorySearch.length >= 1
+    ? inventoryItems.filter((i) =>
+        i.name.toLowerCase().includes(inventorySearch.toLowerCase()) ||
+        (i.sku ?? "").toLowerCase().includes(inventorySearch.toLowerCase())
+      ).slice(0, 8)
+    : [];
+
+  function selectInventoryItem(item: InventoryOption) {
+    setDescription(item.name);
+    setUnitPrice(item.sell_price != null ? String(item.sell_price) : "");
+    setInventorySearch(item.name);
+    setShowSuggestions(false);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -165,17 +197,94 @@ function AddItemForm({ onAdd, onCancel }: { onAdd: (item: Omit<{ type: WorkOrder
         <div>
           <label className="block text-xs text-gray-400 mb-1" htmlFor="item-type">Tipo</label>
           <div className="relative">
-            <select id="item-type" value={type} onChange={(e) => setType(e.target.value as WorkOrderItemType)} className={selectClass}>
+            <select
+              id="item-type"
+              value={type}
+              onChange={(e) => {
+                setType(e.target.value as WorkOrderItemType);
+                setDescription("");
+                setInventorySearch("");
+                setUnitPrice("");
+              }}
+              className={selectClass}
+            >
               <option value="labor">Mano de obra</option>
               <option value="part">Repuesto / Material</option>
             </select>
             <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center"><IconChevronDown /></div>
           </div>
         </div>
-        <div>
-          <label className="block text-xs text-gray-400 mb-1" htmlFor="item-desc">Descripción *</label>
-          <input id="item-desc" type="text" required value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Ej. Cambio de aceite 5W-30" className={inputClass} />
+
+        {/* Description — inventory picker for parts, plain input for labor */}
+        <div className="relative">
+          <label className="block text-xs text-gray-400 mb-1" htmlFor="item-desc">
+            {type === "part" ? "Buscar en inventario *" : "Descripción *"}
+          </label>
+          {type === "part" && inventoryItems.length > 0 ? (
+            <>
+              <input
+                id="item-desc"
+                type="text"
+                required
+                autoComplete="off"
+                value={inventorySearch}
+                onChange={(e) => {
+                  setInventorySearch(e.target.value);
+                  setDescription(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                placeholder="Buscar por nombre o SKU…"
+                className={inputClass}
+              />
+              {showSuggestions && filtered.length > 0 && (
+                <ul className="absolute z-20 left-0 right-0 top-full mt-1 bg-[#0f172a] border border-white/10 rounded-lg shadow-xl overflow-hidden max-h-52 overflow-y-auto">
+                  {filtered.map((item) => (
+                    <li key={item.id}>
+                      <button
+                        type="button"
+                        onMouseDown={() => selectInventoryItem(item)}
+                        className="w-full text-left px-3 py-2.5 hover:bg-white/5 transition-colors flex items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-gray-200 text-sm truncate">{item.name}</p>
+                          {item.sku && (
+                            <p className="text-gray-600 text-xs font-mono">{item.sku}</p>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          {item.sell_price != null && (
+                            <p className="text-[#e94560] text-sm font-medium">
+                              ${item.sell_price.toLocaleString("es-MX")}
+                            </p>
+                          )}
+                          <p className="text-gray-600 text-xs">{item.quantity} en stock</p>
+                        </div>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {showSuggestions && inventorySearch.length >= 1 && filtered.length === 0 && (
+                <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-[#0f172a] border border-white/10 rounded-lg px-3 py-2.5">
+                  <p className="text-gray-600 text-xs">Sin resultados. Podés escribir la descripción manualmente.</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <input
+              id="item-desc"
+              type="text"
+              required
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Ej. Cambio de aceite 5W-30"
+              className={inputClass}
+            />
+          )}
         </div>
+
         <div>
           <label className="block text-xs text-gray-400 mb-1" htmlFor="item-qty">Cantidad</label>
           <input id="item-qty" type="number" min="0.01" step="0.01" value={quantity} onChange={(e) => setQuantity(e.target.value)} className={inputClass} />
@@ -206,9 +315,11 @@ interface Mechanic {
 export default function OrdenDetalleClient({
   order: initialOrder,
   mechanics = [],
+  inventoryItems = [],
 }: {
   order: WorkOrderWithRelations;
   mechanics?: Mechanic[];
+  inventoryItems?: InventoryOption[];
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<WorkOrderStatus>(initialOrder.status);
@@ -581,7 +692,7 @@ export default function OrdenDetalleClient({
 
         {showAddItem && (
           <div className="p-4 border-b border-white/5">
-            <AddItemForm onAdd={handleAddItem} onCancel={() => setShowAddItem(false)} />
+            <AddItemForm onAdd={handleAddItem} onCancel={() => setShowAddItem(false)} inventoryItems={inventoryItems} />
           </div>
         )}
 

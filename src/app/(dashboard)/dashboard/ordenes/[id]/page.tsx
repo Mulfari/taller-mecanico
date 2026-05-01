@@ -10,13 +10,27 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
   const [order, supabase] = await Promise.all([getWorkOrderById(id), createClient()]);
   if (!order) notFound();
 
-  const { data: mechanicRows } = await supabase
-    .from("profiles")
-    .select("id, full_name")
-    .eq("role", "mechanic")
-    .order("full_name");
+  const [{ data: mechanicRows }, { data: inventoryRows }] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name")
+      .eq("role", "mechanic")
+      .order("full_name"),
+    supabase
+      .from("inventory")
+      .select("id, name, sku, sell_price, quantity")
+      .gt("quantity", 0)
+      .order("name"),
+  ]);
 
   const mechanics = (mechanicRows ?? []) as { id: string; full_name: string | null }[];
+  const inventoryItems = (inventoryRows ?? []) as {
+    id: string;
+    name: string;
+    sku: string | null;
+    sell_price: number | null;
+    quantity: number;
+  }[];
 
-  return <OrdenDetalleClient order={order} mechanics={mechanics} />;
+  return <OrdenDetalleClient order={order} mechanics={mechanics} inventoryItems={inventoryItems} />;
 }
