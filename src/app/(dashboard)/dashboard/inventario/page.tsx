@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { toast, ConfirmDialog, EmptyState } from "@/components/ui";
 
 function IconSearch() {
   return (
@@ -272,6 +273,7 @@ export default function InventarioPage() {
   const [filterCategory, setFilterCategory] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<InventoryItem | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -291,6 +293,14 @@ export default function InventarioPage() {
   function handleAdd(item: InventoryItem) {
     setItems((prev) => [item, ...prev]);
     setShowModal(false);
+    toast("Repuesto agregado correctamente", "success");
+  }
+
+  function handleDeleteConfirm() {
+    if (!deleteTarget) return;
+    setItems((prev) => prev.filter((i) => i.id !== deleteTarget.id));
+    toast(`"${deleteTarget.name}" eliminado`, "success");
+    setDeleteTarget(null);
   }
 
   return (
@@ -384,13 +394,28 @@ export default function InventarioPage() {
                 <th className="text-right py-3 px-4 font-medium">Cantidad</th>
                 <th className="text-right py-3 px-4 font-medium">Precio venta</th>
                 <th className="text-center py-3 px-4 font-medium">Estado</th>
+                <th className="py-3 px-4" />
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-gray-500">
-                    No se encontraron repuestos con los filtros aplicados.
+                  <td colSpan={7}>
+                    <EmptyState
+                      icon="📦"
+                      title={search || filterCategory || filterBrand ? "Sin resultados" : "Sin repuestos en inventario"}
+                      description={search || filterCategory || filterBrand ? "Prueba con otros filtros de búsqueda." : "Agrega el primer repuesto para comenzar."}
+                      action={
+                        !search && !filterCategory && !filterBrand ? (
+                          <button
+                            onClick={() => setShowModal(true)}
+                            className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                          >
+                            <IconPlus /> Nuevo repuesto
+                          </button>
+                        ) : undefined
+                      }
+                    />
                   </td>
                 </tr>
               ) : (
@@ -420,6 +445,15 @@ export default function InventarioPage() {
                       <td className="py-3 px-4 text-center">
                         <StockBadge item={item} />
                       </td>
+                      <td className="py-3 px-4 text-right">
+                        <button
+                          onClick={() => setDeleteTarget(item)}
+                          className="text-gray-600 hover:text-red-400 transition-colors text-xs"
+                          aria-label={`Eliminar ${item.name}`}
+                        >
+                          <IconX />
+                        </button>
+                      </td>
                     </tr>
                   );
                 })
@@ -436,6 +470,17 @@ export default function InventarioPage() {
       </div>
 
       {showModal && <AddItemModal onClose={() => setShowModal(false)} onAdd={handleAdd} />}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          title="Eliminar repuesto"
+          message={`¿Seguro que deseas eliminar "${deleteTarget.name}"? Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          danger
+          onConfirm={handleDeleteConfirm}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
     </div>
   );
 }
