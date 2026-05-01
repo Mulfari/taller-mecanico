@@ -5,6 +5,22 @@ import Link from "next/link";
 import type { WorkOrderListItem, WorkOrderStatus } from "@/types/database";
 import { EmptyState } from "@/components/ui";
 
+function IconSearch() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+  );
+}
+
+function IconX() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
 const STATUS_LABELS: Record<WorkOrderStatus, string> = {
   received: "Recibido",
   diagnosing: "Diagnóstico",
@@ -40,37 +56,77 @@ function StatusBadge({ status }: { status: WorkOrderStatus }) {
 
 export default function OrdenesClient({ orders }: { orders: WorkOrderListItem[] }) {
   const [activeFilter, setActiveFilter] = useState<WorkOrderStatus | "all">("all");
+  const [search, setSearch] = useState("");
 
-  const filtered =
-    activeFilter === "all" ? orders : orders.filter((o) => o.status === activeFilter);
+  const q = search.trim().toLowerCase();
+
+  const filtered = orders.filter((o) => {
+    const matchesStatus = activeFilter === "all" || o.status === activeFilter;
+    if (!matchesStatus) return false;
+    if (!q) return true;
+    return (
+      o.client?.full_name?.toLowerCase().includes(q) ||
+      o.vehicle?.plate?.toLowerCase().includes(q) ||
+      o.vehicle?.brand?.toLowerCase().includes(q) ||
+      o.vehicle?.model?.toLowerCase().includes(q) ||
+      o.description?.toLowerCase().includes(q) ||
+      o.id.toLowerCase().includes(q)
+    );
+  });
 
   const countFor = (key: WorkOrderStatus | "all") =>
     key === "all" ? orders.length : orders.filter((o) => o.status === key).length;
 
   return (
     <>
-      {/* Filter tabs */}
-      <div className="flex flex-wrap gap-2">
-        {FILTER_TABS.map((tab) => {
-          const count = countFor(tab.key);
-          const isActive = activeFilter === tab.key;
-          return (
+      {/* Search + filter row */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        {/* Search input */}
+        <div className="relative flex-1 max-w-sm">
+          <span className="absolute inset-y-0 left-3 flex items-center text-gray-500 pointer-events-none">
+            <IconSearch />
+          </span>
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar por cliente, patente, vehículo…"
+            className="w-full bg-[#16213e] border border-white/10 rounded-lg pl-9 pr-8 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors"
+          />
+          {search && (
             <button
-              key={tab.key}
-              onClick={() => setActiveFilter(tab.key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? "bg-[#e94560] text-white"
-                  : "bg-[#16213e] border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
-              }`}
+              onClick={() => setSearch("")}
+              className="absolute inset-y-0 right-2.5 flex items-center text-gray-500 hover:text-gray-300 transition-colors"
+              aria-label="Limpiar búsqueda"
             >
-              {tab.label}
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-white/10 text-gray-500"}`}>
-                {count}
-              </span>
+              <IconX />
             </button>
-          );
-        })}
+          )}
+        </div>
+
+        {/* Filter tabs */}
+        <div className="flex flex-wrap gap-2">
+          {FILTER_TABS.map((tab) => {
+            const count = countFor(tab.key);
+            const isActive = activeFilter === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveFilter(tab.key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-[#e94560] text-white"
+                    : "bg-[#16213e] border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
+                }`}
+              >
+                {tab.label}
+                <span className={`text-xs px-1.5 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-white/10 text-gray-500"}`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Table */}
@@ -93,9 +149,21 @@ export default function OrdenesClient({ orders }: { orders: WorkOrderListItem[] 
                 <tr>
                   <td colSpan={7}>
                     <EmptyState
-                      icon="🔧"
-                      title={activeFilter === "all" ? "Sin órdenes de trabajo" : `Sin órdenes en estado "${FILTER_TABS.find(t => t.key === activeFilter)?.label}"`}
-                      description={activeFilter === "all" ? "Crea la primera orden de trabajo para comenzar." : "No hay órdenes con este estado en este momento."}
+                      icon={q ? "🔍" : "🔧"}
+                      title={
+                        q
+                          ? `Sin resultados para "${search}"`
+                          : activeFilter === "all"
+                          ? "Sin órdenes de trabajo"
+                          : `Sin órdenes en estado "${FILTER_TABS.find(t => t.key === activeFilter)?.label}"`
+                      }
+                      description={
+                        q
+                          ? "Probá con otro nombre, patente o descripción."
+                          : activeFilter === "all"
+                          ? "Crea la primera orden de trabajo para comenzar."
+                          : "No hay órdenes con este estado en este momento."
+                      }
                     />
                   </td>
                 </tr>
