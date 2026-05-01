@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 
@@ -92,12 +93,6 @@ const TIME_SLOTS = [
   "15:00", "15:30", "16:00", "16:30", "17:00",
 ];
 
-// Slots already booked (mock — swap for Supabase query later)
-const BOOKED_SLOTS: Record<string, string[]> = {
-  "2026-05-02": ["09:00", "10:00", "14:00"],
-  "2026-05-05": ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"],
-  "2026-05-07": ["08:00", "09:00", "10:30", "14:00", "15:00"],
-};
 
 const DAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const MONTHS_ES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
@@ -119,8 +114,8 @@ function isPast(d: Date) {
   return d < today;
 }
 
-function isFullyBooked(dateKey: string) {
-  return (BOOKED_SLOTS[dateKey] ?? []).length >= TIME_SLOTS.length;
+function isFullyBooked(dateKey: string, bookedSlots: Record<string, string[]>) {
+  return (bookedSlots[dateKey] ?? []).length >= TIME_SLOTS.length;
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -128,9 +123,11 @@ function isFullyBooked(dateKey: string) {
 interface CalendarProps {
   selected: string | null;
   onSelect: (key: string) => void;
+  bookedSlots: Record<string, string[]>;
+  onMonthChange: (year: number, month: number) => void;
 }
 
-function Calendar({ selected, onSelect }: CalendarProps) {
+function Calendar({ selected, onSelect, bookedSlots, onMonthChange }: CalendarProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -146,12 +143,18 @@ function Calendar({ selected, onSelect }: CalendarProps) {
   for (let d = 1; d <= lastDay.getDate(); d++) days.push(new Date(viewYear, viewMonth, d));
 
   function prevMonth() {
-    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
-    else setViewMonth(m => m - 1);
+    const newYear = viewMonth === 0 ? viewYear - 1 : viewYear;
+    const newMonth = viewMonth === 0 ? 11 : viewMonth - 1;
+    setViewYear(newYear);
+    setViewMonth(newMonth);
+    onMonthChange(newYear, newMonth);
   }
   function nextMonth() {
-    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
-    else setViewMonth(m => m + 1);
+    const newYear = viewMonth === 11 ? viewYear + 1 : viewYear;
+    const newMonth = viewMonth === 11 ? 0 : viewMonth + 1;
+    setViewYear(newYear);
+    setViewMonth(newMonth);
+    onMonthChange(newYear, newMonth);
   }
 
   const canGoPrev = !(viewYear === today.getFullYear() && viewMonth === today.getMonth());
@@ -192,9 +195,9 @@ function Calendar({ selected, onSelect }: CalendarProps) {
         {days.map((day, i) => {
           if (!day) return <div key={`empty-${i}`} />;
           const key = toDateKey(day);
-          const disabled = isPast(day) || isWeekend(day) || isFullyBooked(key);
+          const fullyBooked = isFullyBooked(key, bookedSlots);
+          const disabled = isPast(day) || isWeekend(day) || fullyBooked;
           const isSelected = selected === key;
-          const fullyBooked = isFullyBooked(key);
 
           return (
             <button
@@ -238,39 +241,51 @@ interface TimeSlotsProps {
   dateKey: string;
   selected: string | null;
   onSelect: (slot: string) => void;
+  bookedSlots: Record<string, string[]>;
+  loading?: boolean;
 }
 
-function TimeSlots({ dateKey, selected, onSelect }: TimeSlotsProps) {
-  const booked = BOOKED_SLOTS[dateKey] ?? [];
+function TimeSlots({ dateKey, selected, onSelect, bookedSlots, loading }: TimeSlotsProps) {
+  const booked = bookedSlots[dateKey] ?? [];
   return (
     <div className="bg-[#16213e] border border-white/10 rounded-xl p-4">
       <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
         <IconClock />
         Horario disponible
       </h3>
-      <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-        {TIME_SLOTS.map((slot) => {
-          const isBooked = booked.includes(slot);
-          const isSelected = selected === slot;
-          return (
-            <button
-              key={slot}
-              onClick={() => !isBooked && onSelect(slot)}
-              disabled={isBooked}
-              className={`
-                py-2 rounded-lg text-xs font-medium transition-colors
-                ${isSelected ? "bg-[#e94560] text-white" : ""}
-                ${!isSelected && !isBooked ? "bg-[#1a1a2e] border border-white/10 text-gray-300 hover:border-[#e94560]/50 hover:text-white" : ""}
-                ${isBooked ? "bg-[#1a1a2e] border border-white/5 text-gray-700 cursor-not-allowed line-through" : ""}
-              `}
-              aria-label={`${slot}${isBooked ? " — no disponible" : ""}`}
-              aria-pressed={isSelected}
-            >
-              {slot}
-            </button>
-          );
-        })}
-      </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-6 text-gray-500 text-sm gap-2">
+          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+          </svg>
+          Cargando horarios…
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+          {TIME_SLOTS.map((slot) => {
+            const isBooked = booked.includes(slot);
+            const isSelected = selected === slot;
+            return (
+              <button
+                key={slot}
+                onClick={() => !isBooked && onSelect(slot)}
+                disabled={isBooked}
+                className={`
+                  py-2 rounded-lg text-xs font-medium transition-colors
+                  ${isSelected ? "bg-[#e94560] text-white" : ""}
+                  ${!isSelected && !isBooked ? "bg-[#1a1a2e] border border-white/10 text-gray-300 hover:border-[#e94560]/50 hover:text-white" : ""}
+                  ${isBooked ? "bg-[#1a1a2e] border border-white/5 text-gray-700 cursor-not-allowed line-through" : ""}
+                `}
+                aria-label={`${slot}${isBooked ? " — no disponible" : ""}`}
+                aria-pressed={isSelected}
+              >
+                {slot}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -324,12 +339,10 @@ function NewVehicleForm({ value, onChange, errors }: NewVehicleFormProps) {
   );
 }
 
-// ── Mock saved vehicles (swap for Supabase query later) ────────────────────
-
-const MOCK_VEHICLES = [
-  { id: "v1", label: "Toyota Corolla 2019 — ABC-123" },
-  { id: "v2", label: "Honda Civic 2021 — XYZ-789" },
-];
+interface UserVehicle {
+  id: string;
+  label: string;
+}
 
 // ── Main page ──────────────────────────────────────────────────────────────
 
@@ -361,6 +374,62 @@ export default function CitasPage() {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [bookedSlots, setBookedSlots] = useState<Record<string, string[]>>({});
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [userVehicles, setUserVehicles] = useState<UserVehicle[]>([]);
+
+  // Load user vehicles on mount (only if logged in)
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("vehicles")
+        .select("id, brand, model, year, plate")
+        .eq("owner_id", user.id)
+        .order("created_at", { ascending: false });
+      if (data) {
+        setUserVehicles(
+          data.map((v) => ({
+            id: v.id as string,
+            label: `${v.brand} ${v.model} ${v.year}${v.plate ? ` — ${v.plate}` : ""}`,
+          }))
+        );
+      }
+    });
+  }, []);
+
+  // Fetch booked slots for a given month from the API
+  const fetchMonthSlots = useCallback(async (year: number, month: number) => {
+    setSlotsLoading(true);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const dates: string[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      dates.push(dateKey);
+    }
+    const results = await Promise.all(
+      dates.map((date) =>
+        fetch(`/api/citas?date=${date}`)
+          .then((r) => r.json())
+          .then((j) => ({ date, slots: (j.slots ?? []) as string[] }))
+          .catch(() => ({ date, slots: [] }))
+      )
+    );
+    setBookedSlots((prev) => {
+      const next = { ...prev };
+      for (const { date, slots } of results) next[date] = slots;
+      return next;
+    });
+    setSlotsLoading(false);
+  }, []);
+
+  // Load current month on mount
+  useEffect(() => {
+    const now = new Date();
+    fetchMonthSlots(now.getFullYear(), now.getMonth());
+  }, [fetchMonthSlots]);
 
   const isNewVehicle = form.vehicleId === "__new__";
 
@@ -383,7 +452,6 @@ export default function CitasPage() {
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) fe.email = "Email inválido";
     if (!form.vehicleId) fe.vehicleId = "Selecciona o agrega un vehículo";
     if (!form.serviceType) fe.serviceType = "Selecciona el tipo de servicio";
-    if (!selectedDate) fe.vehicleId = fe.vehicleId ?? ""; // reuse field for date error handled separately
     if (isNewVehicle) {
       if (!form.newVehicle.brand.trim()) ve.brand = "Requerido";
       if (!form.newVehicle.model.trim()) ve.model = "Requerido";
@@ -399,9 +467,42 @@ export default function CitasPage() {
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
-    // swap for Supabase insert later
-    await new Promise((r) => setTimeout(r, 1000));
+    setSubmitError(null);
+
+    const res = await fetch("/api/citas", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: selectedDate,
+        time_slot: selectedSlot,
+        service_type: form.serviceType,
+        notes: form.notes,
+        name: form.name,
+        phone: form.phone,
+        email: form.email,
+        vehicle_id: isNewVehicle ? null : form.vehicleId || null,
+        new_vehicle: isNewVehicle ? form.newVehicle : null,
+      }),
+    });
+
     setSubmitting(false);
+
+    if (res.status === 409) {
+      setSubmitError("Ese horario ya fue tomado. Por favor elige otro.");
+      // Refresh slots for the selected date
+      if (selectedDate) {
+        const [y, m] = selectedDate.split("-").map(Number);
+        fetchMonthSlots(y, m - 1);
+      }
+      setSelectedSlot(null);
+      return;
+    }
+
+    if (!res.ok) {
+      setSubmitError("Ocurrió un error al agendar la cita. Intenta de nuevo.");
+      return;
+    }
+
     setSubmitted(true);
   }
 
@@ -455,9 +556,20 @@ export default function CitasPage() {
                 <span className="w-6 h-6 rounded-full bg-[#e94560] text-white text-xs flex items-center justify-center font-bold">1</span>
                 Selecciona fecha y hora
               </h2>
-              <Calendar selected={selectedDate} onSelect={handleDateSelect} />
+              <Calendar
+                selected={selectedDate}
+                onSelect={handleDateSelect}
+                bookedSlots={bookedSlots}
+                onMonthChange={fetchMonthSlots}
+              />
               {selectedDate && (
-                <TimeSlots dateKey={selectedDate} selected={selectedSlot} onSelect={setSelectedSlot} />
+                <TimeSlots
+                  dateKey={selectedDate}
+                  selected={selectedSlot}
+                  onSelect={setSelectedSlot}
+                  bookedSlots={bookedSlots}
+                  loading={slotsLoading}
+                />
               )}
               {!selectedDate && (
                 <p className="text-gray-600 text-sm text-center py-4">Selecciona un día en el calendario para ver los horarios disponibles.</p>
@@ -509,7 +621,7 @@ export default function CitasPage() {
                     className="w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors appearance-none"
                   >
                     <option value="">Seleccionar vehículo…</option>
-                    {MOCK_VEHICLES.map((v) => (
+                    {userVehicles.map((v) => (
                       <option key={v.id} value={v.id}>{v.label}</option>
                     ))}
                     <option value="__new__">+ Agregar nuevo vehículo</option>
@@ -566,6 +678,12 @@ export default function CitasPage() {
                   <p className="text-white font-medium mt-1 capitalize">{dateLabel}</p>
                   <p className="text-[#e94560] font-semibold">{selectedSlot} hrs</p>
                   {form.serviceType && <p className="text-gray-300 mt-1">{form.serviceType}</p>}
+                </div>
+              )}
+
+              {submitError && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+                  {submitError}
                 </div>
               )}
 
