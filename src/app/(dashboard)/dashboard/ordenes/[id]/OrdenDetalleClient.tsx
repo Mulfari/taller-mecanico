@@ -9,6 +9,7 @@ import {
   addWorkOrderItem,
   removeWorkOrderItem,
   generateInvoiceFromWorkOrder,
+  updateWorkOrderNotes,
 } from "../actions";
 
 const STATUS_STEPS: WorkOrderStatus[] = ["received", "diagnosing", "repairing", "ready", "delivered"];
@@ -204,6 +205,12 @@ export default function OrdenDetalleClient({ order: initialOrder }: { order: Wor
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [diagnosis, setDiagnosis] = useState(initialOrder.diagnosis ?? "");
+  const [finalCost, setFinalCost] = useState(
+    initialOrder.final_cost != null ? String(initialOrder.final_cost) : ""
+  );
+  const [savingNotes, setSavingNotes] = useState(false);
+  const [notesSaved, setNotesSaved] = useState(false);
 
   const currentIdx = STATUS_STEPS.indexOf(status);
   const nextStatus = currentIdx < STATUS_STEPS.length - 1 ? STATUS_STEPS[currentIdx + 1] : null;
@@ -255,6 +262,23 @@ export default function OrdenDetalleClient({ order: initialOrder }: { order: Wor
         setError(err instanceof Error ? err.message : "Error al eliminar el ítem");
       }
     });
+  }
+
+  async function handleSaveNotes() {
+    setSavingNotes(true);
+    setError(null);
+    try {
+      await updateWorkOrderNotes(initialOrder.id, {
+        diagnosis: diagnosis || undefined,
+        final_cost: finalCost ? parseFloat(finalCost) : undefined,
+      });
+      setNotesSaved(true);
+      setTimeout(() => setNotesSaved(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar");
+    } finally {
+      setSavingNotes(false);
+    }
   }
 
   async function handleGenerateInvoice() {
@@ -387,23 +411,75 @@ export default function OrdenDetalleClient({ order: initialOrder }: { order: Wor
         </div>
       </div>
 
-      {/* Diagnosis & notes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-2">
-          <p className="text-gray-400 text-xs uppercase tracking-wide font-medium">Diagnóstico</p>
-          {initialOrder.diagnosis ? (
-            <p className="text-gray-200 text-sm leading-relaxed">{initialOrder.diagnosis}</p>
-          ) : (
-            <p className="text-gray-600 text-sm italic">Sin diagnóstico registrado aún.</p>
-          )}
+      {/* Diagnosis & notes — editable */}
+      <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-5">
+        <div className="flex items-center justify-between">
+          <p className="text-gray-400 text-xs uppercase tracking-wide font-medium">Diagnóstico y costo final</p>
+          <button
+            type="button"
+            onClick={handleSaveNotes}
+            disabled={savingNotes}
+            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed bg-[#e94560]/10 hover:bg-[#e94560]/20 text-[#e94560]"
+          >
+            {savingNotes ? (
+              <>
+                <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                Guardando…
+              </>
+            ) : notesSaved ? (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+                Guardado
+              </>
+            ) : (
+              "Guardar"
+            )}
+          </button>
         </div>
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-2">
-          <p className="text-gray-400 text-xs uppercase tracking-wide font-medium">Descripción del problema</p>
-          {initialOrder.description ? (
-            <p className="text-gray-200 text-sm leading-relaxed">{initialOrder.description}</p>
-          ) : (
-            <p className="text-gray-600 text-sm italic">Sin descripción.</p>
-          )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="space-y-1.5">
+            <label htmlFor="diagnosis" className="block text-gray-500 text-xs font-medium">
+              Diagnóstico
+            </label>
+            <textarea
+              id="diagnosis"
+              rows={4}
+              value={diagnosis}
+              onChange={(e) => setDiagnosis(e.target.value)}
+              placeholder="Describe el diagnóstico del vehículo…"
+              className="w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors resize-none"
+            />
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="final_cost" className="block text-gray-500 text-xs font-medium">
+                Costo final (MXN)
+              </label>
+              <input
+                id="final_cost"
+                type="number"
+                min="0"
+                step="0.01"
+                value={finalCost}
+                onChange={(e) => setFinalCost(e.target.value)}
+                placeholder="0.00"
+                className="w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <p className="text-gray-500 text-xs font-medium">Descripción del problema</p>
+              <p className="text-gray-300 text-sm leading-relaxed bg-[#1a1a2e] rounded-lg px-3 py-2.5 border border-white/5">
+                {initialOrder.description || <span className="text-gray-600 italic">Sin descripción.</span>}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
