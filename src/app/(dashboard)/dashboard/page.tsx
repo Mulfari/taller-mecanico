@@ -7,6 +7,8 @@ import {
   getUpcomingAppointments,
   getLowStockItems,
   getReadyOrders,
+  getPendingQuotes,
+  type PendingQuote,
 } from "@/lib/supabase/queries/work-orders";
 
 export const metadata: Metadata = { title: "Panel Principal — TallerPro" };
@@ -141,12 +143,13 @@ export default async function DashboardPage() {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
-  const [metrics, recentOrders, upcomingAppointments, lowStockItems, readyOrders] = await Promise.all([
+  const [metrics, recentOrders, upcomingAppointments, lowStockItems, readyOrders, pendingQuotes] = await Promise.all([
     getDashboardMetrics(),
     getRecentOrders(5),
     getUpcomingAppointments(5),
     getLowStockItems(8),
     getReadyOrders(5),
+    getPendingQuotes(6),
   ]);
 
   const metricCards: MetricCardProps[] = [
@@ -308,6 +311,103 @@ export default async function DashboardPage() {
         </div>
 
       </div>
+
+      {/* Pending quotes awaiting client response */}
+      {pendingQuotes.length > 0 && (
+        <div className="bg-[#16213e] border border-blue-500/20 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <h2 className="text-white font-semibold text-base">Cotizaciones sin respuesta</h2>
+              <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full font-medium">
+                {pendingQuotes.length}
+              </span>
+            </div>
+            <Link href="/dashboard/cotizaciones?status=sent" className="text-[#e94560] text-sm hover:underline">
+              Ver todas →
+            </Link>
+          </div>
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-sm min-w-[480px]">
+              <thead>
+                <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/5">
+                  <th className="text-left pb-3 px-1 font-medium">Cotización / Cliente</th>
+                  <th className="text-left pb-3 px-1 font-medium">Vehículo</th>
+                  <th className="text-left pb-3 px-1 font-medium">Vence</th>
+                  <th className="text-right pb-3 px-1 font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {pendingQuotes.map((quote: PendingQuote) => {
+                  const isExpired = quote.valid_until
+                    ? new Date(quote.valid_until + "T23:59:59") < new Date()
+                    : false;
+                  const daysLeft = quote.valid_until
+                    ? Math.ceil((new Date(quote.valid_until + "T23:59:59").getTime() - Date.now()) / 86400000)
+                    : null;
+                  return (
+                    <tr key={quote.id} className="hover:bg-white/[0.03] transition-colors group">
+                      <td className="py-3 px-1">
+                        <Link href={`/dashboard/cotizaciones/${quote.id}`} className="block">
+                          <p className="text-blue-400 font-mono text-xs group-hover:underline">
+                            COT-{quote.id.slice(0, 6).toUpperCase()}
+                          </p>
+                          <p className="text-white font-medium mt-0.5">
+                            {quote.client?.full_name ?? "—"}
+                          </p>
+                        </Link>
+                      </td>
+                      <td className="py-3 px-1">
+                        <Link href={`/dashboard/cotizaciones/${quote.id}`} className="block text-gray-300">
+                          {quote.vehicle
+                            ? `${quote.vehicle.brand} ${quote.vehicle.model} ${quote.vehicle.year}`
+                            : <span className="text-gray-600">—</span>}
+                        </Link>
+                      </td>
+                      <td className="py-3 px-1">
+                        <Link href={`/dashboard/cotizaciones/${quote.id}`} className="block">
+                          {quote.valid_until ? (
+                            <span className={`text-xs font-medium ${
+                              isExpired
+                                ? "text-red-400"
+                                : daysLeft !== null && daysLeft <= 2
+                                ? "text-orange-400"
+                                : "text-gray-400"
+                            }`}>
+                              {isExpired
+                                ? "Vencida"
+                                : daysLeft === 0
+                                ? "Hoy"
+                                : daysLeft === 1
+                                ? "Mañana"
+                                : new Date(quote.valid_until + "T00:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}
+                            </span>
+                          ) : (
+                            <span className="text-gray-600 text-xs">Sin fecha</span>
+                          )}
+                        </Link>
+                      </td>
+                      <td className="py-3 px-1 text-right">
+                        <Link href={`/dashboard/cotizaciones/${quote.id}`} className="block">
+                          {quote.total != null && quote.total > 0 ? (
+                            <span className="text-gray-300 font-medium">
+                              ${quote.total.toLocaleString("es-MX")}
+                            </span>
+                          ) : (
+                            <span className="text-gray-600">—</span>
+                          )}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Alerts row: ready orders + low stock */}
       {(readyOrders.length > 0 || lowStockItems.length > 0) && (

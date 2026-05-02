@@ -181,3 +181,28 @@ export async function getReadyOrders(limit = 5): Promise<WorkOrderListItem[]> {
   if (error) throw error;
   return (data ?? []) as WorkOrderListItem[];
 }
+
+export interface PendingQuote {
+  id: string;
+  total: number | null;
+  valid_until: string | null;
+  created_at: string;
+  client: { id: string; full_name: string | null } | null;
+  vehicle: { brand: string; model: string; year: number; plate: string | null } | null;
+}
+
+export async function getPendingQuotes(limit = 6): Promise<PendingQuote[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("quotes")
+    .select(`
+      id, total, valid_until, created_at,
+      client:profiles!quotes_client_id_fkey(id, full_name),
+      vehicle:vehicles!quotes_vehicle_id_fkey(brand, model, year, plate)
+    `)
+    .eq("status", "sent")
+    .order("valid_until", { ascending: true, nullsFirst: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as unknown as PendingQuote[];
+}
