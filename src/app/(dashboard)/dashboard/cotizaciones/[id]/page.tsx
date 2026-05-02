@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import PrintButton from "./PrintButton";
+import ConvertirOrdenButton from "./ConvertirOrdenButton";
 
 export const metadata = { title: "Cotización — TallerPro" };
 
@@ -123,7 +124,12 @@ export default async function CotizacionDetailPage({
             </p>
           </div>
         </div>
-        <PrintButton />
+        <div className="flex items-center gap-2 print:hidden">
+          {quote.status === "accepted" && (
+            <ConvertirOrdenButton quoteId={quote.id} />
+          )}
+          <PrintButton />
+        </div>
       </div>
 
       {/* ── Printable quote document ───────────────────────────────────── */}
