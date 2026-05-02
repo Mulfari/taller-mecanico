@@ -4,6 +4,18 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { QuoteItemRow } from "@/lib/supabase/queries/quotes";
+import type { QuoteStatus } from "@/types/database";
+
+export async function updateQuoteStatus(quoteId: string, status: QuoteStatus) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("quotes")
+    .update({ status })
+    .eq("id", quoteId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/dashboard/cotizaciones/${quoteId}`);
+  revalidatePath("/dashboard/cotizaciones");
+}
 
 export async function createWorkOrderFromQuote(quoteId: string) {
   const supabase = await createClient();
