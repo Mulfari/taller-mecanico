@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import type { QuoteListItem, ClientOption, VehicleOption, InventoryOption, QuoteItemRow } from "@/lib/supabase/queries/quotes";
 import type { QuoteStatus } from "@/types/database";
 import { createWorkOrderFromQuote } from "./actions";
@@ -339,9 +339,21 @@ export default function CotizacionesClient({
   inventory: InventoryOption[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [quotes, setQuotes] = useState(initialQuotes);
   const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState<QuoteStatus | "all">("all");
+
+  const VALID_STATUSES: (QuoteStatus | "all")[] = ["all", "draft", "sent", "accepted", "rejected"];
+  const initialStatus = (searchParams.get("status") ?? "all") as QuoteStatus | "all";
+  const [filterStatus, setFilterStatus] = useState<QuoteStatus | "all">(
+    VALID_STATUSES.includes(initialStatus) ? initialStatus : "all"
+  );
+
+  useEffect(() => {
+    const s = (searchParams.get("status") ?? "all") as QuoteStatus | "all";
+    setFilterStatus(VALID_STATUSES.includes(s) ? s : "all");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
   const [showModal, setShowModal] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [converting, setConverting] = useState<string | null>(null);
