@@ -91,6 +91,26 @@ function UserMenu({ user, onClose }: { user: User; onClose: () => void }) {
           </svg>
           Mis cotizaciones
         </Link>
+        <Link
+          href="/mis-facturas"
+          onClick={onClose}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+          </svg>
+          Mis facturas
+        </Link>
+        <Link
+          href="/mis-vehiculos"
+          onClick={onClose}
+          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+          </svg>
+          Mis vehículos
+        </Link>
       </div>
       <div className="border-t border-white/5 py-1">
         <button
@@ -249,6 +269,11 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
                     </span>
                     <span className="text-gray-300 text-sm truncate">{displayName}</span>
                   </div>
+                  <Link href="/cuenta" className="text-gray-300 hover:text-white text-sm py-1.5 transition-colors" onClick={() => setMenuOpen(false)}>Mi cuenta</Link>
+                  <Link href="/mis-vehiculos" className="text-gray-300 hover:text-white text-sm py-1.5 transition-colors" onClick={() => setMenuOpen(false)}>Mis vehículos</Link>
+                  <Link href="/mis-citas" className="text-gray-300 hover:text-white text-sm py-1.5 transition-colors" onClick={() => setMenuOpen(false)}>Mis citas</Link>
+                  <Link href="/mis-cotizaciones" className="text-gray-300 hover:text-white text-sm py-1.5 transition-colors" onClick={() => setMenuOpen(false)}>Mis cotizaciones</Link>
+                  <Link href="/mis-facturas" className="text-gray-300 hover:text-white text-sm py-1.5 transition-colors" onClick={() => setMenuOpen(false)}>Mis facturas</Link>
                   <button
                     onClick={async () => {
                       setMenuOpen(false);
