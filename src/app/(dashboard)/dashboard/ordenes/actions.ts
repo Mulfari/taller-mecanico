@@ -40,12 +40,19 @@ export async function createWorkOrder(formData: FormData) {
   redirect(`/dashboard/ordenes/${data.id}`);
 }
 
-export async function advanceWorkOrderStatus(orderId: string, nextStatus: WorkOrderStatus) {
+export async function advanceWorkOrderStatus(
+  orderId: string,
+  nextStatus: WorkOrderStatus,
+  finalCost?: number | null
+) {
   const supabase = await createClient();
 
   const updates: Record<string, unknown> = { status: nextStatus };
   if (nextStatus === "delivered") {
     updates.delivered_at = new Date().toISOString();
+    if (finalCost != null && finalCost > 0) {
+      updates.final_cost = finalCost;
+    }
   }
 
   const { error } = await supabase

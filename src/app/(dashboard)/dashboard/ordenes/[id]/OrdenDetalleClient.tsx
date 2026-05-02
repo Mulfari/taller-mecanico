@@ -311,6 +311,90 @@ function AddItemForm({
   );
 }
 
+// ── Delivery Modal ─────────────────────────────────────────────────────────
+
+function DeliveryModal({
+  estimatedCost,
+  onConfirm,
+  onCancel,
+  loading,
+}: {
+  estimatedCost: string;
+  onConfirm: (finalCost: number | null) => void;
+  onCancel: () => void;
+  loading: boolean;
+}) {
+  const [value, setValue] = useState(estimatedCost);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = parseFloat(value);
+    onConfirm(isNaN(parsed) || parsed <= 0 ? null : parsed);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl p-6">
+        <h3 className="text-white font-semibold text-lg mb-1">Registrar entrega</h3>
+        <p className="text-gray-400 text-sm mb-5">
+          Confirmá el costo final antes de marcar la orden como entregada.
+        </p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-gray-400 text-xs font-medium mb-1.5">
+              Costo final (MXN)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">$</span>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder="0.00"
+                className="w-full bg-[#1a1a2e] border border-white/10 rounded-lg pl-7 pr-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors"
+                autoFocus
+              />
+            </div>
+            <p className="text-gray-600 text-xs mt-1">
+              Dejá en blanco para usar el costo estimado.
+            </p>
+          </div>
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={loading}
+              className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white hover:border-white/20 transition-colors disabled:opacity-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+            >
+              {loading ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Registrando…
+                </>
+              ) : (
+                "Confirmar entrega"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 interface Mechanic {
   id: string;
   full_name: string | null;
@@ -362,6 +446,7 @@ export default function OrdenDetalleClient({
       ? new Date(initialOrder.estimated_delivery).toISOString().split("T")[0]
       : ""
   );
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
 
   const currentIdx = STATUS_STEPS.indexOf(status);
   const nextStatus = currentIdx < STATUS_STEPS.length - 1 ? STATUS_STEPS[currentIdx + 1] : null;
@@ -379,6 +464,10 @@ export default function OrdenDetalleClient({
 
   function handleAdvanceStatus() {
     if (!nextStatus) return;
+    if (nextStatus === "delivered") {
+      setShowDeliveryModal(true);
+      return;
+    }
     setError(null);
     startTransition(async () => {
       try {
@@ -386,6 +475,21 @@ export default function OrdenDetalleClient({
         setStatus(nextStatus);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al actualizar el estado");
+      }
+    });
+  }
+
+  function handleDeliveryConfirm(finalCostValue: number | null) {
+    setError(null);
+    startTransition(async () => {
+      try {
+        await advanceWorkOrderStatus(initialOrder.id, "delivered", finalCostValue);
+        setStatus("delivered");
+        if (finalCostValue != null) setFinalCost(String(finalCostValue));
+        setShowDeliveryModal(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error al registrar la entrega");
+        setShowDeliveryModal(false);
       }
     });
   }
@@ -879,6 +983,15 @@ export default function OrdenDetalleClient({
             })}
           </div>
         </div>
+      )}
+
+      {showDeliveryModal && (
+        <DeliveryModal
+          estimatedCost={estimatedCost}
+          onConfirm={handleDeliveryConfirm}
+          onCancel={() => setShowDeliveryModal(false)}
+          loading={isPending}
+        />
       )}
     </div>
   );
