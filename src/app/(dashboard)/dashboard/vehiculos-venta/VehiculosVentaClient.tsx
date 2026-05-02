@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useRef, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import type { VehicleForSale, VehiclePhoto } from "@/lib/supabase/queries/vehicles-for-sale";
 
@@ -768,7 +769,9 @@ export default function VehiculosVentaClient({ initialVehicles }: { initialVehic
                 </div>
 
                 <div className="p-4">
-                  <h3 className="text-white font-semibold">{v.brand} {v.model}</h3>
+                  <Link href={`/dashboard/vehiculos-venta/${v.id}`} className="block hover:text-[#e94560] transition-colors">
+                    <h3 className="text-white font-semibold">{v.brand} {v.model}</h3>
+                  </Link>
                   <p className="text-gray-500 text-sm">{v.year}{v.color ? ` · ${v.color}` : ""}</p>
                   <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
                     {v.mileage != null && <span>{v.mileage.toLocaleString("es-MX")} km</span>}
