@@ -154,7 +154,7 @@ async function getReportData(since: string | null) {
 
   let ordersQuery = supabase
     .from("work_orders")
-    .select("id, status, final_cost, estimated_cost, created_at, delivered_at, mechanic_id, mechanic:profiles!work_orders_mechanic_id_fkey(full_name)");
+    .select("id, status, final_cost, estimated_cost, created_at, delivered_at, mechanic_id, mechanic:profiles!work_orders_mechanic_id_fkey(full_name), client_id, client:profiles!work_orders_client_id_fkey(full_name, email)");
   if (since) ordersQuery = ordersQuery.gte("created_at", since);
 
   let apptQuery = supabase
@@ -234,6 +234,26 @@ async function getReportData(since: string | null) {
   const acceptedQuotes = (quotes ?? []).filter((q) => q.status === "accepted");
   const quotesRevenue = acceptedQuotes.reduce((sum, q) => sum + (q.total ?? 0), 0);
 
+  // Top clients by revenue
+  type ClientStat = { name: string; email: string; orders: number; revenue: number };
+  const clientMap: Record<string, ClientStat> = {};
+  for (const o of orders ?? []) {
+    if (!o.client_id) continue;
+    const clientProfile = o.client as { full_name?: string | null; email?: string | null } | null;
+    const name = clientProfile?.full_name ?? clientProfile?.email ?? "Cliente desconocido";
+    const email = clientProfile?.email ?? "";
+    if (!clientMap[o.client_id]) {
+      clientMap[o.client_id] = { name, email, orders: 0, revenue: 0 };
+    }
+    clientMap[o.client_id].orders += 1;
+    if (o.status === "delivered") {
+      clientMap[o.client_id].revenue += o.final_cost ?? o.estimated_cost ?? 0;
+    }
+  }
+  const topClients = Object.values(clientMap)
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 8);
+
   // Mechanic performance
   type MechanicStat = { name: string; total: number; delivered: number; revenue: number };
   const mechanicMap: Record<string, MechanicStat> = {};
@@ -266,6 +286,7 @@ async function getReportData(since: string | null) {
     quotesRevenue,
     acceptedQuotesCount: acceptedQuotes.length,
     mechanicStats,
+    topClients,
   };
 }
 
@@ -438,6 +459,42 @@ export default async function ReportesPage({
                     <p className="text-gray-600 text-xs">
                       {m.total > 0 ? Math.round((m.delivered / m.total) * 100) : 0}% completado
                     </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+
+        {/* Top clients */}
+        <SectionCard title="Top clientes por ingresos">
+          {data.topClients.length === 0 ? (
+            <p className="text-gray-600 text-sm text-center py-4">Sin órdenes entregadas en este período</p>
+          ) : (
+            <div className="space-y-3">
+              {data.topClients.map((c, i) => (
+                <div
+                  key={c.email + i}
+                  className="flex items-center justify-between gap-4 py-2.5 border-b border-white/5 last:border-0"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                      <span className="text-gray-400 text-xs font-bold">
+                        {c.name.slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-gray-200 text-sm font-medium truncate">{c.name}</p>
+                      <p className="text-gray-500 text-xs">
+                        {c.orders} orden{c.orders !== 1 ? "es" : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-white text-sm font-semibold">{fmt(c.revenue)}</p>
+                    {i === 0 && (
+                      <p className="text-[#e94560] text-xs font-medium">Mejor cliente</p>
+                    )}
                   </div>
                 </div>
               ))}
