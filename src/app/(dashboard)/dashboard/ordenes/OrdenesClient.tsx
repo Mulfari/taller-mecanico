@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { WorkOrderListItem, WorkOrderStatus } from "@/types/database";
 import { EmptyState } from "@/components/ui";
-import { generateInvoiceFromWorkOrder } from "./actions";
+import { generateInvoiceFromWorkOrder, advanceWorkOrderStatus } from "./actions";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 
@@ -135,16 +135,36 @@ function CostCell({ order }: { order: WorkOrderListItem }) {
   return <span className="text-gray-600">—</span>;
 }
 
+// ── Status flow ────────────────────────────────────────────────────────────
+
+const NEXT_STATUS: Partial<Record<WorkOrderStatus, WorkOrderStatus>> = {
+  received: "diagnosing",
+  diagnosing: "repairing",
+  repairing: "ready",
+  ready: "delivered",
+};
+
+const NEXT_STATUS_LABEL: Partial<Record<WorkOrderStatus, string>> = {
+  received: "Iniciar diagnóstico",
+  diagnosing: "Iniciar reparación",
+  repairing: "Marcar listo",
+  ready: "Entregar",
+};
+
 // ── Kanban card ────────────────────────────────────────────────────────────
 
 function KanbanCard({
   order,
   onGenerateInvoice,
   generatingInvoice,
+  onAdvanceStatus,
+  advancingId,
 }: {
   order: WorkOrderListItem;
   onGenerateInvoice: (id: string) => void;
   generatingInvoice: string | null;
+  onAdvanceStatus: (id: string, next: WorkOrderStatus) => void;
+  advancingId: string | null;
 }) {
   const cost =
     order.status === "delivered" && order.final_cost != null && order.final_cost > 0
@@ -212,6 +232,24 @@ function KanbanCard({
           </Link>
         </div>
       </div>
+
+      {/* Advance status button */}
+      {NEXT_STATUS[order.status] && (
+        <button
+          onClick={() => onAdvanceStatus(order.id, NEXT_STATUS[order.status]!)}
+          disabled={advancingId === order.id}
+          className="w-full mt-1 inline-flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg bg-[#e94560]/10 hover:bg-[#e94560]/20 text-[#e94560] disabled:opacity-50 text-xs font-medium transition-colors border border-[#e94560]/20 hover:border-[#e94560]/40"
+        >
+          {advancingId === order.id ? (
+            <IconSpinner />
+          ) : (
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          )}
+          {NEXT_STATUS_LABEL[order.status]}
+        </button>
+      )}
     </div>
   );
 }
@@ -222,10 +260,14 @@ function KanbanView({
   orders,
   onGenerateInvoice,
   generatingInvoice,
+  onAdvanceStatus,
+  advancingId,
 }: {
   orders: WorkOrderListItem[];
   onGenerateInvoice: (id: string) => void;
   generatingInvoice: string | null;
+  onAdvanceStatus: (id: string, next: WorkOrderStatus) => void;
+  advancingId: string | null;
 }) {
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 min-h-[400px]" style={{ scrollbarWidth: "thin" }}>
@@ -255,6 +297,8 @@ function KanbanView({
                     order={order}
                     onGenerateInvoice={onGenerateInvoice}
                     generatingInvoice={generatingInvoice}
+                    onAdvanceStatus={onAdvanceStatus}
+                    advancingId={advancingId}
                   />
                 ))
               )}
@@ -269,17 +313,20 @@ function KanbanView({
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function OrdenesClient({
-  orders,
+  orders: initialOrders,
   initialFilter = "all",
 }: {
   orders: WorkOrderListItem[];
   initialFilter?: WorkOrderStatus | "all";
 }) {
   const router = useRouter();
+  const [orders, setOrders] = useState(initialOrders);
   const [activeFilter, setActiveFilter] = useState<WorkOrderStatus | "all">(initialFilter);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"list" | "kanban">("list");
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
+  const [advancingId, setAdvancingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
   async function handleGenerateInvoice(orderId: string) {
     setGeneratingInvoice(orderId);
@@ -289,6 +336,24 @@ export default function OrdenesClient({
     } finally {
       setGeneratingInvoice(null);
     }
+  }
+
+  function handleAdvanceStatus(orderId: string, next: WorkOrderStatus) {
+    setAdvancingId(orderId);
+    // Optimistic update
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: next } : o))
+    );
+    startTransition(async () => {
+      try {
+        await advanceWorkOrderStatus(orderId, next);
+      } catch {
+        // Revert on error
+        setOrders(initialOrders);
+      } finally {
+        setAdvancingId(null);
+      }
+    });
   }
 
   const q = search.trim().toLowerCase();
@@ -394,6 +459,8 @@ export default function OrdenesClient({
           orders={filtered}
           onGenerateInvoice={handleGenerateInvoice}
           generatingInvoice={generatingInvoice}
+          onAdvanceStatus={handleAdvanceStatus}
+          advancingId={advancingId}
         />
       )}
 
