@@ -18,10 +18,14 @@ function IconWrench() {
 function IconClipboard() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>;
 }
+function IconReceipt() {
+  return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>;
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type WorkOrderStatus = "received" | "diagnosing" | "repairing" | "ready" | "delivered";
 type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled";
+type InvoiceStatus = "draft" | "sent" | "paid";
 
 // ── Status helpers ─────────────────────────────────────────────────────────
 const WO_STATUS_LABELS: Record<WorkOrderStatus, string> = {
@@ -51,6 +55,18 @@ const APPT_STATUS_COLORS: Record<AppointmentStatus, string> = {
   cancelled: "bg-red-500/20 text-red-300",
 };
 
+const INV_STATUS_LABELS: Record<InvoiceStatus, string> = {
+  draft: "Borrador",
+  sent: "Enviada",
+  paid: "Pagada",
+};
+
+const INV_STATUS_COLORS: Record<InvoiceStatus, string> = {
+  draft: "bg-gray-500/20 text-gray-300",
+  sent: "bg-blue-500/20 text-blue-300",
+  paid: "bg-green-500/20 text-green-300",
+};
+
 function formatDate(d: string) {
   return new Date(d + "T00:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
 }
@@ -69,8 +85,8 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
 
   if (!client) notFound();
 
-  // Fetch vehicles, work orders, and appointments in parallel
-  const [{ data: vehicles }, { data: workOrders }, { data: appointments }] = await Promise.all([
+  // Fetch vehicles, work orders, appointments, and invoices in parallel
+  const [{ data: vehicles }, { data: workOrders }, { data: appointments }, { data: invoices }] = await Promise.all([
     supabase
       .from("vehicles")
       .select("id, brand, model, year, plate, color, vin, mileage")
@@ -92,6 +108,11 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
       `)
       .eq("client_id", id)
       .order("date", { ascending: false }),
+    supabase
+      .from("invoices")
+      .select("id, status, total, created_at, paid_at")
+      .eq("client_id", id)
+      .order("created_at", { ascending: false }),
   ]);
 
   return (
@@ -295,6 +316,83 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${APPT_STATUS_COLORS[status]}`}>
                           {APPT_STATUS_LABELS[status]}
                         </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Invoices */}
+      <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+          <h2 className="text-white font-semibold flex items-center gap-2">
+            <IconReceipt />
+            Facturas
+            <span className="text-xs text-gray-500 font-normal">({invoices?.length ?? 0})</span>
+          </h2>
+          <Link
+            href={`/dashboard/facturas?client=${id}`}
+            className="text-[#e94560] text-sm hover:underline"
+          >
+            Ver en facturas →
+          </Link>
+        </div>
+        {!invoices || invoices.length === 0 ? (
+          <p className="py-10 text-center text-gray-600 text-sm">Sin facturas emitidas.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[420px]">
+              <thead>
+                <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/5">
+                  <th className="text-left py-3 px-5 font-medium">Factura</th>
+                  <th className="text-left py-3 px-4 font-medium">Fecha</th>
+                  <th className="text-left py-3 px-4 font-medium">Estado</th>
+                  <th className="text-right py-3 px-5 font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {invoices.map((inv) => {
+                  const status = inv.status as InvoiceStatus;
+                  return (
+                    <tr key={inv.id} className="hover:bg-white/[0.03] transition-colors group">
+                      <td className="py-3.5 px-5">
+                        <Link href={`/dashboard/facturas/${inv.id}`} className="block">
+                          <span className="text-[#e94560] font-mono text-xs group-hover:underline">
+                            FAC-{inv.id.slice(0, 6).toUpperCase()}
+                          </span>
+                        </Link>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <Link href={`/dashboard/facturas/${inv.id}`} className="block text-gray-400 text-xs whitespace-nowrap">
+                          {formatDate(inv.created_at.slice(0, 10))}
+                        </Link>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <Link href={`/dashboard/facturas/${inv.id}`} className="block">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${INV_STATUS_COLORS[status]}`}>
+                            {INV_STATUS_LABELS[status]}
+                          </span>
+                          {status === "paid" && inv.paid_at && (
+                            <span className="block text-gray-600 text-xs mt-0.5">
+                              Pagada {formatDate(inv.paid_at.slice(0, 10))}
+                            </span>
+                          )}
+                        </Link>
+                      </td>
+                      <td className="py-3.5 px-5 text-right">
+                        <Link href={`/dashboard/facturas/${inv.id}`} className="block">
+                          {inv.total != null && inv.total > 0 ? (
+                            <span className="text-gray-300 font-medium text-xs">
+                              ${inv.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                            </span>
+                          ) : (
+                            <span className="text-gray-600 text-xs">—</span>
+                          )}
+                        </Link>
                       </td>
                     </tr>
                   );
