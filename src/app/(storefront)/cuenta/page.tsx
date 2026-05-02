@@ -277,7 +277,7 @@ export default function CuentaPage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
               { icon: <IconCar />, label: "Vehículos", value: stats.vehicles, href: "/mis-vehiculos" },
-              { icon: <IconClipboard />, label: "Órdenes activas", value: stats.activeOrders, href: "/mi-vehiculo" },
+              { icon: <IconClipboard />, label: "Órdenes activas", value: stats.activeOrders, href: "/mis-ordenes" },
               { icon: <IconClipboard />, label: "Total servicios", value: stats.totalOrders, href: "/historial" },
               { icon: <IconCalendar />, label: "Citas próximas", value: stats.upcomingAppointments, href: "/mis-citas" },
             ].map((stat) => (
@@ -378,7 +378,8 @@ export default function CuentaPage() {
         <div className="bg-[#16213e] border border-white/10 rounded-xl divide-y divide-white/5">
           {[
             { href: "/mis-vehiculos", icon: <IconCar />, label: "Mis vehículos", desc: "Consultá los vehículos que tenés registrados en el taller" },
-            { href: "/mi-vehiculo", icon: <IconCar />, label: "Estado de mis vehículos", desc: "Seguí el progreso de las órdenes en tiempo real" },
+            { href: "/mis-ordenes", icon: <IconClipboard />, label: "Mis órdenes de trabajo", desc: "Revisá el estado y detalle de todas tus órdenes" },
+            { href: "/mi-vehiculo", icon: <IconCar />, label: "Seguimiento en vivo", desc: "Seguí el progreso de las órdenes activas en tiempo real" },
             { href: "/historial", icon: <IconClipboard />, label: "Historial de servicios", desc: "Todos los trabajos realizados en tus vehículos" },
             { href: "/mis-citas", icon: <IconCalendar />, label: "Mis citas", desc: "Revisá y gestioná tus turnos agendados" },
             { href: "/mis-cotizaciones", icon: <IconClipboard />, label: "Mis cotizaciones", desc: "Consultá el estado de tus cotizaciones solicitadas" },
