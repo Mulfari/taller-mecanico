@@ -12,6 +12,9 @@ function IconWrench() {
 function IconUser() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>;
 }
+function IconCalendar() {
+  return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>;
+}
 
 type WorkOrderStatus = "received" | "diagnosing" | "repairing" | "ready" | "delivered";
 type AppointmentStatus = "pending" | "confirmed" | "completed" | "cancelled";
@@ -102,7 +105,7 @@ export default async function VehiculoDetailPage({ params }: { params: Promise<{
               Registrado el {formatDate(vehicle.created_at)}
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
             <EditVehicleButton vehicle={{
               id: vehicle.id,
               brand: vehicle.brand,
@@ -114,6 +117,13 @@ export default async function VehiculoDetailPage({ params }: { params: Promise<{
               mileage: vehicle.mileage,
               notes: vehicle.notes,
             }} />
+            <Link
+              href={`/dashboard/citas?vehicle=${id}`}
+              className="inline-flex items-center gap-2 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <IconCalendar />
+              Nueva cita
+            </Link>
             <Link
               href={`/dashboard/ordenes/nueva?vehicle=${id}${owner ? `&client=${owner.id}` : ""}`}
               className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"

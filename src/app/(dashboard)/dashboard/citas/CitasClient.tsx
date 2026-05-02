@@ -345,15 +345,20 @@ function NewCitaModal({
   onClose,
   onSaved,
   initialClientId = "",
+  initialVehicleId = "",
 }: {
   clients: ClientOption[];
   vehicles: VehicleOption[];
   onClose: () => void;
   onSaved: (appt: AppointmentWithRelations) => void;
   initialClientId?: string;
+  initialVehicleId?: string;
 }) {
-  const [clientId, setClientId] = useState(initialClientId);
-  const [vehicleId, setVehicleId] = useState("");
+  const resolvedClientId = initialVehicleId
+    ? (vehicles.find((v) => v.id === initialVehicleId)?.owner_id ?? initialClientId)
+    : initialClientId;
+  const [clientId, setClientId] = useState(resolvedClientId);
+  const [vehicleId, setVehicleId] = useState(initialVehicleId);
   const [date, setDate] = useState(toDateKey(new Date()));
   const [timeSlot, setTimeSlot] = useState("09:00");
   const [serviceType, setServiceType] = useState("");
@@ -799,13 +804,18 @@ export default function CitasClient({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [showNewCita, setShowNewCita] = useState(false);
   const [preselectedClientId, setPreselectedClientId] = useState<string>("");
+  const [preselectedVehicleId, setPreselectedVehicleId] = useState<string>("");
   const [editingAppt, setEditingAppt] = useState<AppointmentWithRelations | null>(null);
   const [search, setSearch] = useState("");
 
-  // Honor ?client= URL param: pre-select client and auto-open new cita modal
+  // Honor ?client= and ?vehicle= URL params: pre-select and auto-open new cita modal
   useEffect(() => {
     const clientParam = searchParams.get("client");
-    if (clientParam && clients.some((c) => c.id === clientParam)) {
+    const vehicleParam = searchParams.get("vehicle");
+    if (vehicleParam && vehicles.some((v) => v.id === vehicleParam)) {
+      setPreselectedVehicleId(vehicleParam);
+      setShowNewCita(true);
+    } else if (clientParam && clients.some((c) => c.id === clientParam)) {
       setPreselectedClientId(clientParam);
       setShowNewCita(true);
     }
@@ -1114,11 +1124,13 @@ export default function CitasClient({
           clients={clients}
           vehicles={vehicles}
           initialClientId={preselectedClientId}
-          onClose={() => { setShowNewCita(false); setPreselectedClientId(""); }}
+          initialVehicleId={preselectedVehicleId}
+          onClose={() => { setShowNewCita(false); setPreselectedClientId(""); setPreselectedVehicleId(""); }}
           onSaved={(appt) => {
             setAppointments((prev) => [...prev, appt]);
             setShowNewCita(false);
             setPreselectedClientId("");
+            setPreselectedVehicleId("");
           }}
         />
       )}
