@@ -96,6 +96,7 @@ const services = [
       "Reseteo del indicador de mantenimiento",
     ],
     cta: "Agendar cambio de aceite",
+    serviceType: "Cambio de aceite y filtros",
   },
   {
     icon: <IconDiag />,
@@ -109,6 +110,7 @@ const services = [
       "Presupuesto sin compromiso",
     ],
     cta: "Solicitar diagnóstico",
+    serviceType: "Diagnóstico electrónico",
   },
   {
     icon: <IconWrench />,
@@ -122,6 +124,7 @@ const services = [
       "Garantía de 6 meses o 10.000 km",
     ],
     cta: "Solicitar cotización",
+    serviceType: "Otro",
   },
   {
     icon: <IconAlign />,
@@ -135,6 +138,7 @@ const services = [
       "Rotación de neumáticos opcional",
     ],
     cta: "Agendar alineación",
+    serviceType: "Alineación y balanceo",
   },
   {
     icon: <IconElec />,
@@ -148,6 +152,7 @@ const services = [
       "Revisión de cableado y fusibles",
     ],
     cta: "Consultar por eléctrico",
+    serviceType: "Sistema eléctrico",
   },
   {
     icon: <IconCar />,
@@ -161,6 +166,7 @@ const services = [
       "Historial digital de servicios",
     ],
     cta: "Ver planes de mantenimiento",
+    serviceType: "Revisión general",
   },
   {
     icon: <IconBrakes />,
@@ -174,6 +180,7 @@ const services = [
       "Prueba de frenado en ruta",
     ],
     cta: "Revisar mis frenos",
+    serviceType: "Frenos (pastillas / discos)",
   },
   {
     icon: <IconAC />,
@@ -187,6 +194,7 @@ const services = [
       "Cambio de filtro de habitáculo",
     ],
     cta: "Revisar mi AC",
+    serviceType: "Aire acondicionado",
   },
   {
     icon: <IconTire />,
@@ -200,6 +208,7 @@ const services = [
       "Almacenamiento de neumáticos de temporada",
     ],
     cta: "Consultar neumáticos",
+    serviceType: "Cambio de neumáticos",
   },
 ];
 
@@ -251,7 +260,7 @@ export default function ServiciosPage() {
               </ul>
 
               <Link
-                href="/citas"
+                href={`/citas?servicio=${encodeURIComponent(service.serviceType)}`}
                 className="block text-center border border-[#e94560]/40 hover:border-[#e94560] hover:bg-[#e94560]/10 text-gray-300 hover:text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
               >
                 {service.cta}

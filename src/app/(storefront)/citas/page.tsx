@@ -370,8 +370,12 @@ const EMPTY_FORM: FormState = {
 function CitasPageInner() {
   const searchParams = useSearchParams();
   const preselectedVehicleId = searchParams.get("vehiculo");
+  const preselectedService = searchParams.get("servicio");
 
-  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [form, setForm] = useState<FormState>(() => ({
+    ...EMPTY_FORM,
+    serviceType: preselectedService && SERVICE_TYPES.includes(preselectedService) ? preselectedService : "",
+  }));
   const [vehicleErrors, setVehicleErrors] = useState<Partial<NewVehicle>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
