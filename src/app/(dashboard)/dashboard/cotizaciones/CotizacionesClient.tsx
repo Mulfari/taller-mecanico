@@ -91,16 +91,18 @@ function NewQuoteModal({
   clients,
   vehicles,
   inventory,
+  initialClientId,
   onClose,
   onSaved,
 }: {
   clients: ClientOption[];
   vehicles: VehicleOption[];
   inventory: InventoryOption[];
+  initialClientId?: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<NewQuoteForm>(EMPTY_FORM);
+  const [form, setForm] = useState<NewQuoteForm>({ ...EMPTY_FORM, client_id: initialClientId ?? "" });
   const [items, setItems] = useState<NewQuoteItem[]>([newItem()]);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -354,7 +356,8 @@ export default function CotizacionesClient({
     setFilterStatus(VALID_STATUSES.includes(s) ? s : "all");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
-  const [showModal, setShowModal] = useState(false);
+  const initialClientId = searchParams.get("client") ?? undefined;
+  const [showModal, setShowModal] = useState(!!initialClientId);
   const [sending, setSending] = useState<string | null>(null);
   const [converting, setConverting] = useState<string | null>(null);
   const [responding, setResponding] = useState<string | null>(null);
@@ -597,6 +600,7 @@ export default function CotizacionesClient({
           clients={clients}
           vehicles={vehicles}
           inventory={inventory}
+          initialClientId={initialClientId}
           onClose={() => setShowModal(false)}
           onSaved={handleSaved}
         />
