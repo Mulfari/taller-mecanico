@@ -87,18 +87,59 @@ async function findByPlate(plate: string): Promise<{ vehicle: Vehicle; orders: W
   return { vehicle, orders: (orders ?? []) as unknown as WorkOrder[] };
 }
 
+async function findByOrderId(orderId: string): Promise<{ vehicle: Vehicle; orders: WorkOrder[] } | null> {
+  const supabase = await createClient();
+
+  const { data: order } = await supabase
+    .from("work_orders")
+    .select(`
+      id, status, description, diagnosis,
+      estimated_cost, estimated_delivery,
+      received_at, delivered_at,
+      mechanic:profiles!work_orders_mechanic_id_fkey(full_name),
+      vehicle:vehicles(id, brand, model, year, plate, color)
+    `)
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (!order) return null;
+
+  const vehicle = Array.isArray(order.vehicle) ? order.vehicle[0] : order.vehicle;
+  if (!vehicle) return null;
+
+  // Fetch all orders for this vehicle so the realtime client has full context
+  const { data: allOrders } = await supabase
+    .from("work_orders")
+    .select(`
+      id, status, description, diagnosis,
+      estimated_cost, estimated_delivery,
+      received_at, delivered_at,
+      mechanic:profiles!work_orders_mechanic_id_fkey(full_name)
+    `)
+    .eq("vehicle_id", vehicle.id)
+    .order("received_at", { ascending: false })
+    .limit(5);
+
+  return { vehicle: vehicle as Vehicle, orders: (allOrders ?? []) as unknown as WorkOrder[] };
+}
+
 // ── Page ───────────────────────────────────────────────────────────────────
 
 export default async function SeguimientoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ patente?: string }>;
+  searchParams: Promise<{ patente?: string; orden?: string }>;
 }) {
-  const { patente } = await searchParams;
+  const { patente, orden } = await searchParams;
   const query = patente?.trim() ?? "";
 
-  const result = query ? await findByPlate(query) : null;
-  const notFound = query && !result;
+  // ?orden=<work_order_id> comes from /mis-ordenes/[id] "Seguimiento en vivo" button
+  const result = orden
+    ? await findByOrderId(orden)
+    : query
+    ? await findByPlate(query)
+    : null;
+  const notFound = (orden || query) && !result;
 
   return (
     <div className="min-h-screen bg-[#1a1a2e]">
@@ -150,7 +191,7 @@ export default async function SeguimientoPage({
         )}
 
         {/* Empty state (no search yet) */}
-        {!query && (
+        {!query && !orden && (
           <div className="text-center py-12 text-gray-600">
             <p className="text-sm">Ingresá una patente para comenzar la búsqueda.</p>
           </div>
