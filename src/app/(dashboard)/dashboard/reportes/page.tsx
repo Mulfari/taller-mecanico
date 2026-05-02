@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
+import Link from "next/link";
 import PeriodFilter from "./PeriodFilter";
 
 export const metadata = { title: "Reportes — TallerPro" };
@@ -235,7 +236,7 @@ async function getReportData(since: string | null) {
   const quotesRevenue = acceptedQuotes.reduce((sum, q) => sum + (q.total ?? 0), 0);
 
   // Top clients by revenue
-  type ClientStat = { name: string; email: string; orders: number; revenue: number };
+  type ClientStat = { id: string; name: string; email: string; orders: number; revenue: number };
   const clientMap: Record<string, ClientStat> = {};
   for (const o of orders ?? []) {
     if (!o.client_id) continue;
@@ -243,7 +244,7 @@ async function getReportData(since: string | null) {
     const name = clientProfile?.full_name ?? clientProfile?.email ?? "Cliente desconocido";
     const email = clientProfile?.email ?? "";
     if (!clientMap[o.client_id]) {
-      clientMap[o.client_id] = { name, email, orders: 0, revenue: 0 };
+      clientMap[o.client_id] = { id: o.client_id, name, email, orders: 0, revenue: 0 };
     }
     clientMap[o.client_id].orders += 1;
     if (o.status === "delivered") {
@@ -473,18 +474,19 @@ export default async function ReportesPage({
           ) : (
             <div className="space-y-3">
               {data.topClients.map((c, i) => (
-                <div
-                  key={c.email + i}
-                  className="flex items-center justify-between gap-4 py-2.5 border-b border-white/5 last:border-0"
+                <Link
+                  key={c.id}
+                  href={`/dashboard/clientes/${c.id}`}
+                  className="flex items-center justify-between gap-4 py-2.5 border-b border-white/5 last:border-0 hover:bg-white/[0.03] rounded-lg px-2 -mx-2 transition-colors group"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 group-hover:border-[#e94560]/30 flex items-center justify-center shrink-0 transition-colors">
                       <span className="text-gray-400 text-xs font-bold">
                         {c.name.slice(0, 2).toUpperCase()}
                       </span>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-gray-200 text-sm font-medium truncate">{c.name}</p>
+                      <p className="text-gray-200 text-sm font-medium truncate group-hover:text-white transition-colors">{c.name}</p>
                       <p className="text-gray-500 text-xs">
                         {c.orders} orden{c.orders !== 1 ? "es" : ""}
                       </p>
@@ -496,7 +498,7 @@ export default async function ReportesPage({
                       <p className="text-[#e94560] text-xs font-medium">Mejor cliente</p>
                     )}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
