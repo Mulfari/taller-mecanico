@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import PrintButton from "./PrintButton";
 import ConvertirOrdenButton from "./ConvertirOrdenButton";
+import QuoteStatusButtons from "./QuoteStatusButtons";
 
 export const metadata = { title: "Cotización — TallerPro" };
 
@@ -124,11 +125,17 @@ export default async function CotizacionDetailPage({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 print:hidden">
-          {quote.status === "accepted" && (
-            <ConvertirOrdenButton quoteId={quote.id} />
-          )}
-          <PrintButton />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 print:hidden">
+          <QuoteStatusButtons
+            quoteId={quote.id}
+            currentStatus={quote.status as import("@/types/database").QuoteStatus}
+          />
+          <div className="flex items-center gap-2">
+            {quote.status === "accepted" && (
+              <ConvertirOrdenButton quoteId={quote.id} />
+            )}
+            <PrintButton />
+          </div>
         </div>
       </div>
 
