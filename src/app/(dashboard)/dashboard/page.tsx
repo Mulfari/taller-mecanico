@@ -90,9 +90,18 @@ function IconAlert() {
   );
 }
 
+function IconCurrencyDollar() {
+  return (
+    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}
+        d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
 interface MetricCardProps {
   label: string;
-  value: number;
+  value: number | string;
   icon: React.ReactNode;
   accentClass: string;
   bgClass: string;
@@ -152,7 +161,22 @@ export default async function DashboardPage() {
     getPendingQuotes(6),
   ]);
 
-  const metricCards: MetricCardProps[] = [
+  const fmtRevenue = (n: number) => {
+    if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
+    return `$${n.toLocaleString("es-MX")}`;
+  };
+
+  const metricCards = [
+    {
+      label: "Ingresos del Mes",
+      value: fmtRevenue(metrics.monthlyRevenue),
+      icon: <IconCurrencyDollar />,
+      accentClass: "text-green-400",
+      bgClass: "bg-green-500/10",
+      note: "órdenes entregadas este mes",
+      href: "/dashboard/reportes",
+    },
     {
       label: "Órdenes Activas",
       value: metrics.activeOrders,
@@ -189,7 +213,7 @@ export default async function DashboardPage() {
       note: "artículos bajo mínimo",
       href: "/dashboard/inventario",
     },
-  ];
+  ] satisfies MetricCardProps[];
 
   return (
     <div className="space-y-8">
@@ -198,7 +222,7 @@ export default async function DashboardPage() {
         <p className="text-gray-500 text-sm mt-1 capitalize">{today}</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         {metricCards.map((m) => (
           <MetricCard key={m.label} {...m} />
         ))}

@@ -81,7 +81,10 @@ export async function getVehiclesByClient(clientId: string) {
 export async function getDashboardMetrics() {
   const supabase = await createClient();
 
-  const [activeOrders, pendingAppointments, vehiclesForSale, lowStockItems] = await Promise.all([
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+  const [activeOrders, pendingAppointments, vehiclesForSale, lowStockItems, monthlyDelivered] = await Promise.all([
     supabase
       .from("work_orders")
       .select("id", { count: "exact", head: true })
@@ -98,17 +101,28 @@ export async function getDashboardMetrics() {
     supabase
       .from("inventory")
       .select("id, quantity, min_stock"),
+    supabase
+      .from("work_orders")
+      .select("final_cost, estimated_cost")
+      .eq("status", "delivered")
+      .gte("delivered_at", monthStart),
   ]);
 
   const lowStockCount = (lowStockItems.data ?? []).filter(
     (item) => item.quantity <= item.min_stock
   ).length;
 
+  const monthlyRevenue = (monthlyDelivered.data ?? []).reduce(
+    (sum, o) => sum + (o.final_cost ?? o.estimated_cost ?? 0),
+    0
+  );
+
   return {
     activeOrders: activeOrders.count ?? 0,
     pendingAppointments: pendingAppointments.count ?? 0,
     vehiclesForSale: vehiclesForSale.count ?? 0,
     lowStockItems: lowStockCount,
+    monthlyRevenue,
   };
 }
 
