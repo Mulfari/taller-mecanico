@@ -381,6 +381,7 @@ export default function CuentaPage() {
             { href: "/historial", icon: <IconClipboard />, label: "Historial de servicios", desc: "Todos los trabajos realizados en tus vehículos" },
             { href: "/mis-citas", icon: <IconCalendar />, label: "Mis citas", desc: "Revisá y gestioná tus turnos agendados" },
             { href: "/mis-cotizaciones", icon: <IconClipboard />, label: "Mis cotizaciones", desc: "Consultá el estado de tus cotizaciones solicitadas" },
+            { href: "/mis-facturas", icon: <IconClipboard />, label: "Mis facturas", desc: "Revisá las facturas emitidas por tus servicios" },
             { href: "/citas", icon: <IconCalendar />, label: "Agendar una cita", desc: "Reservá un turno para tu próximo servicio" },
           ].map((item) => (
             <Link
