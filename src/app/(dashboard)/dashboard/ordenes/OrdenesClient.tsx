@@ -177,7 +177,7 @@ export default function OrdenesClient({
                 <th className="text-left py-3 px-4 font-medium">Mecánico</th>
                 <th className="text-left py-3 px-4 font-medium">Estado</th>
                 <th className="text-left py-3 px-4 font-medium">Recibido</th>
-                <th className="text-right py-3 px-4 font-medium">Costo Est.</th>
+                <th className="text-right py-3 px-4 font-medium">Costo</th>
                 <th className="py-3 px-4" />
               </tr>
             </thead>
@@ -234,10 +234,31 @@ export default function OrdenesClient({
                       })}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      {order.estimated_cost != null && order.estimated_cost > 0 ? (
-                        <span className="text-gray-300 font-medium">
-                          ${Number(order.estimated_cost).toLocaleString("es-MX")}
-                        </span>
+                      {order.status === "delivered" ? (
+                        order.final_cost != null && order.final_cost > 0 ? (
+                          <div>
+                            <span className="text-green-400 font-medium">
+                              ${Number(order.final_cost).toLocaleString("es-MX")}
+                            </span>
+                            <p className="text-gray-600 text-xs mt-0.5">final</p>
+                          </div>
+                        ) : order.estimated_cost != null && order.estimated_cost > 0 ? (
+                          <div>
+                            <span className="text-gray-300 font-medium">
+                              ${Number(order.estimated_cost).toLocaleString("es-MX")}
+                            </span>
+                            <p className="text-gray-600 text-xs mt-0.5">estimado</p>
+                          </div>
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )
+                      ) : order.estimated_cost != null && order.estimated_cost > 0 ? (
+                        <div>
+                          <span className="text-gray-300 font-medium">
+                            ${Number(order.estimated_cost).toLocaleString("es-MX")}
+                          </span>
+                          <p className="text-gray-600 text-xs mt-0.5">estimado</p>
+                        </div>
                       ) : (
                         <span className="text-gray-600">—</span>
                       )}
