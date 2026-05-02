@@ -2,8 +2,27 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { WorkOrderListItem, WorkOrderStatus } from "@/types/database";
 import { EmptyState } from "@/components/ui";
+import { generateInvoiceFromWorkOrder } from "./actions";
+
+function IconReceipt() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+    </svg>
+  );
+}
+
+function IconSpinner() {
+  return (
+    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+  );
+}
 
 function IconSearch() {
   return (
@@ -61,8 +80,20 @@ export default function OrdenesClient({
   orders: WorkOrderListItem[];
   initialFilter?: WorkOrderStatus | "all";
 }) {
+  const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<WorkOrderStatus | "all">(initialFilter);
   const [search, setSearch] = useState("");
+  const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
+
+  async function handleGenerateInvoice(orderId: string) {
+    setGeneratingInvoice(orderId);
+    try {
+      const invoiceId = await generateInvoiceFromWorkOrder(orderId);
+      router.push(`/dashboard/facturas/${invoiceId}`);
+    } finally {
+      setGeneratingInvoice(null);
+    }
+  }
 
   const q = search.trim().toLowerCase();
 
@@ -212,12 +243,25 @@ export default function OrdenesClient({
                       )}
                     </td>
                     <td className="py-3.5 px-4 text-right">
-                      <Link
-                        href={`/dashboard/ordenes/${order.id}`}
-                        className="text-gray-500 hover:text-[#e94560] text-xs transition-colors"
-                      >
-                        Ver →
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        {order.status === "delivered" && (
+                          <button
+                            onClick={() => handleGenerateInvoice(order.id)}
+                            disabled={generatingInvoice === order.id}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 disabled:opacity-50 text-xs transition-colors whitespace-nowrap"
+                            title="Generar factura"
+                          >
+                            {generatingInvoice === order.id ? <IconSpinner /> : <IconReceipt />}
+                            Factura
+                          </button>
+                        )}
+                        <Link
+                          href={`/dashboard/ordenes/${order.id}`}
+                          className="text-gray-500 hover:text-[#e94560] text-xs transition-colors"
+                        >
+                          Ver →
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))
