@@ -375,7 +375,7 @@ export default function CuentaPage() {
           {[
             { href: "/mis-vehiculos", icon: <IconCar />, label: "Mis vehículos", desc: "Consultá los vehículos que tenés registrados en el taller" },
             { href: "/mis-ordenes", icon: <IconClipboard />, label: "Mis órdenes de trabajo", desc: "Revisá el estado y detalle de todas tus órdenes" },
-            { href: "/mi-vehiculo", icon: <IconCar />, label: "Seguimiento en vivo", desc: "Seguí el progreso de las órdenes activas en tiempo real" },
+            { href: "/seguimiento", icon: <IconCar />, label: "Seguimiento en vivo", desc: "Seguí el progreso de las órdenes activas en tiempo real" },
             { href: "/historial", icon: <IconClipboard />, label: "Historial de servicios", desc: "Todos los trabajos realizados en tus vehículos" },
             { href: "/mis-citas", icon: <IconCalendar />, label: "Mis citas", desc: "Revisá y gestioná tus turnos agendados" },
             { href: "/mis-cotizaciones", icon: <IconClipboard />, label: "Mis cotizaciones", desc: "Consultá el estado de tus cotizaciones solicitadas" },
