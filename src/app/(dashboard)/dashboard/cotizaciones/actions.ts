@@ -17,6 +17,23 @@ export async function updateQuoteStatus(quoteId: string, status: QuoteStatus) {
   revalidatePath("/dashboard/cotizaciones");
 }
 
+type QuoteItemInput = Omit<QuoteItemRow, "id">;
+
+export async function updateQuoteItems(
+  quoteId: string,
+  items: QuoteItemInput[],
+  total: number
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("quotes")
+    .update({ items, total })
+    .eq("id", quoteId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/dashboard/cotizaciones/${quoteId}`);
+  revalidatePath("/dashboard/cotizaciones");
+}
+
 export async function createWorkOrderFromQuote(quoteId: string) {
   const supabase = await createClient();
 

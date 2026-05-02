@@ -4,6 +4,7 @@ import Link from "next/link";
 import PrintButton from "./PrintButton";
 import ConvertirOrdenButton from "./ConvertirOrdenButton";
 import QuoteStatusButtons from "./QuoteStatusButtons";
+import EditQuoteItemsButton from "./EditQuoteItemsButton";
 
 export const metadata = { title: "Cotización — TallerPro" };
 
@@ -130,7 +131,12 @@ export default async function CotizacionDetailPage({
             quoteId={quote.id}
             currentStatus={quote.status as import("@/types/database").QuoteStatus}
           />
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <EditQuoteItemsButton
+              quoteId={quote.id}
+              items={items}
+              disabled={quote.status === "accepted" || quote.status === "rejected"}
+            />
             {quote.status === "accepted" && (
               <ConvertirOrdenButton quoteId={quote.id} />
             )}
