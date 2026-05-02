@@ -7,6 +7,8 @@ import type { WorkOrderListItem, WorkOrderStatus } from "@/types/database";
 import { EmptyState } from "@/components/ui";
 import { generateInvoiceFromWorkOrder } from "./actions";
 
+// ── Icons ──────────────────────────────────────────────────────────────────
+
 function IconReceipt() {
   return (
     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -40,6 +42,24 @@ function IconX() {
   );
 }
 
+function IconList() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+    </svg>
+  );
+}
+
+function IconKanban() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+    </svg>
+  );
+}
+
+// ── Constants ──────────────────────────────────────────────────────────────
+
 const STATUS_LABELS: Record<WorkOrderStatus, string> = {
   received: "Recibido",
   diagnosing: "Diagnóstico",
@@ -56,6 +76,24 @@ const STATUS_COLORS: Record<WorkOrderStatus, string> = {
   delivered: "bg-gray-600/20 text-gray-500",
 };
 
+const STATUS_BORDER: Record<WorkOrderStatus, string> = {
+  received: "border-gray-500/30",
+  diagnosing: "border-yellow-500/30",
+  repairing: "border-blue-500/30",
+  ready: "border-green-500/30",
+  delivered: "border-gray-600/30",
+};
+
+const STATUS_DOT: Record<WorkOrderStatus, string> = {
+  received: "bg-gray-400",
+  diagnosing: "bg-yellow-400",
+  repairing: "bg-blue-400",
+  ready: "bg-green-400",
+  delivered: "bg-gray-600",
+};
+
+const KANBAN_COLUMNS: WorkOrderStatus[] = ["received", "diagnosing", "repairing", "ready", "delivered"];
+
 const FILTER_TABS: { key: WorkOrderStatus | "all"; label: string }[] = [
   { key: "all", label: "Todas" },
   { key: "received", label: "Recibido" },
@@ -65,6 +103,8 @@ const FILTER_TABS: { key: WorkOrderStatus | "all"; label: string }[] = [
   { key: "delivered", label: "Entregado" },
 ];
 
+// ── Sub-components ─────────────────────────────────────────────────────────
+
 function StatusBadge({ status }: { status: WorkOrderStatus }) {
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[status]}`}>
@@ -72,6 +112,161 @@ function StatusBadge({ status }: { status: WorkOrderStatus }) {
     </span>
   );
 }
+
+function CostCell({ order }: { order: WorkOrderListItem }) {
+  if (order.status === "delivered") {
+    if (order.final_cost != null && order.final_cost > 0) {
+      return (
+        <div>
+          <span className="text-green-400 font-medium">${Number(order.final_cost).toLocaleString("es-MX")}</span>
+          <p className="text-gray-600 text-xs mt-0.5">final</p>
+        </div>
+      );
+    }
+  }
+  if (order.estimated_cost != null && order.estimated_cost > 0) {
+    return (
+      <div>
+        <span className="text-gray-300 font-medium">${Number(order.estimated_cost).toLocaleString("es-MX")}</span>
+        <p className="text-gray-600 text-xs mt-0.5">estimado</p>
+      </div>
+    );
+  }
+  return <span className="text-gray-600">—</span>;
+}
+
+// ── Kanban card ────────────────────────────────────────────────────────────
+
+function KanbanCard({
+  order,
+  onGenerateInvoice,
+  generatingInvoice,
+}: {
+  order: WorkOrderListItem;
+  onGenerateInvoice: (id: string) => void;
+  generatingInvoice: string | null;
+}) {
+  const cost =
+    order.status === "delivered" && order.final_cost != null && order.final_cost > 0
+      ? { value: `$${Number(order.final_cost).toLocaleString("es-MX")}`, label: "final", accent: true }
+      : order.estimated_cost != null && order.estimated_cost > 0
+      ? { value: `$${Number(order.estimated_cost).toLocaleString("es-MX")}`, label: "est.", accent: false }
+      : null;
+
+  return (
+    <div className={`bg-[#1a1a2e] border ${STATUS_BORDER[order.status]} rounded-xl p-3.5 space-y-2.5 hover:border-white/20 transition-colors group`}>
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <Link href={`/dashboard/ordenes/${order.id}`} className="block min-w-0">
+          <p className="text-[#e94560] font-mono text-xs group-hover:underline">
+            OT-{order.id.slice(0, 6).toUpperCase()}
+          </p>
+          <p className="text-white font-semibold text-sm mt-0.5 truncate">
+            {order.client?.full_name ?? "—"}
+          </p>
+        </Link>
+        {cost && (
+          <div className="shrink-0 text-right">
+            <p className={`text-xs font-bold ${cost.accent ? "text-green-400" : "text-gray-300"}`}>
+              {cost.value}
+            </p>
+            <p className="text-gray-600 text-xs">{cost.label}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Vehicle */}
+      {order.vehicle && (
+        <p className="text-gray-400 text-xs truncate">
+          {order.vehicle.brand} {order.vehicle.model} {order.vehicle.year}
+          {order.vehicle.plate ? ` · ${order.vehicle.plate}` : ""}
+        </p>
+      )}
+
+      {/* Description */}
+      {order.description && (
+        <p className="text-gray-500 text-xs line-clamp-2 leading-relaxed">{order.description}</p>
+      )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-1 border-t border-white/5">
+        <p className={`text-xs ${order.mechanic ? "text-gray-400" : "text-gray-600"}`}>
+          {order.mechanic?.full_name ?? "Sin mecánico"}
+        </p>
+        <div className="flex items-center gap-1.5">
+          {order.status === "delivered" && (
+            <button
+              onClick={() => onGenerateInvoice(order.id)}
+              disabled={generatingInvoice === order.id}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 disabled:opacity-50 text-xs transition-colors"
+              title="Generar factura"
+            >
+              {generatingInvoice === order.id ? <IconSpinner /> : <IconReceipt />}
+            </button>
+          )}
+          <Link
+            href={`/dashboard/ordenes/${order.id}`}
+            className="text-gray-600 hover:text-[#e94560] text-xs transition-colors"
+          >
+            Ver →
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Kanban view ────────────────────────────────────────────────────────────
+
+function KanbanView({
+  orders,
+  onGenerateInvoice,
+  generatingInvoice,
+}: {
+  orders: WorkOrderListItem[];
+  onGenerateInvoice: (id: string) => void;
+  generatingInvoice: string | null;
+}) {
+  return (
+    <div className="flex gap-4 overflow-x-auto pb-4 min-h-[400px]" style={{ scrollbarWidth: "thin" }}>
+      {KANBAN_COLUMNS.map((status) => {
+        const colOrders = orders.filter((o) => o.status === status);
+        return (
+          <div key={status} className="flex-none w-72">
+            {/* Column header */}
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[status]}`} />
+              <span className="text-white font-semibold text-sm">{STATUS_LABELS[status]}</span>
+              <span className="ml-auto text-xs bg-white/10 text-gray-400 px-2 py-0.5 rounded-full font-medium">
+                {colOrders.length}
+              </span>
+            </div>
+
+            {/* Cards */}
+            <div className="space-y-3">
+              {colOrders.length === 0 ? (
+                <div className="bg-[#16213e] border border-white/5 rounded-xl py-8 text-center">
+                  <p className="text-gray-600 text-xs">Sin órdenes</p>
+                </div>
+              ) : (
+                colOrders.map((order) => (
+                  <KanbanCard
+                    key={order.id}
+                    order={order}
+                    onGenerateInvoice={onGenerateInvoice}
+                    generatingInvoice={generatingInvoice}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
 
 export default function OrdenesClient({
   orders,
@@ -83,6 +278,7 @@ export default function OrdenesClient({
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<WorkOrderStatus | "all">(initialFilter);
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<"list" | "kanban">("list");
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
 
   async function handleGenerateInvoice(orderId: string) {
@@ -98,7 +294,7 @@ export default function OrdenesClient({
   const q = search.trim().toLowerCase();
 
   const filtered = orders.filter((o) => {
-    const matchesStatus = activeFilter === "all" || o.status === activeFilter;
+    const matchesStatus = view === "kanban" || activeFilter === "all" || o.status === activeFilter;
     if (!matchesStatus) return false;
     if (!q) return true;
     return (
@@ -116,9 +312,9 @@ export default function OrdenesClient({
 
   return (
     <>
-      {/* Search + filter row */}
+      {/* Toolbar */}
       <div className="flex flex-col sm:flex-row gap-3">
-        {/* Search input */}
+        {/* Search */}
         <div className="relative flex-1 max-w-sm">
           <span className="absolute inset-y-0 left-3 flex items-center text-gray-500 pointer-events-none">
             <IconSearch />
@@ -141,9 +337,9 @@ export default function OrdenesClient({
           )}
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex flex-wrap gap-2">
-          {FILTER_TABS.map((tab) => {
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Filter tabs — only in list view */}
+          {view === "list" && FILTER_TABS.map((tab) => {
             const count = countFor(tab.key);
             const isActive = activeFilter === tab.key;
             return (
@@ -163,134 +359,144 @@ export default function OrdenesClient({
               </button>
             );
           })}
+
+          {/* View toggle */}
+          <div className="flex items-center bg-[#16213e] border border-white/10 rounded-lg p-0.5 ml-auto sm:ml-0">
+            <button
+              onClick={() => setView("list")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                view === "list" ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
+              }`}
+              aria-label="Vista lista"
+              title="Vista lista"
+            >
+              <IconList />
+              <span className="hidden sm:inline">Lista</span>
+            </button>
+            <button
+              onClick={() => setView("kanban")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                view === "kanban" ? "bg-white/10 text-white" : "text-gray-500 hover:text-gray-300"
+              }`}
+              aria-label="Vista tablero"
+              title="Vista tablero"
+            >
+              <IconKanban />
+              <span className="hidden sm:inline">Tablero</span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[700px]">
-            <thead>
-              <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/5">
-                <th className="text-left py-3 px-4 font-medium">OT / Cliente</th>
-                <th className="text-left py-3 px-4 font-medium">Vehículo</th>
-                <th className="text-left py-3 px-4 font-medium">Mecánico</th>
-                <th className="text-left py-3 px-4 font-medium">Estado</th>
-                <th className="text-left py-3 px-4 font-medium">Recibido</th>
-                <th className="text-right py-3 px-4 font-medium">Costo</th>
-                <th className="py-3 px-4" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7}>
-                    <EmptyState
-                      icon={q ? "🔍" : "🔧"}
-                      title={
-                        q
-                          ? `Sin resultados para "${search}"`
-                          : activeFilter === "all"
-                          ? "Sin órdenes de trabajo"
-                          : `Sin órdenes en estado "${FILTER_TABS.find(t => t.key === activeFilter)?.label}"`
-                      }
-                      description={
-                        q
-                          ? "Probá con otro nombre, patente o descripción."
-                          : activeFilter === "all"
-                          ? "Crea la primera orden de trabajo para comenzar."
-                          : "No hay órdenes con este estado en este momento."
-                      }
-                    />
-                  </td>
+      {/* Kanban view */}
+      {view === "kanban" && (
+        <KanbanView
+          orders={filtered}
+          onGenerateInvoice={handleGenerateInvoice}
+          generatingInvoice={generatingInvoice}
+        />
+      )}
+
+      {/* List view */}
+      {view === "list" && (
+        <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[700px]">
+              <thead>
+                <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/5">
+                  <th className="text-left py-3 px-4 font-medium">OT / Cliente</th>
+                  <th className="text-left py-3 px-4 font-medium">Vehículo</th>
+                  <th className="text-left py-3 px-4 font-medium">Mecánico</th>
+                  <th className="text-left py-3 px-4 font-medium">Estado</th>
+                  <th className="text-left py-3 px-4 font-medium">Recibido</th>
+                  <th className="text-right py-3 px-4 font-medium">Costo</th>
+                  <th className="py-3 px-4" />
                 </tr>
-              ) : (
-                filtered.map((order) => (
-                  <tr key={order.id} className="hover:bg-white/3 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <p className="text-[#e94560] font-mono text-xs">{order.id.slice(0, 8).toUpperCase()}</p>
-                      <p className="text-white font-medium mt-0.5">{order.client?.full_name ?? "—"}</p>
-                      <p className="text-gray-600 text-xs mt-0.5 truncate max-w-[180px]">{order.description}</p>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <p className="text-gray-300">
-                        {order.vehicle ? `${order.vehicle.brand} ${order.vehicle.model} ${order.vehicle.year}` : "—"}
-                      </p>
-                      <p className="text-gray-500 text-xs mt-0.5">{order.vehicle?.plate ?? "—"}</p>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <p className={order.mechanic ? "text-gray-300" : "text-gray-600"}>
-                        {order.mechanic?.full_name ?? "—"}
-                      </p>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <StatusBadge status={order.status} />
-                    </td>
-                    <td className="py-3.5 px-4 text-gray-400 text-xs whitespace-nowrap">
-                      {new Date(order.received_at).toLocaleDateString("es-MX", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                      })}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      {order.status === "delivered" ? (
-                        order.final_cost != null && order.final_cost > 0 ? (
-                          <div>
-                            <span className="text-green-400 font-medium">
-                              ${Number(order.final_cost).toLocaleString("es-MX")}
-                            </span>
-                            <p className="text-gray-600 text-xs mt-0.5">final</p>
-                          </div>
-                        ) : order.estimated_cost != null && order.estimated_cost > 0 ? (
-                          <div>
-                            <span className="text-gray-300 font-medium">
-                              ${Number(order.estimated_cost).toLocaleString("es-MX")}
-                            </span>
-                            <p className="text-gray-600 text-xs mt-0.5">estimado</p>
-                          </div>
-                        ) : (
-                          <span className="text-gray-600">—</span>
-                        )
-                      ) : order.estimated_cost != null && order.estimated_cost > 0 ? (
-                        <div>
-                          <span className="text-gray-300 font-medium">
-                            ${Number(order.estimated_cost).toLocaleString("es-MX")}
-                          </span>
-                          <p className="text-gray-600 text-xs mt-0.5">estimado</p>
-                        </div>
-                      ) : (
-                        <span className="text-gray-600">—</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {order.status === "delivered" && (
-                          <button
-                            onClick={() => handleGenerateInvoice(order.id)}
-                            disabled={generatingInvoice === order.id}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 disabled:opacity-50 text-xs transition-colors whitespace-nowrap"
-                            title="Generar factura"
-                          >
-                            {generatingInvoice === order.id ? <IconSpinner /> : <IconReceipt />}
-                            Factura
-                          </button>
-                        )}
-                        <Link
-                          href={`/dashboard/ordenes/${order.id}`}
-                          className="text-gray-500 hover:text-[#e94560] text-xs transition-colors"
-                        >
-                          Ver →
-                        </Link>
-                      </div>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>
+                      <EmptyState
+                        icon={q ? "🔍" : "🔧"}
+                        title={
+                          q
+                            ? `Sin resultados para "${search}"`
+                            : activeFilter === "all"
+                            ? "Sin órdenes de trabajo"
+                            : `Sin órdenes en estado "${FILTER_TABS.find(t => t.key === activeFilter)?.label}"`
+                        }
+                        description={
+                          q
+                            ? "Probá con otro nombre, patente o descripción."
+                            : activeFilter === "all"
+                            ? "Crea la primera orden de trabajo para comenzar."
+                            : "No hay órdenes con este estado en este momento."
+                        }
+                      />
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filtered.map((order) => (
+                    <tr key={order.id} className="hover:bg-white/3 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <p className="text-[#e94560] font-mono text-xs">{order.id.slice(0, 8).toUpperCase()}</p>
+                        <p className="text-white font-medium mt-0.5">{order.client?.full_name ?? "—"}</p>
+                        <p className="text-gray-600 text-xs mt-0.5 truncate max-w-[180px]">{order.description}</p>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <p className="text-gray-300">
+                          {order.vehicle ? `${order.vehicle.brand} ${order.vehicle.model} ${order.vehicle.year}` : "—"}
+                        </p>
+                        <p className="text-gray-500 text-xs mt-0.5">{order.vehicle?.plate ?? "—"}</p>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <p className={order.mechanic ? "text-gray-300" : "text-gray-600"}>
+                          {order.mechanic?.full_name ?? "—"}
+                        </p>
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <StatusBadge status={order.status} />
+                      </td>
+                      <td className="py-3.5 px-4 text-gray-400 text-xs whitespace-nowrap">
+                        {new Date(order.received_at).toLocaleDateString("es-MX", {
+                          day: "2-digit",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <CostCell order={order} />
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {order.status === "delivered" && (
+                            <button
+                              onClick={() => handleGenerateInvoice(order.id)}
+                              disabled={generatingInvoice === order.id}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded bg-green-500/10 text-green-400 hover:bg-green-500/20 disabled:opacity-50 text-xs transition-colors whitespace-nowrap"
+                              title="Generar factura"
+                            >
+                              {generatingInvoice === order.id ? <IconSpinner /> : <IconReceipt />}
+                              Factura
+                            </button>
+                          )}
+                          <Link
+                            href={`/dashboard/ordenes/${order.id}`}
+                            className="text-gray-500 hover:text-[#e94560] text-xs transition-colors"
+                          >
+                            Ver →
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
