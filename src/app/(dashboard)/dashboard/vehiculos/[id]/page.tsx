@@ -198,30 +198,40 @@ export default async function VehiculoDetailPage({ params }: { params: Promise<{
                   const mechanicName = Array.isArray(mechanic) ? mechanic[0]?.full_name : null;
                   const status = wo.status as WorkOrderStatus;
                   return (
-                    <tr key={wo.id} className="hover:bg-white/[0.03] transition-colors">
+                    <tr key={wo.id} className="hover:bg-white/[0.03] transition-colors group">
                       <td className="py-3.5 px-5">
-                        <Link href={`/dashboard/ordenes/${wo.id}`} className="text-[#e94560] font-mono text-xs hover:underline">
-                          #{wo.id.slice(0, 8).toUpperCase()}
+                        <Link href={`/dashboard/ordenes/${wo.id}`} className="block">
+                          <span className="text-[#e94560] font-mono text-xs group-hover:underline">
+                            OT-{wo.id.slice(0, 6).toUpperCase()}
+                          </span>
+                          <p className="text-gray-300 text-xs mt-0.5 max-w-[220px] truncate">{wo.description}</p>
                         </Link>
-                        <p className="text-gray-300 text-xs mt-0.5 max-w-[220px] truncate">{wo.description}</p>
-                      </td>
-                      <td className="py-3.5 px-4 text-gray-400 text-xs">
-                        {mechanicName ?? <span className="text-gray-600">—</span>}
                       </td>
                       <td className="py-3.5 px-4">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${WO_STATUS_COLORS[status]}`}>
-                          {WO_STATUS_LABELS[status]}
-                        </span>
+                        <Link href={`/dashboard/ordenes/${wo.id}`} className="block text-gray-400 text-xs">
+                          {mechanicName ?? <span className="text-gray-600">—</span>}
+                        </Link>
                       </td>
-                      <td className="py-3.5 px-4 text-gray-400 text-xs whitespace-nowrap">
-                        {formatDate(wo.received_at)}
+                      <td className="py-3.5 px-4">
+                        <Link href={`/dashboard/ordenes/${wo.id}`} className="block">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${WO_STATUS_COLORS[status]}`}>
+                            {WO_STATUS_LABELS[status]}
+                          </span>
+                        </Link>
                       </td>
-                      <td className="py-3.5 px-5 text-right text-gray-300 text-xs">
-                        {(wo.final_cost ?? 0) > 0
-                          ? `$${wo.final_cost!.toLocaleString("es-MX")}`
-                          : (wo.estimated_cost ?? 0) > 0
-                            ? <span className="text-gray-500">Est. ${wo.estimated_cost!.toLocaleString("es-MX")}</span>
-                            : <span className="text-gray-600">—</span>}
+                      <td className="py-3.5 px-4">
+                        <Link href={`/dashboard/ordenes/${wo.id}`} className="block text-gray-400 text-xs whitespace-nowrap">
+                          {formatDate(wo.received_at)}
+                        </Link>
+                      </td>
+                      <td className="py-3.5 px-5 text-right">
+                        <Link href={`/dashboard/ordenes/${wo.id}`} className="block text-gray-300 text-xs">
+                          {(wo.final_cost ?? 0) > 0
+                            ? `$${wo.final_cost!.toLocaleString("es-MX")}`
+                            : (wo.estimated_cost ?? 0) > 0
+                              ? <span className="text-gray-500">Est. ${wo.estimated_cost!.toLocaleString("es-MX")}</span>
+                              : <span className="text-gray-600">—</span>}
+                        </Link>
                       </td>
                     </tr>
                   );
