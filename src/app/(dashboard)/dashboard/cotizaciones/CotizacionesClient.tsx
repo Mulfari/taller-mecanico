@@ -58,6 +58,12 @@ function IconFileText() {
 function IconWrench() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" /></svg>;
 }
+function IconCheckCircle() {
+  return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+}
+function IconXCircle() {
+  return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+}
 
 // ── New Quote Modal ────────────────────────────────────────────────────────
 
@@ -339,6 +345,7 @@ export default function CotizacionesClient({
   const [showModal, setShowModal] = useState(false);
   const [sending, setSending] = useState<string | null>(null);
   const [converting, setConverting] = useState<string | null>(null);
+  const [responding, setResponding] = useState<string | null>(null);
   const [, startTransition] = useTransition();
 
   const filtered = useMemo(() => {
@@ -365,6 +372,20 @@ export default function CotizacionesClient({
       setQuotes((prev) => prev.map((q) => (q.id === id ? { ...q, status: "sent" } : q)));
     } finally {
       setSending(null);
+    }
+  }
+
+  async function handleRespond(id: string, status: "accepted" | "rejected") {
+    setResponding(id);
+    try {
+      await fetch(`/api/quotes/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      setQuotes((prev) => prev.map((q) => (q.id === id ? { ...q, status } : q)));
+    } finally {
+      setResponding(null);
     }
   }
 
@@ -503,6 +524,28 @@ export default function CotizacionesClient({
                             {sending === quote.id ? <IconSpinner /> : <IconSend />}
                             Enviar
                           </button>
+                        )}
+                        {quote.status === "sent" && (
+                          <>
+                            <button
+                              onClick={() => handleRespond(quote.id, "accepted")}
+                              disabled={responding === quote.id}
+                              className="inline-flex items-center gap-1 text-xs text-green-400 hover:text-green-300 disabled:opacity-50 transition-colors"
+                              title="Marcar como aceptada"
+                            >
+                              {responding === quote.id ? <IconSpinner /> : <IconCheckCircle />}
+                              Aceptar
+                            </button>
+                            <button
+                              onClick={() => handleRespond(quote.id, "rejected")}
+                              disabled={responding === quote.id}
+                              className="inline-flex items-center gap-1 text-xs text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
+                              title="Marcar como rechazada"
+                            >
+                              <IconXCircle />
+                              Rechazar
+                            </button>
+                          </>
                         )}
                         {quote.status === "accepted" && (
                           <button
