@@ -235,29 +235,40 @@ export default function ClientesClient({ clients }: { clients: ClientWithStats[]
                 </tr>
               ) : (
                 filtered.map((client) => (
-                  <tr key={client.id} className="hover:bg-white/[0.03] transition-colors">
+                  <tr key={client.id} className="hover:bg-white/[0.03] transition-colors group">
                     <td className="py-3.5 px-4">
-                      <p className="text-white font-medium">{client.full_name ?? "—"}</p>
-                      <p className="text-gray-500 text-xs mt-0.5">{client.email}</p>
+                      <Link href={`/dashboard/clientes/${client.id}`} className="block">
+                        <p className="text-white font-medium group-hover:text-[#e94560] transition-colors">{client.full_name ?? "—"}</p>
+                        <p className="text-gray-500 text-xs mt-0.5">{client.email}</p>
+                      </Link>
                     </td>
-                    <td className="py-3.5 px-4 text-gray-300">
-                      {client.phone || <span className="text-gray-600">—</span>}
+                    <td className="py-3.5 px-4">
+                      <Link href={`/dashboard/clientes/${client.id}`} className="block text-gray-300">
+                        {client.phone || <span className="text-gray-600">—</span>}
+                      </Link>
                     </td>
                     <td className="py-3.5 px-4 text-center">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/10 text-gray-300 text-xs font-medium">
-                        {client.vehicle_count}
-                      </span>
+                      <Link href={`/dashboard/clientes/${client.id}`} className="block">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/10 text-gray-300 text-xs font-medium">
+                          {client.vehicle_count}
+                        </span>
+                      </Link>
                     </td>
-                    <td className="py-3.5 px-4 text-gray-400 text-xs whitespace-nowrap">
-                      {client.last_visit ? formatDate(client.last_visit) : <span className="text-gray-600">Sin visitas</span>}
+                    <td className="py-3.5 px-4">
+                      <Link href={`/dashboard/clientes/${client.id}`} className="block text-gray-400 text-xs whitespace-nowrap">
+                        {client.last_visit ? formatDate(client.last_visit) : <span className="text-gray-600">Sin visitas</span>}
+                      </Link>
                     </td>
-                    <td className="py-3.5 px-4 text-gray-400 text-xs whitespace-nowrap">
-                      {formatDate(client.created_at)}
+                    <td className="py-3.5 px-4">
+                      <Link href={`/dashboard/clientes/${client.id}`} className="block text-gray-400 text-xs whitespace-nowrap">
+                        {formatDate(client.created_at)}
+                      </Link>
                     </td>
                     <td className="py-3.5 px-4 text-right">
                       <Link
                         href={`/dashboard/clientes/${client.id}`}
-                        className="inline-flex items-center gap-1 text-gray-500 hover:text-[#e94560] text-xs transition-colors"
+                        className="inline-flex items-center gap-1 text-gray-500 group-hover:text-[#e94560] text-xs transition-colors"
+                        aria-label={`Ver perfil de ${client.full_name ?? client.email}`}
                       >
                         Ver <IconChevronRight />
                       </Link>
