@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationBell from "@/components/dashboard/NotificationBell";
+import { createClient } from "@/lib/supabase/client";
 
 // ── Nav icons ──────────────────────────────────────────────────────────────
 
@@ -134,7 +135,39 @@ const navItems = [
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [displayName, setDisplayName] = useState<string>("Admin");
+  const [userRole, setUserRole] = useState<string>("Administrador");
+  const [initials, setInitials] = useState<string>("A");
   const pathname = usePathname();
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const name =
+        profile?.full_name ||
+        user.user_metadata?.full_name ||
+        user.email?.split("@")[0] ||
+        "Admin";
+
+      const roleMap: Record<string, string> = {
+        admin: "Administrador",
+        mechanic: "Mecánico",
+        client: "Cliente",
+      };
+      const role = roleMap[profile?.role ?? ""] ?? "Administrador";
+
+      setDisplayName(name);
+      setUserRole(role);
+      setInitials(name.slice(0, 2).toUpperCase());
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#1a1a2e] flex">
@@ -238,11 +271,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           {/* User menu */}
           <div className="flex items-center gap-3">
             <div className="hidden sm:block text-right">
-              <p className="text-white text-sm font-medium leading-none">Admin</p>
-              <p className="text-gray-500 text-xs mt-0.5">Administrador</p>
+              <p className="text-white text-sm font-medium leading-none">{displayName}</p>
+              <p className="text-gray-500 text-xs mt-0.5">{userRole}</p>
             </div>
             <div className="w-9 h-9 rounded-full bg-[#e94560]/20 border border-[#e94560]/40 flex items-center justify-center text-[#e94560] font-bold text-sm">
-              A
+              {initials}
             </div>
           </div>
         </header>
