@@ -95,11 +95,12 @@ interface MetricCardProps {
   accentClass: string;
   bgClass: string;
   note?: string;
+  href?: string;
 }
 
-function MetricCard({ label, value, icon, accentClass, bgClass, note }: MetricCardProps) {
-  return (
-    <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 flex items-start gap-4">
+function MetricCard({ label, value, icon, accentClass, bgClass, note, href }: MetricCardProps) {
+  const inner = (
+    <>
       <div className={`shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${bgClass} ${accentClass}`}>
         {icon}
       </div>
@@ -108,6 +109,20 @@ function MetricCard({ label, value, icon, accentClass, bgClass, note }: MetricCa
         <p className={`text-3xl font-bold leading-none ${accentClass}`}>{value}</p>
         {note && <p className="text-gray-500 text-xs mt-1.5">{note}</p>}
       </div>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className="bg-[#16213e] border border-white/10 rounded-xl p-5 flex items-start gap-4 hover:border-white/20 transition-colors group">
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 flex items-start gap-4">
+      {inner}
     </div>
   );
 }
@@ -142,6 +157,7 @@ export default async function DashboardPage() {
       accentClass: "text-[#e94560]",
       bgClass: "bg-[#e94560]/10",
       note: "en proceso hoy",
+      href: "/dashboard/ordenes",
     },
     {
       label: "Citas Pendientes",
@@ -150,6 +166,7 @@ export default async function DashboardPage() {
       accentClass: "text-blue-400",
       bgClass: "bg-blue-500/10",
       note: "para hoy y mañana",
+      href: "/dashboard/citas",
     },
     {
       label: "Vehículos en Venta",
@@ -158,6 +175,7 @@ export default async function DashboardPage() {
       accentClass: "text-yellow-400",
       bgClass: "bg-yellow-500/10",
       note: "disponibles",
+      href: "/dashboard/vehiculos-venta",
     },
     {
       label: "Stock Bajo",
@@ -166,6 +184,7 @@ export default async function DashboardPage() {
       accentClass: "text-orange-400",
       bgClass: "bg-orange-500/10",
       note: "artículos bajo mínimo",
+      href: "/dashboard/inventario",
     },
   ];
 
