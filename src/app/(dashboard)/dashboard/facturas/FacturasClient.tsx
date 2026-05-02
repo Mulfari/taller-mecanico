@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import type { InvoiceStatus } from "@/types/database";
 import { updateInvoiceStatus } from "./actions";
+import NuevaFacturaModal from "./NuevaFacturaModal";
 
 interface InvoiceRow {
   id: string;
@@ -18,6 +19,18 @@ interface InvoiceRow {
   quote_id: string | null;
   client: { full_name: string | null; email: string | null } | null;
   work_order: { id: string; description: string | null } | null;
+}
+
+interface ClientOption {
+  id: string;
+  full_name: string | null;
+  email: string;
+}
+
+interface WorkOrderOption {
+  id: string;
+  description: string | null;
+  client_id: string | null;
 }
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
@@ -54,9 +67,13 @@ const fmtDate = (d: string) =>
 export default function FacturasClient({
   facturas: initialFacturas,
   initialClientId,
+  clients,
+  workOrders,
 }: {
   facturas: InvoiceRow[];
   initialClientId?: string;
+  clients: ClientOption[];
+  workOrders: WorkOrderOption[];
 }) {
   const [activeFilter, setActiveFilter] = useState<InvoiceStatus | "all">("all");
   const [facturas, setFacturas] = useState(initialFacturas);
@@ -64,6 +81,7 @@ export default function FacturasClient({
   const [, startTransition] = useTransition();
   const [search, setSearch] = useState("");
   const [clientFilter, setClientFilter] = useState<string | undefined>(initialClientId);
+  const [showNuevaFactura, setShowNuevaFactura] = useState(false);
 
   async function handleStatusChange(id: string, status: InvoiceStatus) {
     setActionPending(id);
@@ -118,6 +136,19 @@ export default function FacturasClient({
 
   return (
     <>
+      {/* Nueva factura button */}
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowNuevaFactura(true)}
+          className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Nueva factura
+        </button>
+      </div>
+
       {/* Client filter banner */}
       {clientFilter && filteredClientName && (
         <div className="flex items-center justify-between gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3">
@@ -353,6 +384,14 @@ export default function FacturasClient({
           </table>
         </div>
       </div>
+
+      {showNuevaFactura && (
+        <NuevaFacturaModal
+          clients={clients}
+          workOrders={workOrders}
+          onClose={() => setShowNuevaFactura(false)}
+        />
+      )}
     </>
   );
 }

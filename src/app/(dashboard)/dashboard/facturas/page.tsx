@@ -11,15 +11,28 @@ export default async function FacturasPage({
   const { client: clientParam } = await searchParams;
   const supabase = await createClient();
 
-  const { data: facturas } = await supabase
-    .from("invoices")
-    .select(
-      `id, client_id, subtotal, tax, total, status, paid_at, created_at,
-       work_order_id, quote_id,
-       client:profiles!invoices_client_id_fkey(full_name, email),
-       work_order:work_orders!invoices_work_order_id_fkey(id, description)`
-    )
-    .order("created_at", { ascending: false });
+  const [{ data: facturas }, { data: clientRows }, { data: orderRows }] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select(
+        `id, client_id, subtotal, tax, total, status, paid_at, created_at,
+         work_order_id, quote_id,
+         client:profiles!invoices_client_id_fkey(full_name, email),
+         work_order:work_orders!invoices_work_order_id_fkey(id, description)`
+      )
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .eq("role", "client")
+      .order("full_name"),
+    supabase
+      .from("work_orders")
+      .select("id, description, client_id")
+      .not("status", "eq", "delivered")
+      .order("created_at", { ascending: false })
+      .limit(100),
+  ]);
 
   // Supabase returns joined relations as arrays; normalize to single objects
   const normalized = (facturas ?? []).map((f) => ({
@@ -27,6 +40,9 @@ export default async function FacturasPage({
     client: Array.isArray(f.client) ? (f.client[0] ?? null) : f.client,
     work_order: Array.isArray(f.work_order) ? (f.work_order[0] ?? null) : f.work_order,
   }));
+
+  const clients = (clientRows ?? []) as { id: string; full_name: string | null; email: string }[];
+  const workOrders = (orderRows ?? []) as { id: string; description: string | null; client_id: string | null }[];
 
   return (
     <div className="space-y-6">
@@ -39,7 +55,12 @@ export default async function FacturasPage({
         </div>
       </div>
 
-      <FacturasClient facturas={normalized} initialClientId={clientParam} />
+      <FacturasClient
+        facturas={normalized}
+        initialClientId={clientParam}
+        clients={clients}
+        workOrders={workOrders}
+      />
     </div>
   );
 }
