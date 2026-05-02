@@ -140,7 +140,12 @@ function OrderCard({ order }: { order: WorkOrder }) {
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-white font-semibold text-sm font-mono">{shortId}</span>
+              <Link
+                href={`/mis-ordenes/${order.id}`}
+                className="text-white font-semibold text-sm font-mono hover:text-[#e94560] transition-colors"
+              >
+                {shortId}
+              </Link>
               <span
                 className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border ${STATUS_BADGE[order.status]}`}
               >
@@ -154,15 +159,24 @@ function OrderCard({ order }: { order: WorkOrder }) {
           </div>
         </div>
 
-        {isActive && (
+        <div className="shrink-0 flex items-center gap-2">
+          {isActive && (
+            <Link
+              href={`/seguimiento?orden=${order.id}`}
+              className="inline-flex items-center gap-1.5 text-xs text-[#e94560] border border-[#e94560]/30 hover:border-[#e94560]/60 hover:bg-[#e94560]/5 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Seguir en vivo
+              <IconChevronRight />
+            </Link>
+          )}
           <Link
-            href={`/seguimiento?orden=${order.id}`}
-            className="shrink-0 inline-flex items-center gap-1.5 text-xs text-[#e94560] border border-[#e94560]/30 hover:border-[#e94560]/60 hover:bg-[#e94560]/5 px-3 py-1.5 rounded-lg transition-colors"
+            href={`/mis-ordenes/${order.id}`}
+            className="inline-flex items-center gap-1 text-xs text-gray-500 hover:text-white border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg transition-colors"
           >
-            Seguir en vivo
+            Ver detalle
             <IconChevronRight />
           </Link>
-        )}
+        </div>
       </div>
 
       {/* Details grid */}
