@@ -174,6 +174,14 @@ function InvoiceCard({ invoice }: { invoice: Invoice }) {
             {invoice.total != null && invoice.total > 0 && (
               <span className="text-[#e94560] font-bold text-lg">{fmt(invoice.total)}</span>
             )}
+            <Link
+              href={`/mis-facturas/${invoice.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs text-gray-500 hover:text-[#e94560] transition-colors whitespace-nowrap"
+              title="Ver e imprimir factura"
+            >
+              Ver detalle
+            </Link>
             <span className="text-gray-500">
               {expanded ? <IconChevronUp /> : <IconChevronDown />}
             </span>
