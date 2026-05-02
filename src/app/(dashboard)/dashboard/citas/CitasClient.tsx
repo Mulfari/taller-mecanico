@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import type { AppointmentWithRelations } from "@/lib/supabase/queries/appointments";
 import type { AppointmentStatus } from "@/types/database";
 import { updateAppointmentStatusAction, createAppointmentAction, createWorkOrderFromAppointmentAction, updateAppointmentAction } from "./actions";
@@ -343,13 +344,15 @@ function NewCitaModal({
   vehicles,
   onClose,
   onSaved,
+  initialClientId = "",
 }: {
   clients: ClientOption[];
   vehicles: VehicleOption[];
   onClose: () => void;
   onSaved: (appt: AppointmentWithRelations) => void;
+  initialClientId?: string;
 }) {
-  const [clientId, setClientId] = useState("");
+  const [clientId, setClientId] = useState(initialClientId);
   const [vehicleId, setVehicleId] = useState("");
   const [date, setDate] = useState(toDateKey(new Date()));
   const [timeSlot, setTimeSlot] = useState("09:00");
@@ -788,14 +791,26 @@ export default function CitasClient({
   vehicles: VehicleOption[];
 }) {
   const today = toDateKey(new Date());
+  const searchParams = useSearchParams();
   const [appointments, setAppointments] = useState(initial);
   const [selectedDate, setSelectedDate] = useState(today);
   const [activeFilter, setActiveFilter] = useState<AppointmentStatus | "all">("all");
   const [isPending, startTransition] = useTransition();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [showNewCita, setShowNewCita] = useState(false);
+  const [preselectedClientId, setPreselectedClientId] = useState<string>("");
   const [editingAppt, setEditingAppt] = useState<AppointmentWithRelations | null>(null);
   const [search, setSearch] = useState("");
+
+  // Honor ?client= URL param: pre-select client and auto-open new cita modal
+  useEffect(() => {
+    const clientParam = searchParams.get("client");
+    if (clientParam && clients.some((c) => c.id === clientParam)) {
+      setPreselectedClientId(clientParam);
+      setShowNewCita(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const q = search.trim().toLowerCase();
 
@@ -1098,10 +1113,12 @@ export default function CitasClient({
         <NewCitaModal
           clients={clients}
           vehicles={vehicles}
-          onClose={() => setShowNewCita(false)}
+          initialClientId={preselectedClientId}
+          onClose={() => { setShowNewCita(false); setPreselectedClientId(""); }}
           onSaved={(appt) => {
             setAppointments((prev) => [...prev, appt]);
             setShowNewCita(false);
+            setPreselectedClientId("");
           }}
         />
       )}

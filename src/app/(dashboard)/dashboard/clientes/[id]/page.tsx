@@ -21,6 +21,9 @@ function IconClipboard() {
 function IconReceipt() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>;
 }
+function IconCalendar() {
+  return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
+}
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type WorkOrderStatus = "received" | "diagnosing" | "repairing" | "ready" | "delivered";
@@ -129,7 +132,14 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
               Cliente desde {formatDate(client.created_at)}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href={`/dashboard/citas?client=${id}`}
+              className="shrink-0 inline-flex items-center gap-2 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <IconCalendar />
+              Nueva cita
+            </Link>
             <Link
               href={`/dashboard/cotizaciones?client=${id}`}
               className="shrink-0 inline-flex items-center gap-2 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
