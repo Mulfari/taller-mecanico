@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import PrintButton from "./PrintButton";
+import StatusActions from "./StatusActions";
 
 export const metadata = { title: "Factura — TallerPro" };
 
@@ -131,7 +132,10 @@ export default async function FacturaDetailPage({
             </p>
           </div>
         </div>
-        <PrintButton />
+        <div className="flex items-center gap-2">
+          <StatusActions invoiceId={invoice.id} currentStatus={invoice.status as import("@/types/database").InvoiceStatus} />
+          <PrintButton />
+        </div>
       </div>
 
       {/* ── Printable invoice document ─────────────────────────────────── */}
