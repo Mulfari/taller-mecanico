@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import { Suspense } from "react";
+import PeriodFilter from "./PeriodFilter";
 
 export const metadata = { title: "Reportes — TallerPro" };
 
@@ -65,6 +67,42 @@ const STATUS_COLORS: Record<string, string> = {
   delivered: "bg-gray-600",
 };
 
+type Period = "today" | "week" | "month" | "year" | "all";
+
+const PERIOD_LABELS: Record<Period, string> = {
+  today: "Hoy",
+  week: "Esta semana",
+  month: "Este mes",
+  year: "Este año",
+  all: "Todo",
+};
+
+function periodToSince(period: Period): string | null {
+  const now = new Date();
+  switch (period) {
+    case "today": {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      return d.toISOString();
+    }
+    case "week": {
+      const day = now.getDay(); // 0=Sun
+      const diff = (day === 0 ? -6 : 1 - day); // Monday
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+      return d.toISOString();
+    }
+    case "month": {
+      const d = new Date(now.getFullYear(), now.getMonth(), 1);
+      return d.toISOString();
+    }
+    case "year": {
+      const d = new Date(now.getFullYear(), 0, 1);
+      return d.toISOString();
+    }
+    default:
+      return null;
+  }
+}
+
 // ── Sub-components ─────────────────────────────────────────────────────────
 
 function KpiCard({
@@ -111,8 +149,23 @@ function SectionCard({ title, children }: { title: string; children: React.React
 
 // ── Data fetching ──────────────────────────────────────────────────────────
 
-async function getReportData() {
+async function getReportData(since: string | null) {
   const supabase = await createClient();
+
+  let ordersQuery = supabase
+    .from("work_orders")
+    .select("id, status, final_cost, estimated_cost, created_at, delivered_at");
+  if (since) ordersQuery = ordersQuery.gte("created_at", since);
+
+  let apptQuery = supabase
+    .from("appointments")
+    .select("id, status, service_type, created_at");
+  if (since) apptQuery = apptQuery.gte("created_at", since);
+
+  let quotesQuery = supabase
+    .from("quotes")
+    .select("id, total, status, created_at");
+  if (since) quotesQuery = quotesQuery.gte("created_at", since);
 
   const [
     { data: orders },
@@ -120,18 +173,10 @@ async function getReportData() {
     { data: appointments },
     { data: quotes },
   ] = await Promise.all([
-    supabase
-      .from("work_orders")
-      .select("id, status, final_cost, estimated_cost, created_at, delivered_at"),
-    supabase
-      .from("inventory")
-      .select("id, name, quantity, min_stock, sell_price, category"),
-    supabase
-      .from("appointments")
-      .select("id, status, service_type, created_at"),
-    supabase
-      .from("quotes")
-      .select("id, total, status, created_at"),
+    ordersQuery,
+    supabase.from("inventory").select("id, name, quantity, min_stock, sell_price, category"),
+    apptQuery,
+    quotesQuery,
   ]);
 
   // Revenue from delivered orders
@@ -147,7 +192,7 @@ async function getReportData() {
     statusCounts[o.status] = (statusCounts[o.status] ?? 0) + 1;
   }
 
-  // Monthly revenue (last 6 months)
+  // Monthly revenue (last 6 months) — always all-time for the trend chart
   const now = new Date();
   const monthlyRevenue: { label: string; amount: number }[] = [];
   for (let i = 5; i >= 0; i--) {
@@ -173,13 +218,13 @@ async function getReportData() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 6);
 
-  // Low stock items
+  // Low stock items — always current, not period-filtered
   const lowStock = (inventory ?? [])
     .filter((i) => i.quantity <= (i.min_stock ?? 0))
     .sort((a, b) => a.quantity - b.quantity)
     .slice(0, 8);
 
-  // Inventory value
+  // Inventory value — always current
   const inventoryValue = (inventory ?? []).reduce(
     (sum, i) => sum + i.quantity * (i.sell_price ?? 0),
     0
@@ -207,8 +252,19 @@ async function getReportData() {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 
-export default async function ReportesPage() {
-  const data = await getReportData();
+export default async function ReportesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const { period: rawPeriod } = await searchParams;
+  const period: Period =
+    rawPeriod === "today" || rawPeriod === "week" || rawPeriod === "month" || rawPeriod === "year"
+      ? rawPeriod
+      : "all";
+
+  const since = periodToSince(period);
+  const data = await getReportData(since);
 
   const maxMonthly = Math.max(...data.monthlyRevenue.map((m) => m.amount), 1);
   const maxService = data.topServices[0]?.[1] ?? 1;
@@ -216,9 +272,16 @@ export default async function ReportesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Reportes</h1>
-        <p className="text-gray-500 text-sm mt-1">Resumen de actividad y métricas del taller</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Reportes</h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Resumen de actividad — <span className="text-gray-400">{PERIOD_LABELS[period]}</span>
+          </p>
+        </div>
+        <Suspense fallback={null}>
+          <PeriodFilter current={period} />
+        </Suspense>
       </div>
 
       {/* KPI row */}
@@ -277,7 +340,7 @@ export default async function ReportesPage() {
         {/* Orders by status */}
         <SectionCard title="Órdenes por estado">
           {Object.keys(data.statusCounts).length === 0 ? (
-            <p className="text-gray-600 text-sm text-center py-4">Sin órdenes registradas</p>
+            <p className="text-gray-600 text-sm text-center py-4">Sin órdenes en este período</p>
           ) : (
             <div className="space-y-3">
               {Object.entries(data.statusCounts)
@@ -308,7 +371,7 @@ export default async function ReportesPage() {
         {/* Top services */}
         <SectionCard title="Servicios más solicitados">
           {data.topServices.length === 0 ? (
-            <p className="text-gray-600 text-sm text-center py-4">Sin citas registradas aún</p>
+            <p className="text-gray-600 text-sm text-center py-4">Sin citas en este período</p>
           ) : (
             <div className="space-y-3">
               {data.topServices.map(([service, count]) => (
