@@ -221,37 +221,45 @@ export default async function DashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {recentOrders.map((order: WorkOrderListItem) => (
-                    <tr key={order.id} className="hover:bg-white/[0.03] transition-colors">
+                    <tr key={order.id} className="hover:bg-white/[0.03] transition-colors group">
                       <td className="py-3 px-1">
-                        <p className="text-[#e94560] font-mono text-xs">
-                          OT-{order.id.slice(0, 6).toUpperCase()}
-                        </p>
-                        <p className="text-white font-medium mt-0.5">
-                          {order.client.full_name ?? "—"}
-                        </p>
+                        <Link href={`/dashboard/ordenes/${order.id}`} className="block">
+                          <p className="text-[#e94560] font-mono text-xs group-hover:underline">
+                            OT-{order.id.slice(0, 6).toUpperCase()}
+                          </p>
+                          <p className="text-white font-medium mt-0.5">
+                            {order.client.full_name ?? "—"}
+                          </p>
+                        </Link>
                       </td>
                       <td className="py-3 px-1">
-                        <p className="text-gray-300">
-                          {order.vehicle.brand} {order.vehicle.model} {order.vehicle.year}
-                        </p>
-                        <p className="text-gray-500 text-xs mt-0.5">
-                          {order.vehicle.plate ?? "—"}
-                        </p>
+                        <Link href={`/dashboard/ordenes/${order.id}`} className="block">
+                          <p className="text-gray-300">
+                            {order.vehicle.brand} {order.vehicle.model} {order.vehicle.year}
+                          </p>
+                          <p className="text-gray-500 text-xs mt-0.5">
+                            {order.vehicle.plate ?? "—"}
+                          </p>
+                        </Link>
                       </td>
                       <td className="py-3 px-1">
-                        <StatusBadge
-                          label={ORDER_STATUS_LABELS[order.status]}
-                          color={ORDER_STATUS_COLORS[order.status]}
-                        />
+                        <Link href={`/dashboard/ordenes/${order.id}`} className="block">
+                          <StatusBadge
+                            label={ORDER_STATUS_LABELS[order.status]}
+                            color={ORDER_STATUS_COLORS[order.status]}
+                          />
+                        </Link>
                       </td>
                       <td className="py-3 px-1 text-right">
-                        {order.estimated_cost && order.estimated_cost > 0 ? (
-                          <span className="text-gray-300 font-medium">
-                            ${order.estimated_cost.toLocaleString("es-MX")}
-                          </span>
-                        ) : (
-                          <span className="text-gray-600">—</span>
-                        )}
+                        <Link href={`/dashboard/ordenes/${order.id}`} className="block">
+                          {order.estimated_cost && order.estimated_cost > 0 ? (
+                            <span className="text-gray-300 font-medium">
+                              ${order.estimated_cost.toLocaleString("es-MX")}
+                            </span>
+                          ) : (
+                            <span className="text-gray-600">—</span>
+                          )}
+                        </Link>
                       </td>
                     </tr>
                   ))}
