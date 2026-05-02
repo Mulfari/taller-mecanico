@@ -135,12 +135,8 @@ export default function CuentaPage() {
       supabase.from("vehicles").select("id").eq("owner_id", userId),
       supabase
         .from("work_orders")
-        .select("id, status, vehicle_id")
-        .in(
-          "vehicle_id",
-          // subquery workaround: fetch vehicle ids first
-          (await supabase.from("vehicles").select("id").eq("owner_id", userId)).data?.map((v) => v.id) ?? []
-        ),
+        .select("id, status")
+        .eq("client_id", userId),
       supabase
         .from("appointments")
         .select("id, status, date")
