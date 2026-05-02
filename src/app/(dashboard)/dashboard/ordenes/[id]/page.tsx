@@ -10,7 +10,7 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
   const [order, supabase] = await Promise.all([getWorkOrderById(id), createClient()]);
   if (!order) notFound();
 
-  const [{ data: mechanicRows }, { data: inventoryRows }] = await Promise.all([
+  const [{ data: mechanicRows }, { data: inventoryRows }, { data: historyRows }] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name")
@@ -21,6 +21,13 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
       .select("id, name, sku, sell_price, quantity")
       .gt("quantity", 0)
       .order("name"),
+    supabase
+      .from("work_orders")
+      .select("id, status, description, diagnosis, estimated_cost, final_cost, received_at, delivered_at")
+      .eq("vehicle_id", order.vehicle_id)
+      .neq("id", id)
+      .order("received_at", { ascending: false })
+      .limit(10),
   ]);
 
   const mechanics = (mechanicRows ?? []) as { id: string; full_name: string | null }[];
@@ -31,6 +38,16 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
     sell_price: number | null;
     quantity: number;
   }[];
+  const vehicleHistory = (historyRows ?? []) as {
+    id: string;
+    status: string;
+    description: string | null;
+    diagnosis: string | null;
+    estimated_cost: number | null;
+    final_cost: number | null;
+    received_at: string;
+    delivered_at: string | null;
+  }[];
 
-  return <OrdenDetalleClient order={order} mechanics={mechanics} inventoryItems={inventoryItems} />;
+  return <OrdenDetalleClient order={order} mechanics={mechanics} inventoryItems={inventoryItems} vehicleHistory={vehicleHistory} />;
 }

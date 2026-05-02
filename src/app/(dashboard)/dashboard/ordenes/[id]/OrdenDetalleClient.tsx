@@ -316,14 +316,27 @@ interface Mechanic {
   full_name: string | null;
 }
 
+interface VehicleHistoryItem {
+  id: string;
+  status: string;
+  description: string | null;
+  diagnosis: string | null;
+  estimated_cost: number | null;
+  final_cost: number | null;
+  received_at: string;
+  delivered_at: string | null;
+}
+
 export default function OrdenDetalleClient({
   order: initialOrder,
   mechanics = [],
   inventoryItems = [],
+  vehicleHistory = [],
 }: {
   order: WorkOrderWithRelations;
   mechanics?: Mechanic[];
   inventoryItems?: InventoryOption[];
+  vehicleHistory?: VehicleHistoryItem[];
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<WorkOrderStatus>(initialOrder.status);
@@ -806,6 +819,67 @@ export default function OrdenDetalleClient({
           </div>
         )}
       </div>
+
+      {/* Vehicle history */}
+      {vehicleHistory.length > 0 && (
+        <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden print:hidden">
+          <div className="px-5 py-4 border-b border-white/5 flex items-center gap-2">
+            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-gray-400 text-xs uppercase tracking-wide font-medium">
+              Historial del vehículo
+            </p>
+            <span className="ml-1 text-gray-600 text-xs normal-case">
+              ({vehicleHistory.length} orden{vehicleHistory.length !== 1 ? "es" : ""} anterior{vehicleHistory.length !== 1 ? "es" : ""})
+            </span>
+          </div>
+          <div className="divide-y divide-white/5">
+            {vehicleHistory.map((h) => {
+              const cost = h.final_cost ?? h.estimated_cost;
+              return (
+                <Link
+                  key={h.id}
+                  href={`/dashboard/ordenes/${h.id}`}
+                  className="flex items-start justify-between gap-4 px-5 py-4 hover:bg-white/[0.02] transition-colors group"
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="shrink-0 mt-0.5">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${STATUS_COLORS[h.status as WorkOrderStatus] ?? "bg-gray-500/20 text-gray-400"}`}>
+                        {STATUS_LABELS[h.status as WorkOrderStatus] ?? h.status}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-gray-300 text-sm font-mono group-hover:text-white transition-colors">
+                        OT-{h.id.slice(0, 8).toUpperCase()}
+                      </p>
+                      {h.description && (
+                        <p className="text-gray-500 text-xs mt-0.5 truncate max-w-xs">{h.description}</p>
+                      )}
+                      {h.diagnosis && (
+                        <p className="text-gray-600 text-xs mt-0.5 truncate max-w-xs italic">{h.diagnosis}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right space-y-1">
+                    <p className="text-gray-500 text-xs">
+                      {fmtDate(h.received_at)}
+                    </p>
+                    {cost != null && cost > 0 && (
+                      <p className="text-gray-300 text-sm font-medium">
+                        {fmt(cost)}
+                        {h.final_cost == null && h.estimated_cost != null && (
+                          <span className="text-gray-600 text-xs ml-1">est.</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
