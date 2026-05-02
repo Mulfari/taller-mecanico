@@ -3,7 +3,7 @@
 import { useState, useMemo, useTransition } from "react";
 import type { AppointmentWithRelations } from "@/lib/supabase/queries/appointments";
 import type { AppointmentStatus } from "@/types/database";
-import { updateAppointmentStatusAction, createAppointmentAction, createWorkOrderFromAppointmentAction } from "./actions";
+import { updateAppointmentStatusAction, createAppointmentAction, createWorkOrderFromAppointmentAction, updateAppointmentAction } from "./actions";
 
 // ── Prop types ─────────────────────────────────────────────────────────────
 
@@ -110,6 +110,14 @@ function IconSearch() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+  );
+}
+
+function IconPencil() {
+  return (
+    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
     </svg>
   );
 }
@@ -577,6 +585,189 @@ function NewCitaModal({
   );
 }
 
+// ── Edit Cita Modal ────────────────────────────────────────────────────────
+
+function EditCitaModal({
+  appt,
+  onClose,
+  onSaved,
+}: {
+  appt: AppointmentWithRelations;
+  onClose: () => void;
+  onSaved: (updated: Partial<AppointmentWithRelations> & { id: string }) => void;
+}) {
+  const [date, setDate] = useState(appt.date);
+  const [timeSlot, setTimeSlot] = useState(appt.time_slot);
+  const [serviceType, setServiceType] = useState(
+    SERVICE_TYPES.includes(appt.service_type) ? appt.service_type : "Otro"
+  );
+  const [customService, setCustomService] = useState(
+    SERVICE_TYPES.includes(appt.service_type) ? "" : appt.service_type
+  );
+  const [notes, setNotes] = useState(appt.notes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const finalService = serviceType === "Otro" ? customService.trim() : serviceType;
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!date || !timeSlot || !finalService) {
+      setError("Completa los campos obligatorios.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      await updateAppointmentAction(appt.id, {
+        date,
+        time_slot: timeSlot,
+        service_type: finalService,
+        notes: notes.trim() || null,
+      });
+      onSaved({ id: appt.id, date, time_slot: timeSlot, service_type: finalService, notes: notes.trim() || null });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al guardar los cambios.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl my-8">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <h2 className="text-white font-semibold text-lg">Editar cita</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label="Cerrar">
+            <IconX />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          {/* Cliente (read-only) */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Cliente</label>
+            <div className="bg-[#1a1a2e]/60 border border-white/5 rounded-lg px-3 py-2.5 text-gray-400 text-sm">
+              {appt.client?.full_name ?? "Cliente desconocido"}
+            </div>
+          </div>
+
+          {/* Fecha y hora */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Fecha <span className="text-[#e94560]">*</span>
+              </label>
+              <input
+                type="date"
+                className={inputClass}
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Hora <span className="text-[#e94560]">*</span>
+              </label>
+              <div className="relative">
+                <select
+                  className={selectClass}
+                  value={timeSlot}
+                  onChange={(e) => setTimeSlot(e.target.value)}
+                >
+                  {TIME_SLOTS.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+                  <IconChevronDown />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tipo de servicio */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Tipo de servicio <span className="text-[#e94560]">*</span>
+            </label>
+            <div className="relative">
+              <select
+                className={selectClass}
+                value={serviceType}
+                onChange={(e) => setServiceType(e.target.value)}
+                required
+              >
+                <option value="">Seleccionar servicio…</option>
+                {SERVICE_TYPES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+                <IconChevronDown />
+              </div>
+            </div>
+            {serviceType === "Otro" && (
+              <input
+                type="text"
+                className={`${inputClass} mt-2`}
+                placeholder="Describe el servicio…"
+                value={customService}
+                onChange={(e) => setCustomService(e.target.value)}
+                required
+              />
+            )}
+          </div>
+
+          {/* Notas */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Notas</label>
+            <textarea
+              rows={2}
+              className={`${inputClass} resize-none`}
+              placeholder="Observaciones adicionales…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white hover:border-white/20 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+            >
+              {saving ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Guardando…
+                </>
+              ) : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 const FILTER_TABS: { key: AppointmentStatus | "all"; label: string }[] = [
@@ -603,6 +794,7 @@ export default function CitasClient({
   const [isPending, startTransition] = useTransition();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [showNewCita, setShowNewCita] = useState(false);
+  const [editingAppt, setEditingAppt] = useState<AppointmentWithRelations | null>(null);
   const [search, setSearch] = useState("");
 
   const q = search.trim().toLowerCase();
@@ -637,6 +829,13 @@ export default function CitasClient({
     () => appointments.filter((a) => a.date === today),
     [appointments, today]
   );
+
+  function handleEditSaved(updated: Partial<AppointmentWithRelations> & { id: string }) {
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === updated.id ? { ...a, ...updated } : a))
+    );
+    setEditingAppt(null);
+  }
 
   function handleStatusUpdate(id: string, status: AppointmentStatus) {
     setUpdatingId(id);
@@ -872,7 +1071,15 @@ export default function CitasClient({
                       </div>
                     </div>
 
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 flex flex-col items-end gap-2">
+                      <button
+                        onClick={() => setEditingAppt(appt)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white text-xs transition-colors"
+                        aria-label="Editar cita"
+                        title="Editar cita"
+                      >
+                        <IconPencil /> Editar
+                      </button>
                       <StatusActions
                         appt={appt}
                         onUpdate={handleStatusUpdate}
@@ -886,6 +1093,26 @@ export default function CitasClient({
           )}
         </div>
       </div>
+
+      {showNewCita && (
+        <NewCitaModal
+          clients={clients}
+          vehicles={vehicles}
+          onClose={() => setShowNewCita(false)}
+          onSaved={(appt) => {
+            setAppointments((prev) => [...prev, appt]);
+            setShowNewCita(false);
+          }}
+        />
+      )}
+
+      {editingAppt && (
+        <EditCitaModal
+          appt={editingAppt}
+          onClose={() => setEditingAppt(null)}
+          onSaved={handleEditSaved}
+        />
+      )}
     </div>
   );
 }

@@ -36,6 +36,29 @@ export async function createAppointmentAction(data: {
   revalidatePath("/dashboard/citas");
 }
 
+export async function updateAppointmentAction(
+  id: string,
+  data: {
+    date: string;
+    time_slot: string;
+    service_type: string;
+    notes: string | null;
+  }
+): Promise<void> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("appointments")
+    .update({
+      date: data.date,
+      time_slot: data.time_slot,
+      service_type: data.service_type,
+      notes: data.notes || null,
+    })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard/citas");
+}
+
 export async function createWorkOrderFromAppointmentAction(appointmentId: string): Promise<string> {
   const supabase = await createClient();
 
