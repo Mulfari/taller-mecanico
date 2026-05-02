@@ -55,6 +55,7 @@ export default function FacturasClient({ facturas: initialFacturas }: { facturas
   const [facturas, setFacturas] = useState(initialFacturas);
   const [actionPending, setActionPending] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
 
   async function handleStatusChange(id: string, status: InvoiceStatus) {
     setActionPending(id);
@@ -72,10 +73,23 @@ export default function FacturasClient({ facturas: initialFacturas }: { facturas
     }
   }
 
-  const filtered =
-    activeFilter === "all"
-      ? facturas
-      : facturas.filter((f) => f.status === activeFilter);
+  const filtered = facturas.filter((f) => {
+    if (activeFilter !== "all" && f.status !== activeFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const clientName = (f.client?.full_name ?? "").toLowerCase();
+      const clientEmail = (f.client?.email ?? "").toLowerCase();
+      const orderId = (f.work_order?.id ?? "").toLowerCase();
+      const invoiceId = f.id.toLowerCase();
+      if (
+        !clientName.includes(q) &&
+        !clientEmail.includes(q) &&
+        !orderId.includes(q) &&
+        !invoiceId.includes(q)
+      ) return false;
+    }
+    return true;
+  });
 
   const countFor = (key: InvoiceStatus | "all") =>
     key === "all" ? facturas.length : facturas.filter((f) => f.status === key).length;
@@ -127,6 +141,22 @@ export default function FacturasClient({ facturas: initialFacturas }: { facturas
         </div>
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-500">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+        </div>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por cliente, email o número de factura…"
+          className="w-full bg-[#16213e] border border-white/10 rounded-lg pl-9 pr-4 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors"
+        />
+      </div>
+
       {/* Filter tabs */}
       <div className="flex flex-wrap gap-2">
         {FILTER_TABS.map((tab) => {
@@ -172,9 +202,11 @@ export default function FacturasClient({ facturas: initialFacturas }: { facturas
             <tbody className="divide-y divide-white/5">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-16 text-center">
+                  <td colSpan={6} className="py-16 text-center">
                     <p className="text-gray-500 text-sm">
-                      {activeFilter === "all"
+                      {search.trim()
+                        ? "No se encontraron facturas con esa búsqueda"
+                        : activeFilter === "all"
                         ? "No hay facturas registradas"
                         : `No hay facturas con estado "${STATUS_LABELS[activeFilter as InvoiceStatus]}"`}
                     </p>
