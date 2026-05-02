@@ -333,6 +333,9 @@ export default function OrdenDetalleClient({
   const [isPending, startTransition] = useTransition();
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [diagnosis, setDiagnosis] = useState(initialOrder.diagnosis ?? "");
+  const [estimatedCost, setEstimatedCost] = useState(
+    initialOrder.estimated_cost != null ? String(initialOrder.estimated_cost) : ""
+  );
   const [finalCost, setFinalCost] = useState(
     initialOrder.final_cost != null ? String(initialOrder.final_cost) : ""
   );
@@ -419,6 +422,7 @@ export default function OrdenDetalleClient({
     try {
       await updateWorkOrderNotes(initialOrder.id, {
         diagnosis: diagnosis || undefined,
+        estimated_cost: estimatedCost ? parseFloat(estimatedCost) : undefined,
         final_cost: finalCost ? parseFloat(finalCost) : undefined,
         estimated_delivery: estimatedDelivery
           ? new Date(estimatedDelivery + "T12:00:00").toISOString()
@@ -672,6 +676,21 @@ export default function OrdenDetalleClient({
           </div>
 
           <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="estimated_cost" className="block text-gray-500 text-xs font-medium">
+                Costo estimado (MXN)
+              </label>
+              <input
+                id="estimated_cost"
+                type="number"
+                min="0"
+                step="0.01"
+                value={estimatedCost}
+                onChange={(e) => setEstimatedCost(e.target.value)}
+                placeholder="0.00"
+                className="w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors"
+              />
+            </div>
             <div className="space-y-1.5">
               <label htmlFor="final_cost" className="block text-gray-500 text-xs font-medium">
                 Costo final (MXN)

@@ -122,7 +122,7 @@ export async function removeWorkOrderItem(itemId: string, orderId: string) {
 
 export async function updateWorkOrderNotes(
   orderId: string,
-  fields: { diagnosis?: string; final_cost?: number; estimated_delivery?: string | null }
+  fields: { diagnosis?: string; estimated_cost?: number; final_cost?: number; estimated_delivery?: string | null }
 ) {
   const supabase = await createClient();
 
