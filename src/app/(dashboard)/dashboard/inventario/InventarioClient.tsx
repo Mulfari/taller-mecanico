@@ -62,6 +62,14 @@ function IconSpinner() {
   );
 }
 
+function IconDownload() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+  );
+}
+
 type StockStatus = "ok" | "bajo" | "agotado";
 
 function getStockStatus(item: Inventory): StockStatus {
@@ -553,6 +561,37 @@ function StockAdjuster({ item, onAdjusted }: { item: Inventory; onAdjusted: (id:
   );
 }
 
+function exportInventoryCSV(items: Inventory[]) {
+  const headers = ["Nombre", "SKU", "Categoría", "Marca", "Cantidad", "Stock mínimo", "Precio costo", "Precio venta", "Ubicación", "Proveedor", "Compatible con"];
+  const rows = items.map((i) => [
+    i.name,
+    i.sku,
+    i.category ?? "",
+    i.brand ?? "",
+    i.quantity,
+    i.min_stock,
+    i.cost_price ?? "",
+    i.sell_price,
+    i.location ?? "",
+    i.supplier ?? "",
+    Array.isArray(i.compatible_brands) ? i.compatible_brands.join("; ") : (i.compatible_brands ?? ""),
+  ]);
+
+  const escape = (v: string | number) => {
+    const s = String(v);
+    return s.includes(",") || s.includes('"') || s.includes("\n") ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+
+  const csv = [headers, ...rows].map((row) => row.map(escape).join(",")).join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `inventario-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function InventarioClient({ initialItems }: { initialItems: Inventory[] }) {
   const [items, setItems] = useState<Inventory[]>(initialItems);
   const [search, setSearch] = useState("");
@@ -628,13 +667,24 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
             )}
           </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="shrink-0 inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <IconPlus />
-          Nuevo repuesto
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => exportInventoryCSV(filtered)}
+            disabled={filtered.length === 0}
+            className="shrink-0 inline-flex items-center gap-2 bg-[#16213e] border border-white/10 hover:border-white/20 text-gray-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            title="Exportar inventario filtrado a CSV"
+          >
+            <IconDownload />
+            Exportar CSV
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="shrink-0 inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            <IconPlus />
+            Nuevo repuesto
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
