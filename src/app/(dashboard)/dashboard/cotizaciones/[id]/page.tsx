@@ -59,7 +59,7 @@ export default async function CotizacionDetailPage({
     supabase
       .from("quotes")
       .select(
-        `id, client_id, vehicle_id, items, total, status, valid_until, created_at,
+        `id, client_id, vehicle_id, items, total, status, valid_until, created_at, notes,
          client:profiles!quotes_client_id_fkey(full_name, email, phone),
          vehicle:vehicles!quotes_vehicle_id_fkey(brand, model, year, plate)`
       )
@@ -231,6 +231,21 @@ export default async function CotizacionDetailPage({
             </div>
           )}
         </div>
+
+        {/* Notes (guest contact info or internal notes) */}
+        {(quote as { notes?: string | null }).notes && (
+          <div
+            className="px-8 py-6 border-b border-white/5
+                       print:border-b print:border-gray-200 print:px-0 print:py-5"
+          >
+            <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-3 print:text-gray-400">
+              Notas / Contacto
+            </p>
+            <pre className="text-gray-300 text-sm whitespace-pre-wrap font-sans leading-relaxed print:text-gray-700">
+              {(quote as { notes: string }).notes}
+            </pre>
+          </div>
+        )}
 
         {/* Line items */}
         <div className="px-8 py-6 print:px-0 print:py-5">
