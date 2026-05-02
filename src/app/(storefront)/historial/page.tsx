@@ -6,6 +6,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 type WorkOrderStatus = "received" | "diagnosing" | "repairing" | "ready" | "delivered";
@@ -245,6 +246,18 @@ function WorkOrderCard({ order }: { order: WorkOrder }) {
           {order.work_order_items.length === 0 && !order.diagnosis && (
             <p className="text-gray-600 text-sm italic">Sin detalles registrados para esta orden.</p>
           )}
+
+          <div className="pt-2 border-t border-white/5">
+            <Link
+              href={`/mis-ordenes/${order.id}`}
+              className="inline-flex items-center gap-1.5 text-xs text-[#e94560] hover:text-[#c73652] font-medium transition-colors"
+            >
+              Ver detalle completo
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
       )}
     </div>
