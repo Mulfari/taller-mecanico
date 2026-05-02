@@ -67,6 +67,7 @@ export async function addWorkOrderItem(
     description: string;
     quantity: number;
     unit_price: number;
+    inventoryItemId?: string;
   }
 ) {
   const supabase = await createClient();
@@ -84,7 +85,26 @@ export async function addWorkOrderItem(
 
   if (error) throw new Error(error.message);
 
+  // Decrement inventory stock when a part from inventory is used
+  if (item.type === "part" && item.inventoryItemId) {
+    const { data: inv } = await supabase
+      .from("inventory")
+      .select("quantity")
+      .eq("id", item.inventoryItemId)
+      .single();
+
+    if (inv) {
+      const newQty = Math.max(0, inv.quantity - item.quantity);
+      await supabase
+        .from("inventory")
+        .update({ quantity: newQty })
+        .eq("id", item.inventoryItemId);
+    }
+  }
+
   revalidatePath(`/dashboard/ordenes/${orderId}`);
+  revalidatePath("/dashboard/inventario");
+  revalidatePath("/dashboard");
 }
 
 export async function removeWorkOrderItem(itemId: string, orderId: string) {

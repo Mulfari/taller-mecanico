@@ -158,7 +158,7 @@ function AddItemForm({
   onCancel,
   inventoryItems = [],
 }: {
-  onAdd: (item: { type: WorkOrderItemType; description: string; quantity: number; unit_price: number; total: number }) => void;
+  onAdd: (item: { type: WorkOrderItemType; description: string; quantity: number; unit_price: number; total: number; inventoryItemId?: string }) => void;
   onCancel: () => void;
   inventoryItems?: InventoryOption[];
 }) {
@@ -168,6 +168,7 @@ function AddItemForm({
   const [unitPrice, setUnitPrice] = useState("");
   const [inventorySearch, setInventorySearch] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedInventoryId, setSelectedInventoryId] = useState<string | undefined>(undefined);
 
   const filtered = inventorySearch.length >= 1
     ? inventoryItems.filter((i) =>
@@ -180,6 +181,7 @@ function AddItemForm({
     setDescription(item.name);
     setUnitPrice(item.sell_price != null ? String(item.sell_price) : "");
     setInventorySearch(item.name);
+    setSelectedInventoryId(item.id);
     setShowSuggestions(false);
   }
 
@@ -187,7 +189,7 @@ function AddItemForm({
     e.preventDefault();
     const qty = parseFloat(quantity) || 1;
     const price = parseFloat(unitPrice) || 0;
-    onAdd({ type, description, quantity: qty, unit_price: price, total: qty * price });
+    onAdd({ type, description, quantity: qty, unit_price: price, total: qty * price, inventoryItemId: selectedInventoryId });
   }
 
   return (
@@ -205,6 +207,7 @@ function AddItemForm({
                 setDescription("");
                 setInventorySearch("");
                 setUnitPrice("");
+                setSelectedInventoryId(undefined);
               }}
               className={selectClass}
             >
@@ -370,7 +373,7 @@ export default function OrdenDetalleClient({
     });
   }
 
-  function handleAddItem(item: { type: WorkOrderItemType; description: string; quantity: number; unit_price: number; total: number }) {
+  function handleAddItem(item: { type: WorkOrderItemType; description: string; quantity: number; unit_price: number; total: number; inventoryItemId?: string }) {
     setError(null);
     startTransition(async () => {
       try {
