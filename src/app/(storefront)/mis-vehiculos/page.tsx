@@ -86,6 +86,240 @@ function IconSpinner() {
   );
 }
 
+function IconPlus() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+    </svg>
+  );
+}
+
+function IconX() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+// ── Register Vehicle Modal ─────────────────────────────────────────────────
+
+const inputClass =
+  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors";
+
+function RegisterVehicleModal({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved: (vehicle: Vehicle) => void;
+}) {
+  const [brand, setBrand] = useState("");
+  const [model, setModel] = useState("");
+  const [year, setYear] = useState(new Date().getFullYear().toString());
+  const [plate, setPlate] = useState("");
+  const [color, setColor] = useState("");
+  const [vin, setVin] = useState("");
+  const [mileage, setMileage] = useState("");
+  const [notes, setNotes] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const yearNum = parseInt(year, 10);
+    if (!brand.trim() || !model.trim() || isNaN(yearNum)) {
+      setError("Marca, modelo y año son obligatorios.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setError("Sesión expirada. Recargá la página.");
+      setSaving(false);
+      return;
+    }
+
+    const { data, error: insertError } = await supabase
+      .from("vehicles")
+      .insert({
+        owner_id: user.id,
+        brand: brand.trim(),
+        model: model.trim(),
+        year: yearNum,
+        plate: plate.trim() || null,
+        color: color.trim() || null,
+        vin: vin.trim() || null,
+        mileage: mileage ? parseInt(mileage, 10) : null,
+        notes: notes.trim() || null,
+      })
+      .select("id, brand, model, year, plate, color, vin, mileage, notes, created_at")
+      .single();
+
+    if (insertError || !data) {
+      setError("No se pudo registrar el vehículo. Intenta de nuevo.");
+      setSaving(false);
+      return;
+    }
+
+    onSaved(data as Vehicle);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl my-8">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <h2 className="text-white font-semibold text-lg">Registrar vehículo</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label="Cerrar">
+            <IconX />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Marca <span className="text-[#e94560]">*</span>
+              </label>
+              <input
+                type="text"
+                className={inputClass}
+                placeholder="Ej. Toyota"
+                value={brand}
+                onChange={(e) => setBrand(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Modelo <span className="text-[#e94560]">*</span>
+              </label>
+              <input
+                type="text"
+                className={inputClass}
+                placeholder="Ej. Corolla"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Año <span className="text-[#e94560]">*</span>
+              </label>
+              <input
+                type="number"
+                className={inputClass}
+                placeholder="Ej. 2020"
+                min={1900}
+                max={new Date().getFullYear() + 1}
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Placa / Patente</label>
+              <input
+                type="text"
+                className={`${inputClass} uppercase`}
+                placeholder="Ej. ABC-123"
+                value={plate}
+                onChange={(e) => setPlate(e.target.value.toUpperCase())}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Color</label>
+              <input
+                type="text"
+                className={inputClass}
+                placeholder="Ej. Blanco"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Kilometraje</label>
+              <input
+                type="number"
+                className={inputClass}
+                placeholder="Ej. 45000"
+                min={0}
+                value={mileage}
+                onChange={(e) => setMileage(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">VIN (número de chasis)</label>
+            <input
+              type="text"
+              className={`${inputClass} font-mono uppercase`}
+              placeholder="17 caracteres"
+              maxLength={17}
+              value={vin}
+              onChange={(e) => setVin(e.target.value.toUpperCase())}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Notas</label>
+            <textarea
+              rows={2}
+              className={`${inputClass} resize-none`}
+              placeholder="Observaciones sobre el vehículo…"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white hover:border-white/20 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+            >
+              {saving ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Guardando…
+                </>
+              ) : "Registrar vehículo"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Vehicle Card ───────────────────────────────────────────────────────────
 
 function VehicleCard({ vehicle, stats }: { vehicle: Vehicle; stats: VehicleStats }) {
@@ -207,6 +441,7 @@ export default function MisVehiculosPage() {
   const [authed, setAuthed] = useState(false);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [statsMap, setStatsMap] = useState<Record<string, VehicleStats>>({});
+  const [showRegister, setShowRegister] = useState(false);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -300,6 +535,15 @@ export default function MisVehiculosPage() {
     );
   }
 
+  function handleVehicleSaved(vehicle: Vehicle) {
+    setVehicles((prev) => [vehicle, ...prev]);
+    setStatsMap((prev) => ({
+      ...prev,
+      [vehicle.id]: { totalOrders: 0, activeOrders: 0, lastService: null },
+    }));
+    setShowRegister(false);
+  }
+
   // ── No vehicles ──────────────────────────────────────────────────────────
   if (vehicles.length === 0) {
     return (
@@ -320,16 +564,31 @@ export default function MisVehiculosPage() {
           </div>
           <p className="text-gray-400 text-lg">No tenés vehículos registrados</p>
           <p className="text-gray-500 text-sm mt-2 mb-8">
-            Cuando el taller registre tu vehículo, aparecerá aquí.
+            Registrá tu vehículo para hacer seguimiento de servicios y agendar citas fácilmente.
           </p>
-          <Link
-            href="/citas"
-            className="inline-block py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-            style={{ backgroundColor: "#e94560" }}
-          >
-            Agendar una cita
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => setShowRegister(true)}
+              className="inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-white transition-colors"
+              style={{ backgroundColor: "#e94560" }}
+            >
+              <IconPlus />
+              Registrar mi vehículo
+            </button>
+            <Link
+              href="/citas"
+              className="inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-gray-300 border border-white/10 hover:border-white/20 hover:text-white transition-colors"
+            >
+              Agendar una cita
+            </Link>
+          </div>
         </div>
+        {showRegister && (
+          <RegisterVehicleModal
+            onClose={() => setShowRegister(false)}
+            onSaved={handleVehicleSaved}
+          />
+        )}
       </div>
     );
   }
@@ -347,15 +606,24 @@ export default function MisVehiculosPage() {
             <span>/</span>
             <span className="text-white">Mis vehículos</span>
           </nav>
-          <h1 className="text-3xl font-bold text-white">Mis Vehículos</h1>
-          <p className="text-gray-400 mt-2">
-            {vehicles.length} vehículo{vehicles.length !== 1 ? "s" : ""} registrado{vehicles.length !== 1 ? "s" : ""}
-            {activeCount > 0 && (
-              <span className="ml-2 text-blue-400">
-                · {activeCount} en el taller ahora
-              </span>
-            )}
-          </p>
+          <div className="flex items-start justify-between gap-4 mt-1">
+            <p className="text-gray-400">
+              {vehicles.length} vehículo{vehicles.length !== 1 ? "s" : ""} registrado{vehicles.length !== 1 ? "s" : ""}
+              {activeCount > 0 && (
+                <span className="ml-2 text-blue-400">
+                  · {activeCount} en el taller ahora
+                </span>
+              )}
+            </p>
+            <button
+              onClick={() => setShowRegister(true)}
+              className="shrink-0 inline-flex items-center gap-2 py-2 px-4 rounded-lg text-sm font-medium text-white transition-colors"
+              style={{ backgroundColor: "#e94560" }}
+            >
+              <IconPlus />
+              Agregar vehículo
+            </button>
+          </div>
         </div>
       </div>
 
@@ -387,6 +655,13 @@ export default function MisVehiculosPage() {
           </Link>
         </div>
       </div>
+
+      {showRegister && (
+        <RegisterVehicleModal
+          onClose={() => setShowRegister(false)}
+          onSaved={handleVehicleSaved}
+        />
+      )}
     </div>
   );
 }
