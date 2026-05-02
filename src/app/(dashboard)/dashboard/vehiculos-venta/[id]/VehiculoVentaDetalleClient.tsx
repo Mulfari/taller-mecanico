@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { updateVehicleSaleStatusAction, updateVehicleSaleAction } from "./actions";
+import { createClient } from "@/lib/supabase/client";
+import { updateVehicleSaleStatusAction, updateVehicleSaleAction, deleteVehiclePhotoAction } from "./actions";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -301,6 +302,168 @@ function EditModal({ vehicle, onClose, onSaved }: { vehicle: Vehicle; onClose: (
   );
 }
 
+// ── PhotoManager ───────────────────────────────────────────────────────────
+
+function IconTrash() {
+  return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>;
+}
+
+function IconUpload2() {
+  return <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>;
+}
+
+function PhotoManager({
+  vehicleId,
+  initialPhotos,
+}: {
+  vehicleId: string;
+  initialPhotos: Photo[];
+}) {
+  const [photos, setPhotos] = useState<Photo[]>(initialPhotos);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFiles(files: FileList) {
+    setUploading(true);
+    setUploadError(null);
+    const supabase = createClient();
+    const newPhotos: Photo[] = [];
+
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `vehicles-for-sale/${vehicleId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("shop-assets")
+        .upload(path, file, { upsert: false });
+
+      if (uploadError || !uploadData) {
+        setUploadError("Error al subir una o más fotos.");
+        continue;
+      }
+
+      const { data: urlData } = supabase.storage.from("shop-assets").getPublicUrl(uploadData.path);
+      const nextOrder = photos.length + newPhotos.length;
+
+      const { data: photoRow, error: insertError } = await supabase
+        .from("vehicle_photos")
+        .insert({ vehicle_sale_id: vehicleId, url: urlData.publicUrl, order: nextOrder })
+        .select("id, url, order")
+        .single();
+
+      if (insertError || !photoRow) {
+        setUploadError("Error al guardar la foto en la base de datos.");
+        continue;
+      }
+
+      newPhotos.push({ id: photoRow.id as string, url: photoRow.url as string, order: photoRow.order as number });
+    }
+
+    setPhotos((prev) => [...prev, ...newPhotos]);
+    setUploading(false);
+  }
+
+  async function handleDelete(photo: Photo) {
+    setDeletingId(photo.id);
+    try {
+      await deleteVehiclePhotoAction(photo.id);
+      setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+    } catch {
+      setUploadError("No se pudo eliminar la foto.");
+    }
+    setDeletingId(null);
+  }
+
+  return (
+    <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-white font-semibold text-sm uppercase tracking-wide">
+          Fotos ({photos.length})
+        </h2>
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+        >
+          {uploading ? (
+            <><IconSpinner /> Subiendo…</>
+          ) : (
+            <><IconUpload2 /> Agregar fotos</>
+          )}
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ""; }}
+        />
+      </div>
+
+      {uploadError && (
+        <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          {uploadError}
+        </p>
+      )}
+
+      {photos.length === 0 ? (
+        <div
+          className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center cursor-pointer hover:border-[#e94560]/40 transition-colors"
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+          aria-label="Subir fotos"
+        >
+          <div className="flex justify-center text-gray-600 mb-2"><IconUpload2 /></div>
+          <p className="text-gray-500 text-sm">Arrastrá fotos aquí o hacé clic para seleccionar</p>
+          <p className="text-gray-600 text-xs mt-1">JPG, PNG, WEBP</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+          {photos.map((photo, i) => (
+            <div key={photo.id} className="relative group aspect-video rounded-lg overflow-hidden border border-white/10">
+              <Image src={photo.url} alt={`Foto ${i + 1}`} fill className="object-cover" sizes="120px" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                <button
+                  onClick={() => handleDelete(photo)}
+                  disabled={deletingId === photo.id}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-lg disabled:opacity-50"
+                  aria-label="Eliminar foto"
+                >
+                  {deletingId === photo.id ? <IconSpinner /> : <IconTrash />}
+                </button>
+              </div>
+              {i === 0 && (
+                <span className="absolute top-1 left-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded">
+                  Principal
+                </span>
+              )}
+            </div>
+          ))}
+          <div
+            className="aspect-video rounded-lg border-2 border-dashed border-white/10 flex items-center justify-center cursor-pointer hover:border-[#e94560]/40 transition-colors"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+            aria-label="Agregar más fotos"
+          >
+            <span className="text-gray-600 text-2xl leading-none">+</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function VehiculoVentaDetalleClient({
@@ -379,8 +542,8 @@ export default function VehiculoVentaDetalleClient({
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left — gallery */}
-        <PhotoGallery photos={photos} vehicleName={title} />
+        {/* Left — photo manager */}
+        <PhotoManager vehicleId={vehicle.id} initialPhotos={photos} />
 
         {/* Right — info */}
         <div className="space-y-5">

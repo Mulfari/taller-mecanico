@@ -41,3 +41,9 @@ export async function updateVehicleSaleAction(
   revalidatePath(`/dashboard/vehiculos-venta/${id}`);
   revalidatePath("/dashboard/vehiculos-venta");
 }
+
+export async function deleteVehiclePhotoAction(photoId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("vehicle_photos").delete().eq("id", photoId);
+  if (error) throw new Error(error.message);
+}
