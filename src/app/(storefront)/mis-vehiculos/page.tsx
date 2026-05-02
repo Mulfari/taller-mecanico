@@ -102,6 +102,161 @@ function IconX() {
   );
 }
 
+function IconPencil() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+    </svg>
+  );
+}
+
+// ── Edit Vehicle Modal ─────────────────────────────────────────────────────
+
+function EditVehicleModal({
+  vehicle,
+  onClose,
+  onSaved,
+}: {
+  vehicle: Vehicle;
+  onClose: () => void;
+  onSaved: (updated: Vehicle) => void;
+}) {
+  const [brand, setBrand] = useState(vehicle.brand);
+  const [model, setModel] = useState(vehicle.model);
+  const [year, setYear] = useState(String(vehicle.year));
+  const [plate, setPlate] = useState(vehicle.plate ?? "");
+  const [color, setColor] = useState(vehicle.color ?? "");
+  const [vin, setVin] = useState(vehicle.vin ?? "");
+  const [mileage, setMileage] = useState(vehicle.mileage != null ? String(vehicle.mileage) : "");
+  const [notes, setNotes] = useState(vehicle.notes ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const yearNum = parseInt(year, 10);
+    if (!brand.trim() || !model.trim() || isNaN(yearNum)) {
+      setError("Marca, modelo y año son obligatorios.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+
+    const supabase = createClient();
+    const { data, error: updateError } = await supabase
+      .from("vehicles")
+      .update({
+        brand: brand.trim(),
+        model: model.trim(),
+        year: yearNum,
+        plate: plate.trim() || null,
+        color: color.trim() || null,
+        vin: vin.trim() || null,
+        mileage: mileage ? parseInt(mileage, 10) : null,
+        notes: notes.trim() || null,
+      })
+      .eq("id", vehicle.id)
+      .select("id, brand, model, year, plate, color, vin, mileage, notes, created_at")
+      .single();
+
+    if (updateError || !data) {
+      setError("No se pudo actualizar el vehículo. Intenta de nuevo.");
+      setSaving(false);
+      return;
+    }
+
+    onSaved(data as Vehicle);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl my-8">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <h2 className="text-white font-semibold text-lg">Editar vehículo</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label="Cerrar">
+            <IconX />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Marca <span className="text-[#e94560]">*</span>
+              </label>
+              <input type="text" className={inputClass} placeholder="Ej. Toyota" value={brand} onChange={(e) => setBrand(e.target.value)} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Modelo <span className="text-[#e94560]">*</span>
+              </label>
+              <input type="text" className={inputClass} placeholder="Ej. Corolla" value={model} onChange={(e) => setModel(e.target.value)} required />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                Año <span className="text-[#e94560]">*</span>
+              </label>
+              <input type="number" className={inputClass} placeholder="Ej. 2020" min={1900} max={new Date().getFullYear() + 1} value={year} onChange={(e) => setYear(e.target.value)} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Placa / Patente</label>
+              <input type="text" className={`${inputClass} uppercase`} placeholder="Ej. ABC-123" value={plate} onChange={(e) => setPlate(e.target.value.toUpperCase())} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Color</label>
+              <input type="text" className={inputClass} placeholder="Ej. Blanco" value={color} onChange={(e) => setColor(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1.5">Kilometraje</label>
+              <input type="number" className={inputClass} placeholder="Ej. 45000" min={0} value={mileage} onChange={(e) => setMileage(e.target.value)} />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">VIN (número de chasis)</label>
+            <input type="text" className={`${inputClass} font-mono uppercase`} placeholder="17 caracteres" maxLength={17} value={vin} onChange={(e) => setVin(e.target.value.toUpperCase())} />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Notas</label>
+            <textarea rows={2} className={`${inputClass} resize-none`} placeholder="Observaciones sobre el vehículo…" value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white hover:border-white/20 transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
+              {saving ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Guardando…
+                </>
+              ) : "Guardar cambios"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Register Vehicle Modal ─────────────────────────────────────────────────
 
 const inputClass =
@@ -322,7 +477,16 @@ function RegisterVehicleModal({
 
 // ── Vehicle Card ───────────────────────────────────────────────────────────
 
-function VehicleCard({ vehicle, stats }: { vehicle: Vehicle; stats: VehicleStats }) {
+function VehicleCard({
+  vehicle: initialVehicle,
+  stats,
+}: {
+  vehicle: Vehicle;
+  stats: VehicleStats;
+}) {
+  const [vehicle, setVehicle] = useState(initialVehicle);
+  const [showEdit, setShowEdit] = useState(false);
+
   const fmtDate = (d: string) =>
     new Date(d.includes("T") ? d : d + "T00:00:00").toLocaleDateString("es-MX", {
       day: "2-digit",
@@ -331,6 +495,7 @@ function VehicleCard({ vehicle, stats }: { vehicle: Vehicle; stats: VehicleStats
     });
 
   return (
+    <>
     <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden hover:border-[#e94560]/20 transition-colors">
       {/* Header */}
       <div className="p-5 border-b border-white/5">
@@ -344,12 +509,22 @@ function VehicleCard({ vehicle, stats }: { vehicle: Vehicle; stats: VehicleStats
             </h2>
             <p className="text-gray-400 text-sm mt-0.5">{vehicle.year}</p>
           </div>
-          {stats.activeOrders > 0 && (
-            <span className="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              En taller
-            </span>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            {stats.activeOrders > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                En taller
+              </span>
+            )}
+            <button
+              onClick={() => setShowEdit(true)}
+              className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 border border-white/10 hover:border-white/20 px-2.5 py-1.5 rounded-lg transition-colors"
+              aria-label="Editar vehículo"
+            >
+              <IconPencil />
+              Editar
+            </button>
+          </div>
         </div>
       </div>
 
@@ -431,6 +606,17 @@ function VehicleCard({ vehicle, stats }: { vehicle: Vehicle; stats: VehicleStats
         </Link>
       </div>
     </div>
+    {showEdit && (
+      <EditVehicleModal
+        vehicle={vehicle}
+        onClose={() => setShowEdit(false)}
+        onSaved={(updated) => {
+          setVehicle(updated);
+          setShowEdit(false);
+        }}
+      />
+    )}
+    </>
   );
 }
 
