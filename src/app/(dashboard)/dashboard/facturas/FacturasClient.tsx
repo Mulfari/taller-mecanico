@@ -7,6 +7,7 @@ import { updateInvoiceStatus } from "./actions";
 
 interface InvoiceRow {
   id: string;
+  client_id: string | null;
   subtotal: number | null;
   tax: number | null;
   total: number | null;
@@ -50,12 +51,19 @@ const fmtDate = (d: string) =>
     year: "numeric",
   });
 
-export default function FacturasClient({ facturas: initialFacturas }: { facturas: InvoiceRow[] }) {
+export default function FacturasClient({
+  facturas: initialFacturas,
+  initialClientId,
+}: {
+  facturas: InvoiceRow[];
+  initialClientId?: string;
+}) {
   const [activeFilter, setActiveFilter] = useState<InvoiceStatus | "all">("all");
   const [facturas, setFacturas] = useState(initialFacturas);
   const [actionPending, setActionPending] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const [search, setSearch] = useState("");
+  const [clientFilter, setClientFilter] = useState<string | undefined>(initialClientId);
 
   async function handleStatusChange(id: string, status: InvoiceStatus) {
     setActionPending(id);
@@ -74,6 +82,7 @@ export default function FacturasClient({ facturas: initialFacturas }: { facturas
   }
 
   const filtered = facturas.filter((f) => {
+    if (clientFilter && f.client_id !== clientFilter) return false;
     if (activeFilter !== "all" && f.status !== activeFilter) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
@@ -91,6 +100,11 @@ export default function FacturasClient({ facturas: initialFacturas }: { facturas
     return true;
   });
 
+  // Name of the client being filtered (for the banner)
+  const filteredClientName = clientFilter
+    ? (facturas.find((f) => f.client_id === clientFilter)?.client?.full_name ?? "Cliente")
+    : null;
+
   const countFor = (key: InvoiceStatus | "all") =>
     key === "all" ? facturas.length : facturas.filter((f) => f.status === key).length;
 
@@ -104,6 +118,24 @@ export default function FacturasClient({ facturas: initialFacturas }: { facturas
 
   return (
     <>
+      {/* Client filter banner */}
+      {clientFilter && filteredClientName && (
+        <div className="flex items-center justify-between gap-3 bg-blue-500/10 border border-blue-500/20 rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-blue-300">
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+            </svg>
+            Mostrando facturas de <span className="font-semibold text-white">{filteredClientName}</span>
+          </div>
+          <button
+            onClick={() => setClientFilter(undefined)}
+            className="shrink-0 text-xs text-blue-400 hover:text-white border border-blue-500/30 hover:border-white/20 px-3 py-1 rounded-lg transition-colors"
+          >
+            Ver todas
+          </button>
+        </div>
+      )}
+
       {/* KPI strip */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-[#16213e] border border-white/10 rounded-xl p-4 flex items-center gap-3">

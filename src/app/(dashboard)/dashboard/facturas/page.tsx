@@ -3,13 +3,18 @@ import FacturasClient from "./FacturasClient";
 
 export const metadata = { title: "Facturas — TallerPro" };
 
-export default async function FacturasPage() {
+export default async function FacturasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ client?: string }>;
+}) {
+  const { client: clientParam } = await searchParams;
   const supabase = await createClient();
 
   const { data: facturas } = await supabase
     .from("invoices")
     .select(
-      `id, subtotal, tax, total, status, paid_at, created_at,
+      `id, client_id, subtotal, tax, total, status, paid_at, created_at,
        work_order_id, quote_id,
        client:profiles!invoices_client_id_fkey(full_name, email),
        work_order:work_orders!invoices_work_order_id_fkey(id, description)`
@@ -34,7 +39,7 @@ export default async function FacturasPage() {
         </div>
       </div>
 
-      <FacturasClient facturas={normalized} />
+      <FacturasClient facturas={normalized} initialClientId={clientParam} />
     </div>
   );
 }
