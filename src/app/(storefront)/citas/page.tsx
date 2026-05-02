@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -366,7 +367,10 @@ const EMPTY_FORM: FormState = {
   email: "",
 };
 
-export default function CitasPage() {
+function CitasPageInner() {
+  const searchParams = useSearchParams();
+  const preselectedVehicleId = searchParams.get("vehiculo");
+
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [vehicleErrors, setVehicleErrors] = useState<Partial<NewVehicle>>({});
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -390,14 +394,18 @@ export default function CitasPage() {
         .eq("owner_id", user.id)
         .order("created_at", { ascending: false });
       if (data) {
-        setUserVehicles(
-          data.map((v) => ({
-            id: v.id as string,
-            label: `${v.brand} ${v.model} ${v.year}${v.plate ? ` — ${v.plate}` : ""}`,
-          }))
-        );
+        const vehicles = data.map((v) => ({
+          id: v.id as string,
+          label: `${v.brand} ${v.model} ${v.year}${v.plate ? ` — ${v.plate}` : ""}`,
+        }));
+        setUserVehicles(vehicles);
+        // Pre-select vehicle from URL param if it belongs to this user
+        if (preselectedVehicleId && vehicles.some((v) => v.id === preselectedVehicleId)) {
+          setForm((f) => ({ ...f, vehicleId: preselectedVehicleId }));
+        }
       }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch booked slots for a given month from the API
@@ -712,5 +720,13 @@ export default function CitasPage() {
         </form>
       </div>
     </main>
+  );
+}
+
+export default function CitasPage() {
+  return (
+    <Suspense>
+      <CitasPageInner />
+    </Suspense>
   );
 }
