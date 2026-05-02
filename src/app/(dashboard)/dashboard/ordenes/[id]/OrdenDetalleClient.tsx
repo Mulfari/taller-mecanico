@@ -12,6 +12,7 @@ import {
   updateWorkOrderNotes,
   reassignMechanic,
 } from "../actions";
+import PrintButton from "./PrintButton";
 
 const STATUS_STEPS: WorkOrderStatus[] = ["received", "diagnosing", "repairing", "ready", "delivered"];
 
@@ -449,7 +450,7 @@ export default function OrdenDetalleClient({
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/ordenes" className="text-gray-500 hover:text-white transition-colors" aria-label="Volver a órdenes">
+          <Link href="/dashboard/ordenes" className="text-gray-500 hover:text-white transition-colors print:hidden" aria-label="Volver a órdenes">
             <IconArrowLeft />
           </Link>
           <div>
@@ -462,7 +463,8 @@ export default function OrdenDetalleClient({
             <p className="text-gray-500 text-sm mt-0.5 truncate max-w-sm">{initialOrder.description}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 print:hidden">
+          <PrintButton />
           {/* Generate invoice button — shown once order has items */}
           {items.length > 0 && (
             <button
@@ -580,7 +582,7 @@ export default function OrdenDetalleClient({
                       type="button"
                       onClick={handleSaveMechanic}
                       disabled={savingMechanic}
-                      className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed bg-[#e94560]/10 hover:bg-[#e94560]/20 text-[#e94560]"
+                      className="print:hidden shrink-0 inline-flex items-center gap-1.5 text-xs font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed bg-[#e94560]/10 hover:bg-[#e94560]/20 text-[#e94560]"
                     >
                       {savingMechanic ? (
                         <>
@@ -631,7 +633,7 @@ export default function OrdenDetalleClient({
             type="button"
             onClick={handleSaveNotes}
             disabled={savingNotes}
-            className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed bg-[#e94560]/10 hover:bg-[#e94560]/20 text-[#e94560]"
+            className="print:hidden inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed bg-[#e94560]/10 hover:bg-[#e94560]/20 text-[#e94560]"
           >
             {savingNotes ? (
               <>
@@ -703,7 +705,7 @@ export default function OrdenDetalleClient({
             {items.length > 0 && <span className="ml-2 text-gray-600 normal-case">({items.length})</span>}
           </p>
           {!showAddItem && (
-            <button onClick={() => setShowAddItem(true)} className="inline-flex items-center gap-1.5 text-xs text-[#e94560] hover:text-[#c73652] transition-colors font-medium">
+            <button onClick={() => setShowAddItem(true)} className="print:hidden inline-flex items-center gap-1.5 text-xs text-[#e94560] hover:text-[#c73652] transition-colors font-medium">
               <IconPlus />
               Agregar ítem
             </button>
@@ -743,7 +745,7 @@ export default function OrdenDetalleClient({
                     <td className="py-3 px-4 text-right text-gray-400">{item.quantity}</td>
                     <td className="py-3 px-4 text-right text-gray-400">{fmt(item.unit_price)}</td>
                     <td className="py-3 px-4 text-right text-gray-200 font-medium">{fmt(item.total)}</td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right print:hidden">
                       <button
                         onClick={() => handleRemoveItem(item.id)}
                         disabled={isPending}
