@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import EditVehicleButton from "./EditVehicleButton";
 
 function IconArrowLeft() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>;
@@ -101,13 +102,26 @@ export default async function VehiculoDetailPage({ params }: { params: Promise<{
               Registrado el {formatDate(vehicle.created_at)}
             </p>
           </div>
-          <Link
-            href={`/dashboard/ordenes/nueva?vehicle=${id}${owner ? `&client=${owner.id}` : ""}`}
-            className="shrink-0 inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            <IconWrench />
-            Nueva orden
-          </Link>
+          <div className="flex items-center gap-2 shrink-0">
+            <EditVehicleButton vehicle={{
+              id: vehicle.id,
+              brand: vehicle.brand,
+              model: vehicle.model,
+              year: vehicle.year,
+              plate: vehicle.plate,
+              color: vehicle.color,
+              vin: vehicle.vin,
+              mileage: vehicle.mileage,
+              notes: vehicle.notes,
+            }} />
+            <Link
+              href={`/dashboard/ordenes/nueva?vehicle=${id}${owner ? `&client=${owner.id}` : ""}`}
+              className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              <IconWrench />
+              Nueva orden
+            </Link>
+          </div>
         </div>
       </div>
 
