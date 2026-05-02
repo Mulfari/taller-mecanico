@@ -106,6 +106,14 @@ function IconPlus() {
   );
 }
 
+function IconSearch() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+    </svg>
+  );
+}
+
 function IconChevronDown() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -595,6 +603,23 @@ export default function CitasClient({
   const [isPending, startTransition] = useTransition();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [showNewCita, setShowNewCita] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const q = search.trim().toLowerCase();
+
+  const searchResults = useMemo(() => {
+    if (!q) return [];
+    return appointments
+      .filter((a) =>
+        a.client?.full_name?.toLowerCase().includes(q) ||
+        a.service_type.toLowerCase().includes(q) ||
+        a.vehicle?.plate?.toLowerCase().includes(q) ||
+        a.vehicle?.brand?.toLowerCase().includes(q) ||
+        a.vehicle?.model?.toLowerCase().includes(q) ||
+        a.notes?.toLowerCase().includes(q)
+      )
+      .sort((a, b) => a.date.localeCompare(b.date) || a.time_slot.localeCompare(b.time_slot));
+  }, [appointments, q]);
 
   const appointmentDates = useMemo(
     () => new Set(appointments.map((a) => a.date)),
@@ -643,7 +668,7 @@ export default function CitasClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-white">Citas</h1>
           <p className="text-gray-500 text-sm mt-1">
@@ -653,14 +678,88 @@ export default function CitasClient({
             <span className="text-green-400">{todayStats.completed} completadas</span>
           </p>
         </div>
-        <button
-          onClick={() => setShowNewCita(true)}
-          className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-        >
-          <IconPlus />
-          Nueva cita
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="relative">
+            <span className="absolute inset-y-0 left-3 flex items-center text-gray-500 pointer-events-none">
+              <IconSearch />
+            </span>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar cliente, servicio, patente…"
+              className="w-64 bg-[#16213e] border border-white/10 rounded-lg pl-9 pr-8 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                className="absolute inset-y-0 right-2.5 flex items-center text-gray-500 hover:text-gray-300 transition-colors"
+                aria-label="Limpiar búsqueda"
+              >
+                <IconX />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => setShowNewCita(true)}
+            className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors whitespace-nowrap"
+          >
+            <IconPlus />
+            Nueva cita
+          </button>
+        </div>
       </div>
+
+      {/* Search results panel */}
+      {q && (
+        <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+            <p className="text-sm text-gray-400">
+              {searchResults.length === 0
+                ? `Sin resultados para "${search}"`
+                : `${searchResults.length} resultado${searchResults.length !== 1 ? "s" : ""} para "${search}"`}
+            </p>
+            <button onClick={() => setSearch("")} className="text-xs text-gray-500 hover:text-white transition-colors">
+              Limpiar
+            </button>
+          </div>
+          {searchResults.length > 0 && (
+            <div className="divide-y divide-white/5">
+              {searchResults.map((appt) => (
+                <div key={appt.id} className="px-4 py-3 flex items-start justify-between gap-4 hover:bg-white/[0.02] transition-colors">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="shrink-0 text-center w-20">
+                      <p className="text-xs text-gray-500">{appt.date}</p>
+                      <p className="text-[#e94560] font-bold text-sm">{appt.time_slot}</p>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="text-white font-medium text-sm">{appt.client?.full_name ?? "Cliente desconocido"}</p>
+                        <StatusBadge status={appt.status} />
+                      </div>
+                      <p className="text-gray-400 text-xs mt-0.5">{appt.service_type}</p>
+                      {appt.vehicle && (
+                        <p className="text-gray-500 text-xs mt-0.5">
+                          {appt.vehicle.brand} {appt.vehicle.model} {appt.vehicle.year}
+                          {appt.vehicle.plate ? ` — ${appt.vehicle.plate}` : ""}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <StatusActions
+                      appt={appt}
+                      onUpdate={handleStatusUpdate}
+                      pending={isPending && updatingId === appt.id}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-6">
         {/* Left — mini calendar */}
