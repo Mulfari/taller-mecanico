@@ -154,7 +154,7 @@ async function getReportData(since: string | null) {
 
   let ordersQuery = supabase
     .from("work_orders")
-    .select("id, status, final_cost, estimated_cost, created_at, delivered_at");
+    .select("id, status, final_cost, estimated_cost, created_at, delivered_at, mechanic_id, mechanic:profiles!work_orders_mechanic_id_fkey(full_name)");
   if (since) ordersQuery = ordersQuery.gte("created_at", since);
 
   let apptQuery = supabase
@@ -234,6 +234,24 @@ async function getReportData(since: string | null) {
   const acceptedQuotes = (quotes ?? []).filter((q) => q.status === "accepted");
   const quotesRevenue = acceptedQuotes.reduce((sum, q) => sum + (q.total ?? 0), 0);
 
+  // Mechanic performance
+  type MechanicStat = { name: string; total: number; delivered: number; revenue: number };
+  const mechanicMap: Record<string, MechanicStat> = {};
+  for (const o of orders ?? []) {
+    if (!o.mechanic_id) continue;
+    const name =
+      (o.mechanic as { full_name?: string | null } | null)?.full_name ?? "Sin nombre";
+    if (!mechanicMap[o.mechanic_id]) {
+      mechanicMap[o.mechanic_id] = { name, total: 0, delivered: 0, revenue: 0 };
+    }
+    mechanicMap[o.mechanic_id].total += 1;
+    if (o.status === "delivered") {
+      mechanicMap[o.mechanic_id].delivered += 1;
+      mechanicMap[o.mechanic_id].revenue += o.final_cost ?? o.estimated_cost ?? 0;
+    }
+  }
+  const mechanicStats = Object.values(mechanicMap).sort((a, b) => b.delivered - a.delivered);
+
   return {
     totalRevenue,
     totalOrders: (orders ?? []).length,
@@ -247,6 +265,7 @@ async function getReportData(since: string | null) {
     pendingAppointments: (appointments ?? []).filter((a) => a.status === "pending").length,
     quotesRevenue,
     acceptedQuotesCount: acceptedQuotes.length,
+    mechanicStats,
   };
 }
 
@@ -384,6 +403,42 @@ export default async function ReportesPage({
                     />
                   </div>
                   <span className="text-gray-300 text-xs w-8 shrink-0 text-right">{count}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+
+        {/* Mechanic performance */}
+        <SectionCard title="Rendimiento por mecánico">
+          {data.mechanicStats.length === 0 ? (
+            <p className="text-gray-600 text-sm text-center py-4">Sin órdenes asignadas en este período</p>
+          ) : (
+            <div className="space-y-3">
+              {data.mechanicStats.map((m, i) => (
+                <div
+                  key={m.name + i}
+                  className="flex items-center justify-between gap-4 py-2.5 border-b border-white/5 last:border-0"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-[#e94560]/10 border border-[#e94560]/20 flex items-center justify-center shrink-0">
+                      <span className="text-[#e94560] text-xs font-bold">
+                        {m.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-gray-200 text-sm font-medium truncate">{m.name}</p>
+                      <p className="text-gray-500 text-xs">
+                        {m.total} orden{m.total !== 1 ? "es" : ""} · {m.delivered} entregada{m.delivered !== 1 ? "s" : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-white text-sm font-semibold">{fmt(m.revenue)}</p>
+                    <p className="text-gray-600 text-xs">
+                      {m.total > 0 ? Math.round((m.delivered / m.total) * 100) : 0}% completado
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
