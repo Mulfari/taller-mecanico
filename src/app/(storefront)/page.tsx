@@ -2,7 +2,40 @@ import Link from "next/link";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/server";
 
-// --- Icons ---
+// --- Reason icons ---
+function IconCertified() {
+  return (
+    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-.723 3.065 3.745 3.745 0 01-3.065.723 3.745 3.745 0 01-3.068 1.593 3.745 3.745 0 01-3.068-1.593 3.745 3.745 0 01-3.065-.723 3.745 3.745 0 01-.723-3.065A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 01.723-3.065 3.745 3.745 0 013.065-.723A3.745 3.745 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.745 3.745 0 013.065.723 3.745 3.745 0 01.723 3.065A3.745 3.745 0 0121 12z" />
+    </svg>
+  );
+}
+
+function IconClock() {
+  return (
+    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+function IconPriceTag() {
+  return (
+    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185zM9.75 9h.008v.008H9.75V9zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 4.5h.008v.008h-.008V13.5zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+    </svg>
+  );
+}
+
+function IconShield() {
+  return (
+    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+    </svg>
+  );
+}
+
+// --- Service icons ---
 function WrenchIcon() {
   return (
     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,15 +96,25 @@ const services = [
 
 
 const reasons = [
-  { icon: "🔧", title: "Técnicos Certificados", desc: "Más de 15 años de experiencia. Nuestro equipo está certificado por los principales fabricantes." },
-  { icon: "⏱", title: "Entrega a Tiempo", desc: "Cumplimos los plazos prometidos. Si nos demoramos más, el servicio tiene descuento." },
-  { icon: "💰", title: "Precios Transparentes", desc: "Cotización detallada antes de empezar. Sin sorpresas ni cargos ocultos." },
-  { icon: "🛡", title: "Garantía de Servicio", desc: "Todos nuestros trabajos tienen garantía de 6 meses o 10.000 km, lo que ocurra primero." },
+  { icon: <IconCertified />, title: "Técnicos Certificados", desc: "Más de 15 años de experiencia. Nuestro equipo está certificado por los principales fabricantes." },
+  { icon: <IconClock />, title: "Entrega a Tiempo", desc: "Cumplimos los plazos prometidos. Si nos demoramos más, el servicio tiene descuento." },
+  { icon: <IconPriceTag />, title: "Precios Transparentes", desc: "Cotización detallada antes de empezar. Sin sorpresas ni cargos ocultos." },
+  { icon: <IconShield />, title: "Garantía de Servicio", desc: "Todos nuestros trabajos tienen garantía de 6 meses o 10.000 km, lo que ocurra primero." },
 ];
 
 // --- Page ---
 export default async function HomePage() {
   const supabase = await createClient();
+
+  const { data: shopConfig } = await supabase
+    .from("shop_config")
+    .select("name, address")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  const shopName = shopConfig?.name || "TallerPro";
+  const shopAddress = shopConfig?.address || null;
 
   const { data: featuredVehicles } = await supabase
     .from("vehicles_for_sale")
@@ -114,7 +157,9 @@ export default async function HomePage() {
           <div className="max-w-3xl">
             <div className="inline-flex items-center gap-2 bg-[#e94560]/10 border border-[#e94560]/30 rounded-full px-4 py-1.5 mb-6">
               <span className="w-2 h-2 rounded-full bg-[#e94560] animate-pulse" />
-              <span className="text-[#e94560] text-sm font-medium">Taller autorizado · Ciudad</span>
+              <span className="text-[#e94560] text-sm font-medium">
+                {shopName}{shopAddress ? ` · ${shopAddress}` : ""}
+              </span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
@@ -287,8 +332,8 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {reasons.map((r) => (
-              <div key={r.title} className="bg-[#1a1a2e] border border-white/5 rounded-xl p-6 text-center hover:border-[#e94560]/30 transition-colors">
-                <div className="text-4xl mb-4">{r.icon}</div>
+              <div key={r.title} className="bg-[#1a1a2e] border border-white/5 rounded-xl p-6 text-center hover:border-[#e94560]/30 transition-colors group">
+                <div className="text-[#e94560] mb-4 flex justify-center group-hover:scale-110 transition-transform">{r.icon}</div>
                 <h3 className="text-white font-semibold text-base mb-2">{r.title}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">{r.desc}</p>
               </div>
