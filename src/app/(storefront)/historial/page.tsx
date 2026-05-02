@@ -302,6 +302,11 @@ export default function HistorialPage() {
   const [ordersByVehicle, setOrdersByVehicle] = useState<Record<string, WorkOrder[]>>({});
   const [filterVehicleId, setFilterVehicleId] = useState<string>("all");
 
+  useEffect(() => {
+    const param = new URLSearchParams(window.location.search).get("vehiculo");
+    if (param) setFilterVehicleId(param);
+  }, []);
+
   const load = useCallback(async () => {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();

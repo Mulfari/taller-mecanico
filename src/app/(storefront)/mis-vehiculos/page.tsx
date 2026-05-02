@@ -174,7 +174,7 @@ function VehicleCard({ vehicle, stats }: { vehicle: Vehicle; stats: VehicleStats
       {/* Actions */}
       <div className="px-5 py-4 border-t border-white/5 flex flex-col sm:flex-row gap-2">
         <Link
-          href="/seguimiento"
+          href={vehicle.plate ? `/seguimiento?patente=${encodeURIComponent(vehicle.plate)}` : "/seguimiento"}
           className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium text-white transition-colors"
           style={{ backgroundColor: "#e94560" }}
         >
@@ -182,7 +182,7 @@ function VehicleCard({ vehicle, stats }: { vehicle: Vehicle; stats: VehicleStats
           Ver estado actual
         </Link>
         <Link
-          href="/historial"
+          href={`/historial?vehiculo=${vehicle.id}`}
           className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium text-gray-300 border border-white/10 hover:border-white/20 hover:text-white transition-colors"
         >
           <IconWrench />
