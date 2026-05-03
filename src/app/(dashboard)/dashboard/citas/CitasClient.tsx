@@ -972,7 +972,14 @@ export default function CitasClient({
                       )}
                     </div>
                   </div>
-                  <div className="shrink-0">
+                  <div className="shrink-0 flex flex-col items-end gap-2">
+                    <Link
+                      href={`/dashboard/citas/${appt.id}`}
+                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white text-xs transition-colors"
+                      title="Ver detalle"
+                    >
+                      <IconChevronRight />
+                    </Link>
                     <StatusActions
                       appt={appt}
                       onUpdate={handleStatusUpdate}
