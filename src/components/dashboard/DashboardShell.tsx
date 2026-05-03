@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import GlobalSearch from "@/components/dashboard/GlobalSearch";
 import { createClient } from "@/lib/supabase/client";
+
+type BadgeCounts = Record<string, number>;
 
 // ── Nav icons ──────────────────────────────────────────────────────────────
 
@@ -148,7 +150,21 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [displayName, setDisplayName] = useState<string>("Admin");
   const [userRole, setUserRole] = useState<string>("Administrador");
   const [initials, setInitials] = useState<string>("A");
+  const [badges, setBadges] = useState<BadgeCounts>({});
   const pathname = usePathname();
+
+  const fetchBadges = useCallback(async () => {
+    try {
+      const res = await fetch("/api/sidebar-badges");
+      if (res.ok) setBadges(await res.json());
+    } catch { /* silent */ }
+  }, []);
+
+  useEffect(() => {
+    fetchBadges();
+    const interval = setInterval(fetchBadges, 60_000);
+    return () => clearInterval(interval);
+  }, [fetchBadges]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -240,6 +256,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                   >
                     <span className="shrink-0">{item.icon}</span>
                     {item.label}
+                    {badges[item.href] > 0 && (
+                      <span className="ml-auto text-[10px] font-bold leading-none px-1.5 py-0.5 rounded-full bg-[#e94560]/20 text-[#e94560] border border-[#e94560]/30 tabular-nums">
+                        {badges[item.href]}
+                      </span>
+                    )}
                   </Link>
                 </li>
               );
