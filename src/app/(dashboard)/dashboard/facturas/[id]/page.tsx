@@ -60,7 +60,7 @@ export default async function FacturaDetailPage({
          work_order_id, quote_id, items,
          client:profiles!invoices_client_id_fkey(full_name, email, phone),
          work_order:work_orders!invoices_work_order_id_fkey(
-           id, description, received_at, delivered_at,
+           id, description, status, received_at, delivered_at,
            vehicle:vehicles(brand, model, year, plate, vin)
          )`
       )
@@ -95,7 +95,7 @@ export default async function FacturaDetailPage({
     : [];
 
   const laborItems = items.filter((i) => i.type === "labor");
-  const partItems = items.filter((i) => i.type === "part");
+  const partItems = items.filter((i) => !i.type || i.type === "part");
 
   const invoiceNumber = invoice.id.slice(0, 8).toUpperCase();
   const shopName = shopConfig?.name ?? "TallerPro";
@@ -196,9 +196,16 @@ export default async function FacturaDetailPage({
             <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-2 print:text-gray-400">
               Facturar a
             </p>
-            <p className="text-white font-semibold print:text-gray-900">
-              {client?.full_name ?? "—"}
-            </p>
+            {client?.full_name ? (
+              <Link
+                href={`/dashboard/clientes/${(client as { id?: string }).id ?? ""}`}
+                className="text-white font-semibold hover:text-[#e94560] transition-colors print:text-gray-900 print:no-underline"
+              >
+                {client.full_name}
+              </Link>
+            ) : (
+              <p className="text-white font-semibold print:text-gray-900">—</p>
+            )}
             {client?.email && (
               <p className="text-gray-400 text-sm mt-0.5 print:text-gray-600">
                 {client.email}
