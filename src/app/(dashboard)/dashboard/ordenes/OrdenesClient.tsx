@@ -537,6 +537,22 @@ export default function OrdenesClient({
                       </td>
                       <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {NEXT_STATUS[order.status] && (
+                            <button
+                              onClick={() => handleAdvanceStatus(order.id, NEXT_STATUS[order.status]!)}
+                              disabled={advancingId === order.id}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded bg-[#e94560]/10 text-[#e94560] hover:bg-[#e94560]/20 disabled:opacity-50 text-xs font-medium transition-colors whitespace-nowrap border border-[#e94560]/20 hover:border-[#e94560]/40"
+                            >
+                              {advancingId === order.id ? (
+                                <IconSpinner />
+                              ) : (
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                              )}
+                              {NEXT_STATUS_LABEL[order.status]}
+                            </button>
+                          )}
                           {order.status === "delivered" && (
                             <button
                               onClick={() => handleGenerateInvoice(order.id)}
