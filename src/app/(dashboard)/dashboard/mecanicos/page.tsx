@@ -187,13 +187,19 @@ function MechanicCard({ mechanic }: { mechanic: Mechanic }) {
     <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
       {/* Header */}
       <div className="px-5 py-4 flex items-start gap-4 border-b border-white/5">
-        <div className="w-12 h-12 rounded-full bg-[#e94560]/15 border border-[#e94560]/30 flex items-center justify-center shrink-0">
+        <Link
+          href={`/dashboard/mecanicos/${mechanic.id}`}
+          className="w-12 h-12 rounded-full bg-[#e94560]/15 border border-[#e94560]/30 flex items-center justify-center shrink-0 hover:bg-[#e94560]/25 transition-colors"
+        >
           <span className="text-[#e94560] font-bold text-sm">{initials}</span>
-        </div>
+        </Link>
         <div className="flex-1 min-w-0">
-          <p className="text-white font-semibold truncate">
+          <Link
+            href={`/dashboard/mecanicos/${mechanic.id}`}
+            className="text-white font-semibold truncate hover:text-[#e94560] transition-colors block"
+          >
             {mechanic.full_name ?? mechanic.email}
-          </p>
+          </Link>
           <p className="text-gray-500 text-xs truncate">{mechanic.email}</p>
           {mechanic.phone && (
             <p className="text-gray-500 text-xs flex items-center gap-1 mt-0.5">
