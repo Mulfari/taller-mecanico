@@ -118,6 +118,24 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
       .order("created_at", { ascending: false }),
   ]);
 
+  // ── Client KPI stats (derived from already-fetched data) ──────────────────
+  const deliveredOrders = (workOrders ?? []).filter((wo) => wo.status === "delivered");
+  const totalRevenue = deliveredOrders.reduce(
+    (sum, wo) => sum + (wo.final_cost ?? wo.estimated_cost ?? 0),
+    0
+  );
+  const totalOrders = (workOrders ?? []).length;
+  const avgOrderValue = deliveredOrders.length > 0 ? totalRevenue / deliveredOrders.length : 0;
+  const lastVisit = (workOrders ?? []).length > 0
+    ? (workOrders ?? []).reduce((latest, wo) => {
+        const d = wo.received_at ?? "";
+        return d > latest ? d : latest;
+      }, "")
+    : null;
+
+  const fmtCurrency = (n: number) =>
+    `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
   return (
     <div className="space-y-6">
       {/* Back + header */}
@@ -155,6 +173,30 @@ export default async function ClienteDetailPage({ params }: { params: Promise<{ 
               Nueva orden
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* KPI summary row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-[#16213e] border border-white/10 rounded-xl px-4 py-3">
+          <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-1">Ingresos totales</p>
+          <p className="text-[#e94560] text-xl font-bold">{fmtCurrency(totalRevenue)}</p>
+          <p className="text-gray-600 text-xs mt-0.5">{deliveredOrders.length} orden{deliveredOrders.length !== 1 ? "es" : ""} entregada{deliveredOrders.length !== 1 ? "s" : ""}</p>
+        </div>
+        <div className="bg-[#16213e] border border-white/10 rounded-xl px-4 py-3">
+          <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-1">Órdenes totales</p>
+          <p className="text-white text-xl font-bold">{totalOrders}</p>
+          <p className="text-gray-600 text-xs mt-0.5">{(workOrders ?? []).filter((wo) => wo.status !== "delivered").length} activa{(workOrders ?? []).filter((wo) => wo.status !== "delivered").length !== 1 ? "s" : ""}</p>
+        </div>
+        <div className="bg-[#16213e] border border-white/10 rounded-xl px-4 py-3">
+          <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-1">Ticket promedio</p>
+          <p className="text-white text-xl font-bold">{deliveredOrders.length > 0 ? fmtCurrency(avgOrderValue) : "—"}</p>
+          <p className="text-gray-600 text-xs mt-0.5">por orden entregada</p>
+        </div>
+        <div className="bg-[#16213e] border border-white/10 rounded-xl px-4 py-3">
+          <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-1">Última visita</p>
+          <p className="text-white text-xl font-bold">{lastVisit ? formatDate(lastVisit.slice(0, 10)) : "—"}</p>
+          <p className="text-gray-600 text-xs mt-0.5">{(appointments ?? []).length} cita{(appointments ?? []).length !== 1 ? "s" : ""} en total</p>
         </div>
       </div>
 
