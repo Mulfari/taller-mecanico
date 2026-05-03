@@ -390,7 +390,7 @@ export default async function MisVehiculosDetailPage({
             Volver a mis vehículos
           </Link>
           <Link
-            href={`/seguimiento?placa=${vehicle.plate ?? ""}`}
+            href={vehicle.plate ? `/seguimiento?patente=${encodeURIComponent(vehicle.plate)}` : "/seguimiento"}
             className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white bg-[#e94560] hover:bg-[#c73652] transition-colors text-sm"
           >
             Consultar estado en taller
