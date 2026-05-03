@@ -5,6 +5,7 @@ import PrintButton from "./PrintButton";
 import ConvertirOrdenButton from "./ConvertirOrdenButton";
 import QuoteStatusButtons from "./QuoteStatusButtons";
 import EditQuoteItemsButton from "./EditQuoteItemsButton";
+import ShareQuoteButton from "./ShareQuoteButton";
 
 export const metadata = { title: "Cotización — TallerPro" };
 
@@ -140,6 +141,7 @@ export default async function CotizacionDetailPage({
             {quote.status === "accepted" && (
               <ConvertirOrdenButton quoteId={quote.id} />
             )}
+            <ShareQuoteButton quoteId={quote.id} />
             <PrintButton />
           </div>
         </div>
