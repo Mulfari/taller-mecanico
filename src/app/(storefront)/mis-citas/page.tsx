@@ -101,16 +101,169 @@ function IconSpinner() {
   );
 }
 
+const TIME_SLOTS = [
+  "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+  "11:00", "11:30", "12:00", "12:30", "13:00", "13:30",
+  "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
+  "17:00", "17:30",
+];
+
+const inputClass =
+  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors";
+const selectClass =
+  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors appearance-none";
+
+function IconChevronDown() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+    </svg>
+  );
+}
+
+function IconRefresh() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+    </svg>
+  );
+}
+
+// ── Reschedule Modal ───────────────────────────────────────────────────────
+
+function RescheduleModal({
+  appt,
+  onClose,
+  onSaved,
+}: {
+  appt: Appointment;
+  onClose: () => void;
+  onSaved: (id: string, date: string, timeSlot: string) => void;
+}) {
+  const [date, setDate] = useState(appt.date);
+  const [timeSlot, setTimeSlot] = useState(appt.time_slot);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (date < today) {
+      setError("La fecha debe ser hoy o en el futuro.");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    const supabase = createClient();
+    const { error: updateError } = await supabase
+      .from("appointments")
+      .update({ date, time_slot: timeSlot })
+      .eq("id", appt.id);
+
+    if (updateError) {
+      setError("No se pudo reprogramar la cita. Intenta de nuevo.");
+      setSaving(false);
+      return;
+    }
+    onSaved(appt.id, date, timeSlot);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl my-8">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <h2 className="text-white font-semibold text-lg">Reprogramar cita</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label="Cerrar">
+            <IconX />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="bg-white/[0.03] border border-white/5 rounded-lg px-4 py-3 text-sm text-gray-400">
+            <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1">Servicio</p>
+            <p className="text-gray-200">{appt.service_type}</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Nueva fecha <span className="text-[#e94560]">*</span>
+            </label>
+            <input
+              type="date"
+              className={inputClass}
+              value={date}
+              min={today}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">
+              Nuevo horario <span className="text-[#e94560]">*</span>
+            </label>
+            <div className="relative">
+              <select
+                className={selectClass}
+                value={timeSlot}
+                onChange={(e) => setTimeSlot(e.target.value)}
+              >
+                {TIME_SLOTS.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-500">
+                <IconChevronDown />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white hover:border-white/20 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+            >
+              {saving ? (
+                <>
+                  <IconSpinner /> Guardando…
+                </>
+              ) : "Confirmar cambio"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 // ── Appointment Card ───────────────────────────────────────────────────────
 
 function AppointmentCard({
   appt,
   onCancel,
   cancelling,
+  onReschedule,
 }: {
   appt: Appointment;
   onCancel: (id: string) => void;
   cancelling: string | null;
+  onReschedule: (appt: Appointment) => void;
 }) {
   const canCancel = appt.status === "pending" || appt.status === "confirmed";
 
@@ -163,15 +316,25 @@ function AppointmentCard({
         </div>
 
         {canCancel && (
-          <button
-            onClick={() => onCancel(appt.id)}
-            disabled={cancelling === appt.id}
-            className="shrink-0 flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-400 border border-white/10 hover:border-red-400/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-            aria-label="Cancelar cita"
-          >
-            {cancelling === appt.id ? <IconSpinner /> : <IconX />}
-            Cancelar
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => onReschedule(appt)}
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-blue-400 border border-white/10 hover:border-blue-400/30 px-3 py-1.5 rounded-lg transition-colors"
+              aria-label="Reprogramar cita"
+            >
+              <IconRefresh />
+              Reprogramar
+            </button>
+            <button
+              onClick={() => onCancel(appt.id)}
+              disabled={cancelling === appt.id}
+              className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-red-400 border border-white/10 hover:border-red-400/30 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+              aria-label="Cancelar cita"
+            >
+              {cancelling === appt.id ? <IconSpinner /> : <IconX />}
+              Cancelar
+            </button>
+          </div>
         )}
       </div>
 
@@ -230,6 +393,7 @@ export default function MisCitasPage() {
   const [dataLoading, setDataLoading] = useState(false);
   const [cancelling, setCancelling] = useState<string | null>(null);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [reschedulingAppt, setReschedulingAppt] = useState<Appointment | null>(null);
 
   const loadAppointments = useCallback(async (userId: string) => {
     setDataLoading(true);
@@ -264,6 +428,17 @@ export default function MisCitasPage() {
 
     return () => subscription.unsubscribe();
   }, [loadAppointments]);
+
+  function handleReschedule(appt: Appointment) {
+    setReschedulingAppt(appt);
+  }
+
+  function handleRescheduleSaved(id: string, date: string, timeSlot: string) {
+    setAppointments((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, date, time_slot: timeSlot } : a))
+    );
+    setReschedulingAppt(null);
+  }
 
   async function handleCancel(id: string) {
     setCancelling(id);
@@ -334,6 +509,7 @@ export default function MisCitasPage() {
   // ── Main view ────────────────────────────────────────────────────────────
 
   return (
+    <>
     <div className="min-h-screen bg-[#1a1a2e]">
       {/* Hero */}
       <div className="bg-[#16213e] border-b border-white/5 py-12">
@@ -411,6 +587,7 @@ export default function MisCitasPage() {
                     appt={appt}
                     onCancel={handleCancel}
                     cancelling={cancelling}
+                    onReschedule={handleReschedule}
                   />
                 ))}
               </section>
@@ -440,6 +617,7 @@ export default function MisCitasPage() {
                           appt={appt}
                           onCancel={handleCancel}
                           cancelling={cancelling}
+                          onReschedule={handleReschedule}
                         />
                       ))}
                     </div>
@@ -455,6 +633,7 @@ export default function MisCitasPage() {
                         appt={appt}
                         onCancel={handleCancel}
                         cancelling={cancelling}
+                        onReschedule={handleReschedule}
                       />
                     ))}
                   </>
@@ -478,5 +657,14 @@ export default function MisCitasPage() {
         )}
       </div>
     </div>
+
+    {reschedulingAppt && (
+      <RescheduleModal
+        appt={reschedulingAppt}
+        onClose={() => setReschedulingAppt(null)}
+        onSaved={handleRescheduleSaved}
+      />
+    )}
+    </>
   );
 }
