@@ -838,6 +838,7 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
   const [filterCategory, setFilterCategory] = useState("");
   const [filterBrand, setFilterBrand] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Inventory | null>(null);
   const [editTarget, setEditTarget] = useState<Inventory | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -863,6 +864,14 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
 
   function handleAdded() {
     setShowModal(false);
+    startTransition(() => {
+      window.location.reload();
+    });
+  }
+
+  function handleImportDone(inserted: number, updated: number) {
+    setShowImport(false);
+    toast(`Importación completada: ${inserted} nuevos, ${updated} actualizados`, "success");
     startTransition(() => {
       window.location.reload();
     });
@@ -908,6 +917,14 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowImport(true)}
+            className="shrink-0 inline-flex items-center gap-2 bg-[#16213e] border border-white/10 hover:border-white/20 text-gray-300 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            title="Importar inventario desde CSV"
+          >
+            <IconUpload />
+            Importar CSV
+          </button>
           <button
             onClick={() => exportInventoryCSV(filtered)}
             disabled={filtered.length === 0}
@@ -1063,6 +1080,13 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
       </div>
 
       {showModal && <AddItemModal onClose={() => setShowModal(false)} onAdd={handleAdded} />}
+
+      {showImport && (
+        <ImportCSVModal
+          onClose={() => setShowImport(false)}
+          onDone={handleImportDone}
+        />
+      )}
 
       {editTarget && (
         <EditItemModal
