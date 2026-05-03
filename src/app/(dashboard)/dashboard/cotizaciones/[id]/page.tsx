@@ -6,6 +6,7 @@ import ConvertirOrdenButton from "./ConvertirOrdenButton";
 import QuoteStatusButtons from "./QuoteStatusButtons";
 import EditQuoteItemsButton from "./EditQuoteItemsButton";
 import ShareQuoteButton from "./ShareQuoteButton";
+import CrearFacturaButton from "./CrearFacturaButton";
 
 export const metadata = { title: "Cotización — TallerPro" };
 
@@ -57,7 +58,7 @@ export default async function CotizacionDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: quote }, { data: shopConfig }] = await Promise.all([
+  const [{ data: quote }, { data: shopConfig }, { data: existingInvoice }] = await Promise.all([
     supabase
       .from("quotes")
       .select(
@@ -72,6 +73,11 @@ export default async function CotizacionDetailPage({
       .select("name, phone, address, logo_url")
       .order("created_at", { ascending: true })
       .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("invoices")
+      .select("id")
+      .eq("quote_id", id)
       .maybeSingle(),
   ]);
 
@@ -140,6 +146,21 @@ export default async function CotizacionDetailPage({
             />
             {quote.status === "accepted" && (
               <ConvertirOrdenButton quoteId={quote.id} />
+            )}
+            {quote.status === "accepted" && (
+              existingInvoice ? (
+                <Link
+                  href={`/dashboard/facturas/${existingInvoice.id}`}
+                  className="flex items-center gap-2 bg-green-600/20 border border-green-600/40 hover:bg-green-600/30 text-green-300 text-sm font-medium px-4 py-2.5 rounded-lg transition-colors print:hidden"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                  </svg>
+                  Ver factura
+                </Link>
+              ) : (
+                <CrearFacturaButton quoteId={quote.id} />
+              )
             )}
             <ShareQuoteButton quoteId={quote.id} />
             <PrintButton />

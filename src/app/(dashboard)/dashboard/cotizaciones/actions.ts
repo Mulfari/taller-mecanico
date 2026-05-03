@@ -34,6 +34,55 @@ export async function updateQuoteItems(
   revalidatePath("/dashboard/cotizaciones");
 }
 
+export async function createWorkOrderFromQuoteAction(quoteId: string) {
+  return createWorkOrderFromQuote(quoteId);
+}
+
+export async function createInvoiceFromQuoteAction(quoteId: string) {
+  const supabase = await createClient();
+
+  const { data: quote, error: quoteError } = await supabase
+    .from("quotes")
+    .select("id, client_id, vehicle_id, items, total, status")
+    .eq("id", quoteId)
+    .single();
+
+  if (quoteError || !quote) throw new Error("Cotización no encontrada");
+  if (quote.status === "rejected") throw new Error("No se puede facturar una cotización rechazada");
+
+  // Check if invoice already exists for this quote
+  const { data: existing } = await supabase
+    .from("invoices")
+    .select("id")
+    .eq("quote_id", quoteId)
+    .maybeSingle();
+
+  if (existing) redirect(`/dashboard/facturas/${existing.id}`);
+
+  const subtotal = Number(quote.total ?? 0);
+
+  const { data: invoice, error: invoiceError } = await supabase
+    .from("invoices")
+    .insert({
+      quote_id: quoteId,
+      work_order_id: null,
+      client_id: quote.client_id,
+      items: quote.items ?? [],
+      subtotal,
+      tax: 0,
+      total: subtotal,
+      status: "draft",
+    })
+    .select("id")
+    .single();
+
+  if (invoiceError || !invoice) throw new Error(invoiceError?.message ?? "Error al crear la factura");
+
+  revalidatePath("/dashboard/facturas");
+  revalidatePath(`/dashboard/cotizaciones/${quoteId}`);
+  redirect(`/dashboard/facturas/${invoice.id}`);
+}
+
 export async function createWorkOrderFromQuote(quoteId: string) {
   const supabase = await createClient();
 
