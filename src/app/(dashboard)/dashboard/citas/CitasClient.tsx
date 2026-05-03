@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useTransition, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import type { AppointmentWithRelations } from "@/lib/supabase/queries/appointments";
 import type { AppointmentStatus } from "@/types/database";
 import { updateAppointmentStatusAction, createAppointmentAction, createWorkOrderFromAppointmentAction, updateAppointmentAction } from "./actions";
@@ -1097,14 +1098,23 @@ export default function CitasClient({
                     </div>
 
                     <div className="flex-shrink-0 flex flex-col items-end gap-2">
-                      <button
-                        onClick={() => setEditingAppt(appt)}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white text-xs transition-colors"
-                        aria-label="Editar cita"
-                        title="Editar cita"
-                      >
-                        <IconPencil /> Editar
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setEditingAppt(appt)}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white text-xs transition-colors"
+                          aria-label="Editar cita"
+                          title="Editar cita"
+                        >
+                          <IconPencil /> Editar
+                        </button>
+                        <Link
+                          href={`/dashboard/citas/${appt.id}`}
+                          className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white text-xs transition-colors"
+                          title="Ver detalle"
+                        >
+                          <IconChevronRight />
+                        </Link>
+                      </div>
                       <StatusActions
                         appt={appt}
                         onUpdate={handleStatusUpdate}
