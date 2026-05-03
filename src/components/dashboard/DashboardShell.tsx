@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationBell from "@/components/dashboard/NotificationBell";
+import GlobalSearch from "@/components/dashboard/GlobalSearch";
 import { createClient } from "@/lib/supabase/client";
 
 // ── Nav icons ──────────────────────────────────────────────────────────────
@@ -272,7 +273,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             </svg>
           </button>
 
-          <div className="flex-1" />
+          <GlobalSearch />
 
           {/* Notifications */}
           <NotificationBell />
