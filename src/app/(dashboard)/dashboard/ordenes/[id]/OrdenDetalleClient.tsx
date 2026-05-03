@@ -522,7 +522,7 @@ export default function OrdenDetalleClient({
     startTransition(async () => {
       try {
         await addWorkOrderItem(initialOrder.id, item);
-        setItems((prev) => [...prev, { ...item, id: `temp-${Date.now()}`, work_order_id: initialOrder.id }]);
+        setItems((prev) => [...prev, { ...item, id: `temp-${Date.now()}`, work_order_id: initialOrder.id, inventory_id: item.inventoryItemId ?? null }]);
         setShowAddItem(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al agregar el ítem");
