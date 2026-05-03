@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { WorkOrderListItem, WorkOrderStatus } from "@/types/database";
 import { EmptyState } from "@/components/ui";
+import { createClient } from "@/lib/supabase/client";
 import { generateInvoiceFromWorkOrder, advanceWorkOrderStatus } from "./actions";
 
 // ── Icons ──────────────────────────────────────────────────────────────────
@@ -326,7 +327,66 @@ export default function OrdenesClient({
   const [view, setView] = useState<"list" | "kanban">("list");
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
   const [advancingId, setAdvancingId] = useState<string | null>(null);
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [, startTransition] = useTransition();
+
+  // Supabase Realtime: live order status updates
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel("dashboard_work_orders")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "work_orders",
+        },
+        (payload) => {
+          if (payload.eventType === "UPDATE") {
+            setOrders((prev) =>
+              prev.map((o) =>
+                o.id === payload.new.id
+                  ? {
+                      ...o,
+                      status: payload.new.status as WorkOrderStatus,
+                      description: payload.new.description ?? o.description,
+                      diagnosis: payload.new.diagnosis ?? o.diagnosis,
+                      estimated_cost: payload.new.estimated_cost ?? o.estimated_cost,
+                      final_cost: payload.new.final_cost ?? o.final_cost,
+                      mechanic_id: payload.new.mechanic_id ?? o.mechanic_id,
+                      received_at: payload.new.received_at ?? o.received_at,
+                      estimated_delivery: payload.new.estimated_delivery ?? o.estimated_delivery,
+                      delivered_at: payload.new.delivered_at ?? o.delivered_at,
+                    }
+                  : o
+              )
+            );
+          } else if (payload.eventType === "INSERT") {
+            router.refresh();
+          } else if (payload.eventType === "DELETE") {
+            setOrders((prev) => prev.filter((o) => o.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe((status) => {
+        setRealtimeConnected(status === "SUBSCRIBED");
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [router]);
+
+  // Sync with server data when initialOrders changes (e.g. after router.refresh)
+  const syncOrders = useCallback(() => {
+    setOrders(initialOrders);
+  }, [initialOrders]);
+
+  useEffect(() => {
+    syncOrders();
+  }, [syncOrders]);
 
   async function handleGenerateInvoice(orderId: string) {
     setGeneratingInvoice(orderId);
@@ -340,7 +400,6 @@ export default function OrdenesClient({
 
   function handleAdvanceStatus(orderId: string, next: WorkOrderStatus) {
     setAdvancingId(orderId);
-    // Optimistic update
     setOrders((prev) =>
       prev.map((o) => (o.id === orderId ? { ...o, status: next } : o))
     );
@@ -348,7 +407,6 @@ export default function OrdenesClient({
       try {
         await advanceWorkOrderStatus(orderId, next);
       } catch {
-        // Revert on error
         setOrders(initialOrders);
       } finally {
         setAdvancingId(null);
@@ -424,6 +482,20 @@ export default function OrdenesClient({
               </button>
             );
           })}
+
+          {/* Realtime indicator */}
+          <span
+            className={`inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg ${
+              realtimeConnected
+                ? "text-green-400 bg-green-500/10 border border-green-500/20"
+                : "text-gray-600 bg-white/5 border border-white/5"
+            }`}
+            title={realtimeConnected ? "Actualizaciones en tiempo real activas" : "Conectando…"}
+            aria-live="polite"
+          >
+            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${realtimeConnected ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
+            <span className="hidden sm:inline">{realtimeConnected ? "En vivo" : "Conectando…"}</span>
+          </span>
 
           {/* View toggle */}
           <div className="flex items-center bg-[#16213e] border border-white/10 rounded-lg p-0.5 ml-auto sm:ml-0">
