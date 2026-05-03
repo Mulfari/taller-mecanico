@@ -8,7 +8,9 @@ import {
   getLowStockItems,
   getReadyOrders,
   getPendingQuotes,
+  getUpcomingDeliveries,
   type PendingQuote,
+  type UpcomingDelivery,
 } from "@/lib/supabase/queries/work-orders";
 
 export const metadata: Metadata = { title: "Panel Principal — TallerPro" };
@@ -152,13 +154,14 @@ export default async function DashboardPage() {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
-  const [metrics, recentOrders, upcomingAppointments, lowStockItems, readyOrders, pendingQuotes] = await Promise.all([
+  const [metrics, recentOrders, upcomingAppointments, lowStockItems, readyOrders, pendingQuotes, upcomingDeliveries] = await Promise.all([
     getDashboardMetrics(),
     getRecentOrders(5),
     getUpcomingAppointments(5),
     getLowStockItems(8),
     getReadyOrders(5),
     getPendingQuotes(6),
+    getUpcomingDeliveries(5, 8),
   ]);
 
   const fmtRevenue = (n: number) => {
@@ -421,6 +424,103 @@ export default async function DashboardPage() {
                             </span>
                           ) : (
                             <span className="text-gray-600">—</span>
+                          )}
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Upcoming deliveries */}
+      {upcomingDeliveries.length > 0 && (
+        <div className="bg-[#16213e] border border-purple-500/20 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <h2 className="text-white font-semibold text-base">Entregas próximas</h2>
+              <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full font-medium">
+                {upcomingDeliveries.length}
+              </span>
+            </div>
+            <Link href="/dashboard/ordenes" className="text-[#e94560] text-sm hover:underline">
+              Ver todas →
+            </Link>
+          </div>
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-sm min-w-[520px]">
+              <thead>
+                <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/5">
+                  <th className="text-left pb-3 px-1 font-medium">OT / Cliente</th>
+                  <th className="text-left pb-3 px-1 font-medium">Vehículo</th>
+                  <th className="text-left pb-3 px-1 font-medium">Estado</th>
+                  <th className="text-left pb-3 px-1 font-medium">Entrega estimada</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {upcomingDeliveries.map((delivery: UpcomingDelivery) => {
+                  const daysUntil = Math.ceil(
+                    (new Date(delivery.estimated_delivery + "T00:00:00").getTime() - Date.now()) / 86400000
+                  );
+                  const isToday = daysUntil <= 0;
+                  const isTomorrow = daysUntil === 1;
+                  const isUrgent = daysUntil <= 1;
+                  const deliveryLabel = isToday
+                    ? "Hoy"
+                    : isTomorrow
+                    ? "Mañana"
+                    : new Date(delivery.estimated_delivery + "T00:00:00").toLocaleDateString("es-MX", {
+                        day: "2-digit",
+                        month: "short",
+                      });
+                  return (
+                    <tr key={delivery.id} className="hover:bg-white/[0.03] transition-colors group">
+                      <td className="py-3 px-1">
+                        <Link href={`/dashboard/ordenes/${delivery.id}`} className="block">
+                          <p className="text-purple-400 font-mono text-xs group-hover:underline">
+                            OT-{delivery.id.slice(0, 6).toUpperCase()}
+                          </p>
+                          <p className="text-white font-medium mt-0.5">
+                            {delivery.client?.full_name ?? "—"}
+                          </p>
+                        </Link>
+                      </td>
+                      <td className="py-3 px-1">
+                        <Link href={`/dashboard/ordenes/${delivery.id}`} className="block text-gray-300">
+                          {delivery.vehicle
+                            ? `${delivery.vehicle.brand} ${delivery.vehicle.model} ${delivery.vehicle.year}`
+                            : <span className="text-gray-600">—</span>}
+                          {delivery.vehicle?.plate && (
+                            <p className="text-gray-500 text-xs mt-0.5">{delivery.vehicle.plate}</p>
+                          )}
+                        </Link>
+                      </td>
+                      <td className="py-3 px-1">
+                        <Link href={`/dashboard/ordenes/${delivery.id}`} className="block">
+                          <StatusBadge
+                            label={ORDER_STATUS_LABELS[delivery.status as WorkOrderStatus]}
+                            color={ORDER_STATUS_COLORS[delivery.status as WorkOrderStatus]}
+                          />
+                        </Link>
+                      </td>
+                      <td className="py-3 px-1">
+                        <Link href={`/dashboard/ordenes/${delivery.id}`} className="block">
+                          <span className={`text-sm font-semibold ${isUrgent ? "text-orange-400" : "text-purple-300"}`}>
+                            {deliveryLabel}
+                          </span>
+                          {!isToday && !isTomorrow && (
+                            <p className="text-gray-500 text-xs mt-0.5">
+                              {new Date(delivery.estimated_delivery + "T00:00:00").toLocaleDateString("es-MX", {
+                                day: "2-digit",
+                                month: "long",
+                              })}
+                            </p>
                           )}
                         </Link>
                       </td>
