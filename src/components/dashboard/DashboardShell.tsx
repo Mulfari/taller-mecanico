@@ -180,11 +180,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex">
+    <div className="min-h-screen bg-[#1a1a2e] flex print:bg-white print:block">
       {/* Sidebar overlay (mobile) */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-20 md:hidden"
+          className="fixed inset-0 bg-black/60 z-20 md:hidden print:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -196,6 +196,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           flex flex-col transition-transform duration-300
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0 md:static md:z-auto
+          print:hidden
         `}
       >
         {/* Logo */}
@@ -261,7 +262,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Topbar */}
-        <header className="h-16 bg-[#16213e] border-b border-[#e94560]/20 flex items-center px-4 sm:px-6 gap-4 shrink-0">
+        <header className="h-16 bg-[#16213e] border-b border-[#e94560]/20 flex items-center px-4 sm:px-6 gap-4 shrink-0 print:hidden">
           {/* Hamburger (mobile) */}
           <button
             className="md:hidden text-gray-400 hover:text-white p-1"
@@ -291,7 +292,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-auto p-4 sm:p-6 print:p-0 print:overflow-visible print:bg-white">
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}

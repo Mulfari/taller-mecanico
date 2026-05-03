@@ -30,10 +30,14 @@ export default async function StorefrontLayout({ children }: { children: React.R
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1a1a2e]">
-      <StorefrontNav shopName={shopName} logoUrl={logoUrl} />
-      <main className="flex-1">{children}</main>
-      <StorefrontFooter shopName={shopName} phone={phone} address={address} schedule={schedule} />
+    <div className="min-h-screen flex flex-col bg-[#1a1a2e] print:bg-white print:block">
+      <div className="print:hidden">
+        <StorefrontNav shopName={shopName} logoUrl={logoUrl} />
+      </div>
+      <main className="flex-1 print:bg-white">{children}</main>
+      <div className="print:hidden">
+        <StorefrontFooter shopName={shopName} phone={phone} address={address} schedule={schedule} />
+      </div>
     </div>
   );
 }

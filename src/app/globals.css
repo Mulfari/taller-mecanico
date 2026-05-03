@@ -1,1 +1,53 @@
 @import "tailwindcss";
+
+@media print {
+  /* Reset dark backgrounds to white for paper */
+  body,
+  html {
+    background: white !important;
+    color: #111 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Let content flow naturally on paper */
+  * {
+    overflow: visible !important;
+  }
+
+  /* Remove fixed/sticky positioning that breaks print layout */
+  aside,
+  header,
+  nav {
+    position: static !important;
+  }
+
+  /* Dashboard shell: expand main content to full width */
+  .print\:flex-none {
+    flex: none !important;
+  }
+
+  /* Clean page margins */
+  @page {
+    margin: 1.5cm;
+    size: auto;
+  }
+
+  /* Prevent page breaks inside cards and tables */
+  table,
+  tr,
+  .rounded-xl,
+  .rounded-lg {
+    break-inside: avoid;
+  }
+
+  /* Hide Framer Motion wrappers' transforms */
+  [style*="transform"] {
+    transform: none !important;
+  }
+
+  /* Ensure links don't show underlines unless wanted */
+  a {
+    text-decoration: none !important;
+  }
+}
