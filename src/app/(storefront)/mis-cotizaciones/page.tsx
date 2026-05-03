@@ -212,7 +212,7 @@ function QuoteCard({
               </span>
             )}
             <Link
-              href={`/cotizacion/${quote.id}`}
+              href={`/mis-cotizaciones/${quote.id}`}
               className="inline-flex items-center gap-1 text-gray-400 hover:text-white text-sm transition-colors"
               aria-label={`Ver cotización ${quote.id.slice(0, 8).toUpperCase()}`}
             >
