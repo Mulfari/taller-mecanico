@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition, useRef } from "react";
 import type { Inventory } from "@/types/database";
 import { toast, ConfirmDialog, EmptyState } from "@/components/ui";
-import { createInventoryItem, updateInventoryItem, deleteInventoryItem, adjustStock } from "./actions";
+import { createInventoryItem, updateInventoryItem, deleteInventoryItem, adjustStock, bulkUpsertInventoryItems } from "./actions";
 
 function IconSearch() {
   return (
@@ -66,6 +66,14 @@ function IconDownload() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+  );
+}
+
+function IconUpload() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12" />
     </svg>
   );
 }
@@ -557,6 +565,238 @@ function StockAdjuster({ item, onAdjusted }: { item: Inventory; onAdjusted: (id:
         <IconPlus />
       </button>
       <span className="text-gray-600 text-xs ml-0.5">/ {item.min_stock} mín</span>
+    </div>
+  );
+}
+
+// ── CSV Import Modal ───────────────────────────────────────────────────────
+
+// Expected CSV columns (matches export format):
+// Nombre, SKU, Categoría, Marca, Cantidad, Stock mínimo, Precio costo, Precio venta, Ubicación, Proveedor, Compatible con
+function parseInventoryCSV(text: string): Array<{
+  name: string; sku: string; category: string; brand: string;
+  quantity: number; min_stock: number; cost_price: number | null;
+  sell_price: number; location: string; supplier: string; compatible_brands: string[];
+}> {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) throw new Error("El archivo no tiene datos.");
+
+  // Strip BOM if present
+  const rawHeader = lines[0].replace(/^﻿/, "");
+  const headers = rawHeader.split(",").map((h) => h.trim().toLowerCase().replace(/"/g, ""));
+
+  // Map header names to indices (flexible — matches Spanish export headers)
+  const idx = (names: string[]) => {
+    for (const n of names) {
+      const i = headers.findIndex((h) => h.includes(n));
+      if (i !== -1) return i;
+    }
+    return -1;
+  };
+
+  const iName     = idx(["nombre"]);
+  const iSku      = idx(["sku"]);
+  const iCat      = idx(["categor"]);
+  const iBrand    = idx(["marca"]);
+  const iQty      = idx(["cantidad"]);
+  const iMin      = idx(["mínimo", "minimo", "min"]);
+  const iCost     = idx(["costo"]);
+  const iSell     = idx(["venta"]);
+  const iLoc      = idx(["ubicaci"]);
+  const iSupp     = idx(["proveedor"]);
+  const iCompat   = idx(["compatible"]);
+
+  if (iName === -1 || iSku === -1) throw new Error("El CSV debe tener columnas 'Nombre' y 'SKU'.");
+
+  const parseCell = (row: string[], i: number) => {
+    if (i === -1) return "";
+    const v = row[i] ?? "";
+    return v.replace(/^"|"$/g, "").replace(/""/g, '"').trim();
+  };
+
+  const rows = [];
+  for (let li = 1; li < lines.length; li++) {
+    // Simple CSV split (handles quoted fields)
+    const row: string[] = [];
+    let cur = "";
+    let inQ = false;
+    for (const ch of lines[li]) {
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === "," && !inQ) { row.push(cur); cur = ""; }
+      else { cur += ch; }
+    }
+    row.push(cur);
+
+    const name = parseCell(row, iName);
+    const sku  = parseCell(row, iSku);
+    if (!name || !sku) continue;
+
+    const qty      = parseInt(parseCell(row, iQty), 10);
+    const minStock = parseInt(parseCell(row, iMin), 10);
+    const costRaw  = parseCell(row, iCost);
+    const sellRaw  = parseCell(row, iSell);
+    const compatRaw = parseCell(row, iCompat);
+
+    rows.push({
+      name,
+      sku,
+      category:         parseCell(row, iCat),
+      brand:            parseCell(row, iBrand),
+      quantity:         isNaN(qty) ? 0 : qty,
+      min_stock:        isNaN(minStock) ? 0 : minStock,
+      cost_price:       costRaw ? parseFloat(costRaw) || null : null,
+      sell_price:       parseFloat(sellRaw) || 0,
+      location:         parseCell(row, iLoc),
+      supplier:         parseCell(row, iSupp),
+      compatible_brands: compatRaw ? compatRaw.split(";").map((s) => s.trim()).filter(Boolean) : [],
+    });
+  }
+
+  if (rows.length === 0) throw new Error("No se encontraron filas válidas en el archivo.");
+  return rows;
+}
+
+function ImportCSVModal({ onClose, onDone }: { onClose: () => void; onDone: (inserted: number, updated: number) => void }) {
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<{ name: string; sku: string }[]>([]);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(f: File) {
+    setFile(f);
+    setParseError(null);
+    setPreview([]);
+    try {
+      const text = await f.text();
+      const rows = parseInventoryCSV(text);
+      setPreview(rows.slice(0, 5).map((r) => ({ name: r.name, sku: r.sku })));
+    } catch (e) {
+      setParseError(e instanceof Error ? e.message : "Error al leer el archivo.");
+    }
+  }
+
+  async function handleImport() {
+    if (!file) return;
+    setImporting(true);
+    setImportError(null);
+    try {
+      const text = await file.text();
+      const rows = parseInventoryCSV(text);
+      const { inserted, updated } = await bulkUpsertInventoryItems(rows);
+      onDone(inserted, updated);
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : "Error al importar.");
+      setImporting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl my-8">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <h2 className="text-white font-semibold text-lg">Importar inventario desde CSV</h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label="Cerrar">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-5">
+          {/* Format hint */}
+          <div className="bg-white/[0.03] border border-white/5 rounded-lg px-4 py-3 text-xs text-gray-400 space-y-1">
+            <p className="font-medium text-gray-300">Formato esperado (mismo que exportación CSV):</p>
+            <p className="font-mono text-gray-500">Nombre, SKU, Categoría, Marca, Cantidad, Stock mínimo, Precio costo, Precio venta, Ubicación, Proveedor, Compatible con</p>
+            <p className="mt-1">Los registros existentes con el mismo SKU serán <span className="text-yellow-400">actualizados</span>. Los nuevos serán <span className="text-green-400">insertados</span>.</p>
+          </div>
+
+          {/* Drop zone */}
+          <div
+            className="border-2 border-dashed border-white/10 rounded-xl p-6 text-center cursor-pointer hover:border-[#e94560]/40 transition-colors"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+            aria-label="Seleccionar archivo CSV"
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+            />
+            <div className="flex justify-center text-gray-500 mb-2">
+              <IconUpload />
+            </div>
+            {file ? (
+              <p className="text-white text-sm font-medium">{file.name}</p>
+            ) : (
+              <p className="text-gray-500 text-sm">Arrastrá un archivo CSV o hacé clic para seleccionar</p>
+            )}
+          </div>
+
+          {/* Parse error */}
+          {parseError && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+              {parseError}
+            </div>
+          )}
+
+          {/* Preview */}
+          {preview.length > 0 && !parseError && (
+            <div>
+              <p className="text-gray-400 text-xs mb-2">Vista previa (primeras {preview.length} filas):</p>
+              <div className="bg-[#1a1a2e] rounded-lg border border-white/5 divide-y divide-white/5 overflow-hidden">
+                {preview.map((r, i) => (
+                  <div key={i} className="flex items-center gap-3 px-3 py-2 text-xs">
+                    <span className="text-white font-medium truncate flex-1">{r.name}</span>
+                    <span className="text-gray-500 font-mono shrink-0">{r.sku}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Import error */}
+          {importError && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 text-red-400 text-sm">
+              {importError}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white hover:border-white/20 transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={!file || !!parseError || importing}
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-50 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+            >
+              {importing ? (
+                <>
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Importando…
+                </>
+              ) : "Importar"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
