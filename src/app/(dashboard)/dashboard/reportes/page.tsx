@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Suspense } from "react";
 import Link from "next/link";
 import PeriodFilter from "./PeriodFilter";
+import ExportReporteButton from "./ExportReporteButton";
 
 export const metadata = { title: "Reportes — TallerPro" };
 
@@ -320,9 +321,24 @@ export default async function ReportesPage({
             Resumen de actividad — <span className="text-gray-400">{PERIOD_LABELS[period]}</span>
           </p>
         </div>
-        <Suspense fallback={null}>
-          <PeriodFilter current={period} />
-        </Suspense>
+        <div className="flex items-center gap-3 flex-wrap">
+          <ExportReporteButton
+            data={{
+              period: PERIOD_LABELS[period],
+              totalRevenue: data.totalRevenue,
+              totalOrders: data.totalOrders,
+              activeOrders: data.activeOrders,
+              monthlyRevenue: data.monthlyRevenue,
+              topServices: data.topServices.map(([service, count]) => ({ service, count })),
+              topClients: data.topClients,
+              mechanicStats: data.mechanicStats,
+              lowStock: data.lowStock,
+            }}
+          />
+          <Suspense fallback={null}>
+            <PeriodFilter current={period} />
+          </Suspense>
+        </div>
       </div>
 
       {/* KPI row */}
