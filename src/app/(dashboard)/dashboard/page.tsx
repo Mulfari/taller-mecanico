@@ -225,6 +225,71 @@ export default async function DashboardPage() {
         <p className="text-gray-500 text-sm mt-1 capitalize">{today}</p>
       </div>
 
+      {/* Quick actions */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          {
+            label: "Nueva Orden",
+            href: "/dashboard/ordenes/nueva",
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085" />
+              </svg>
+            ),
+            color: "bg-[#e94560]/10 text-[#e94560] border-[#e94560]/20 hover:bg-[#e94560]/20",
+          },
+          {
+            label: "Registrar Cliente",
+            href: "/dashboard/clientes?nuevo=1",
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+            ),
+            color: "bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20",
+          },
+          {
+            label: "Agendar Cita",
+            href: "/dashboard/citas?nueva=1",
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            ),
+            color: "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-green-500/20",
+          },
+          {
+            label: "Nueva Cotización",
+            href: "/dashboard/cotizaciones?nueva=1",
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            ),
+            color: "bg-purple-500/10 text-purple-400 border-purple-500/20 hover:bg-purple-500/20",
+          },
+          {
+            label: "Agregar Repuesto",
+            href: "/dashboard/inventario?nuevo=1",
+            icon: (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            ),
+            color: "bg-orange-500/10 text-orange-400 border-orange-500/20 hover:bg-orange-500/20",
+          },
+        ].map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${action.color}`}
+          >
+            {action.icon}
+            {action.label}
+          </Link>
+        ))}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         {metricCards.map((m) => (
           <MetricCard key={m.label} {...m} />
