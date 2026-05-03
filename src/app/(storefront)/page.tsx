@@ -106,15 +106,63 @@ const reasons = [
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const { data: shopConfig } = await supabase
-    .from("shop_config")
-    .select("name, address")
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+  const [
+    { data: shopConfig },
+    { count: clientCount },
+    { count: deliveredCount },
+    { count: vehicleCount },
+  ] = await Promise.all([
+    supabase
+      .from("shop_config")
+      .select("name, address, created_at")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "client"),
+    supabase
+      .from("work_orders")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "delivered"),
+    supabase
+      .from("work_orders")
+      .select("vehicle_id", { count: "exact", head: true }),
+  ]);
 
   const shopName = shopConfig?.name || "TallerPro";
   const shopAddress = shopConfig?.address || null;
+
+  const yearsActive = shopConfig?.created_at
+    ? Math.max(1, new Date().getFullYear() - new Date(shopConfig.created_at).getFullYear())
+    : null;
+
+  function formatCount(n: number): string {
+    if (n >= 1000) return `+${(n / 1000).toFixed(1).replace(/\.0$/, "")}k`;
+    return n > 0 ? `+${n}` : "0";
+  }
+
+  const heroStats = [
+    {
+      value: formatCount(clientCount ?? 0),
+      label: "Clientes atendidos",
+    },
+    {
+      value: deliveredCount != null && deliveredCount > 0
+        ? formatCount(deliveredCount)
+        : formatCount(vehicleCount ?? 0),
+      label: deliveredCount != null && deliveredCount > 0
+        ? "Servicios completados"
+        : "Vehículos atendidos",
+    },
+    {
+      value: yearsActive != null
+        ? `${yearsActive} ${yearsActive === 1 ? "año" : "años"}`
+        : "Expertos",
+      label: yearsActive != null ? "De experiencia" : "En mecánica automotriz",
+    },
+  ];
 
   const { data: featuredVehicles } = await supabase
     .from("vehicles_for_sale")
@@ -141,30 +189,30 @@ export default async function HomePage() {
   return (
     <>
       {/* HERO */}
-      <section className="relative overflow-hidden bg-[#1a1a2e]">
+      <section className="relative overflow-hidden bg-surface">
         {/* Background grid pattern */}
         <div
           className="absolute inset-0 opacity-5"
           style={{
-            backgroundImage: "linear-gradient(#e94560 1px, transparent 1px), linear-gradient(90deg, #e94560 1px, transparent 1px)",
+            backgroundImage: "linear-gradient(var(--color-primary) 1px, transparent 1px), linear-gradient(90deg, var(--color-primary) 1px, transparent 1px)",
             backgroundSize: "40px 40px",
           }}
         />
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a2e] via-[#16213e]/80 to-[#1a1a2e]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-surface via-secondary/80 to-surface" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32">
           <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 bg-[#e94560]/10 border border-[#e94560]/30 rounded-full px-4 py-1.5 mb-6">
-              <span className="w-2 h-2 rounded-full bg-[#e94560] animate-pulse" />
-              <span className="text-[#e94560] text-sm font-medium">
+            <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-full px-4 py-1.5 mb-6">
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="text-primary text-sm font-medium">
                 {shopName}{shopAddress ? ` · ${shopAddress}` : ""}
               </span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-tight mb-6">
               Tu vehículo merece{" "}
-              <span className="text-[#e94560]">el mejor cuidado</span>
+              <span className="text-primary">el mejor cuidado</span>
             </h1>
 
             <p className="text-gray-400 text-lg md:text-xl leading-relaxed mb-8 max-w-xl">
@@ -174,13 +222,13 @@ export default async function HomePage() {
             <div className="flex flex-col sm:flex-row gap-4">
               <Link
                 href="/citas"
-                className="bg-[#e94560] hover:bg-[#c73652] text-white font-semibold px-8 py-3.5 rounded-lg transition-colors text-center"
+                className="bg-primary hover:bg-primary-hover text-white font-semibold px-8 py-3.5 rounded-lg transition-colors text-center"
               >
                 Agendar Cita
               </Link>
               <Link
                 href="/mi-vehiculo"
-                className="border border-[#e94560]/40 hover:border-[#e94560] text-gray-300 hover:text-white font-semibold px-8 py-3.5 rounded-lg transition-colors text-center"
+                className="border border-primary/40 hover:border-primary text-gray-300 hover:text-white font-semibold px-8 py-3.5 rounded-lg transition-colors text-center"
               >
                 Estado de mi Vehículo
               </Link>
@@ -188,11 +236,7 @@ export default async function HomePage() {
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3 sm:gap-6 mt-12 pt-10 border-t border-white/10">
-              {[
-                { value: "+2.500", label: "Clientes atendidos" },
-                { value: "15 años", label: "De experiencia" },
-                { value: "98%", label: "Satisfacción" },
-              ].map((stat) => (
+              {heroStats.map((stat) => (
                 <div key={stat.label}>
                   <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">{stat.value}</p>
                   <p className="text-gray-500 text-xs sm:text-sm mt-1">{stat.label}</p>
@@ -204,11 +248,11 @@ export default async function HomePage() {
       </section>
 
       {/* SERVICES */}
-      <section className="bg-[#16213e] py-16 md:py-24">
+      <section className="bg-secondary py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Nuestros <span className="text-[#e94560]">Servicios</span>
+              Nuestros <span className="text-primary">Servicios</span>
             </h2>
             <p className="text-gray-400 max-w-xl mx-auto">
               Equipos de diagnóstico de última generación y técnicos certificados para cualquier marca y modelo.
@@ -218,9 +262,9 @@ export default async function HomePage() {
             {services.map((service) => (
               <div
                 key={service.title}
-                className="bg-[#1a1a2e] border border-white/5 rounded-xl p-6 hover:border-[#e94560]/30 transition-colors group"
+                className="bg-surface border border-white/5 rounded-xl p-6 hover:border-primary/30 transition-colors group"
               >
-                <div className="text-[#e94560] mb-4 group-hover:scale-110 transition-transform inline-block">
+                <div className="text-primary mb-4 group-hover:scale-110 transition-transform inline-block">
                   {service.icon}
                 </div>
                 <h3 className="text-white font-semibold text-lg mb-2">{service.title}</h3>
@@ -229,7 +273,7 @@ export default async function HomePage() {
             ))}
           </div>
           <div className="text-center mt-10">
-            <Link href="/servicios" className="inline-flex items-center gap-2 text-[#e94560] hover:text-white font-medium transition-colors">
+            <Link href="/servicios" className="inline-flex items-center gap-2 text-primary hover:text-white font-medium transition-colors">
               Ver todos los servicios
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -240,11 +284,11 @@ export default async function HomePage() {
       </section>
 
       {/* FEATURED VEHICLES */}
-      <section className="bg-[#1a1a2e] py-16 md:py-24">
+      <section className="bg-surface py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Vehículos <span className="text-[#e94560]">Destacados</span>
+              Vehículos <span className="text-primary">Destacados</span>
             </h2>
             <p className="text-gray-400 max-w-xl mx-auto">
               Revisados y certificados por nuestros técnicos. Garantía incluida en todos los modelos.
@@ -262,9 +306,9 @@ export default async function HomePage() {
               <Link
                 key={v.id}
                 href={`/vehiculos/${v.id}`}
-                className="bg-[#16213e] border border-white/5 rounded-xl overflow-hidden hover:border-[#e94560]/30 transition-colors group"
+                className="bg-secondary border border-white/5 rounded-xl overflow-hidden hover:border-primary/30 transition-colors group"
               >
-                <div className="relative h-48 bg-gradient-to-br from-[#16213e] to-[#0d1117] flex items-center justify-center border-b border-white/5 overflow-hidden">
+                <div className="relative h-48 bg-gradient-to-br from-secondary to-[#0d1117] flex items-center justify-center border-b border-white/5 overflow-hidden">
                   {mainPhoto ? (
                     <Image
                       src={mainPhoto}
@@ -274,7 +318,7 @@ export default async function HomePage() {
                       sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     />
                   ) : (
-                    <svg className="w-20 h-20 text-gray-700 group-hover:text-[#e94560]/30 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-20 h-20 text-gray-700 group-hover:text-primary/30 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
                     </svg>
                   )}
@@ -282,11 +326,11 @@ export default async function HomePage() {
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-white font-bold text-lg group-hover:text-[#e94560] transition-colors">{v.brand} {v.model}</h3>
+                      <h3 className="text-white font-bold text-lg group-hover:text-primary transition-colors">{v.brand} {v.model}</h3>
                       <p className="text-gray-500 text-sm">{v.year}{v.color ? ` · ${v.color}` : ""}</p>
                     </div>
                     {v.price != null && (
-                      <span className="text-[#e94560] font-bold text-lg">${v.price.toLocaleString("es-MX")}</span>
+                      <span className="text-primary font-bold text-lg">${v.price.toLocaleString("es-MX")}</span>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2 mb-4">
@@ -297,12 +341,12 @@ export default async function HomePage() {
                     ]
                       .filter(Boolean)
                       .map((tag) => (
-                        <span key={tag} className="bg-[#1a1a2e] text-gray-400 text-xs px-2.5 py-1 rounded-full border border-white/5">
+                        <span key={tag} className="bg-surface text-gray-400 text-xs px-2.5 py-1 rounded-full border border-white/5">
                           {tag}
                         </span>
                       ))}
                   </div>
-                  <div className="block text-center border border-[#e94560]/40 group-hover:border-[#e94560] group-hover:bg-[#e94560]/10 text-gray-300 group-hover:text-white text-sm font-medium py-2 rounded-lg transition-colors">
+                  <div className="block text-center border border-primary/40 group-hover:border-primary group-hover:bg-primary/10 text-gray-300 group-hover:text-white text-sm font-medium py-2 rounded-lg transition-colors">
                     Ver detalles
                   </div>
                 </div>
@@ -312,7 +356,7 @@ export default async function HomePage() {
           </div>
           )}
           <div className="text-center mt-10">
-            <Link href="/vehiculos" className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white font-semibold px-8 py-3 rounded-lg transition-colors">
+            <Link href="/vehiculos" className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white font-semibold px-8 py-3 rounded-lg transition-colors">
               Ver todos los vehículos
             </Link>
           </div>
@@ -320,11 +364,11 @@ export default async function HomePage() {
       </section>
 
       {/* WHY CHOOSE US */}
-      <section className="bg-[#16213e] py-16 md:py-24">
+      <section className="bg-secondary py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              ¿Por qué <span className="text-[#e94560]">elegirnos</span>?
+              ¿Por qué <span className="text-primary">elegirnos</span>?
             </h2>
             <p className="text-gray-400 max-w-xl mx-auto">
               Calidad, transparencia y respeto por tu tiempo. Eso es lo que nos diferencia.
@@ -332,8 +376,8 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {reasons.map((r) => (
-              <div key={r.title} className="bg-[#1a1a2e] border border-white/5 rounded-xl p-6 text-center hover:border-[#e94560]/30 transition-colors group">
-                <div className="text-[#e94560] mb-4 flex justify-center group-hover:scale-110 transition-transform">{r.icon}</div>
+              <div key={r.title} className="bg-surface border border-white/5 rounded-xl p-6 text-center hover:border-primary/30 transition-colors group">
+                <div className="text-primary mb-4 flex justify-center group-hover:scale-110 transition-transform">{r.icon}</div>
                 <h3 className="text-white font-semibold text-base mb-2">{r.title}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">{r.desc}</p>
               </div>
@@ -343,7 +387,7 @@ export default async function HomePage() {
       </section>
 
       {/* CTA BANNER */}
-      <section className="bg-[#e94560] py-14">
+      <section className="bg-primary py-14">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
             ¿Listo para agendar tu próxima visita?
@@ -352,7 +396,7 @@ export default async function HomePage() {
             Reserva tu cita en minutos y recibe confirmación inmediata. Sin esperas, sin complicaciones.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/citas" className="bg-white text-[#e94560] hover:bg-gray-100 font-semibold px-8 py-3.5 rounded-lg transition-colors">
+            <Link href="/citas" className="bg-white text-primary hover:bg-gray-100 font-semibold px-8 py-3.5 rounded-lg transition-colors">
               Agendar Cita Ahora
             </Link>
             <Link href="/cotizacion" className="border-2 border-white/60 hover:border-white text-white font-semibold px-8 py-3.5 rounded-lg transition-colors">
