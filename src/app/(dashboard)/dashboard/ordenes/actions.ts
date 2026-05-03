@@ -17,6 +17,7 @@ export async function createWorkOrder(formData: FormData) {
     ? parseFloat(formData.get("estimated_cost") as string)
     : null;
   const estimated_delivery = (formData.get("estimated_delivery") as string) || null;
+  const received_at_raw = (formData.get("received_at") as string) || null;
 
   const { data, error } = await supabase
     .from("work_orders")
@@ -30,6 +31,9 @@ export async function createWorkOrder(formData: FormData) {
       estimated_delivery: estimated_delivery
         ? new Date(estimated_delivery).toISOString()
         : null,
+      received_at: received_at_raw
+        ? new Date(received_at_raw).toISOString()
+        : new Date().toISOString(),
     })
     .select("id")
     .single();

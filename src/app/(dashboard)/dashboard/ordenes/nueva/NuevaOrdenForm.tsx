@@ -401,6 +401,22 @@ export default function NuevaOrdenForm({ clients, mechanics, vehiclesByClient, d
             />
           </div>
         </div>
+
+        <div>
+          <FieldLabel htmlFor="received_at">Fecha y hora de recepción</FieldLabel>
+          <input
+            id="received_at"
+            name="received_at"
+            type="datetime-local"
+            defaultValue={new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+              .toISOString()
+              .slice(0, 16)}
+            className={inputClass}
+          />
+          <p className="text-gray-600 text-xs mt-1">
+            Por defecto: ahora. Ajustá si el vehículo ingresó antes.
+          </p>
+        </div>
       </div>
 
       <div className="flex items-center justify-end gap-3 pt-1">
