@@ -13,6 +13,7 @@ import {
   reassignMechanic,
 } from "../actions";
 import PrintButton from "./PrintButton";
+import WhatsAppButton from "./WhatsAppButton";
 
 const STATUS_STEPS: WorkOrderStatus[] = ["received", "diagnosing", "repairing", "ready", "delivered"];
 
@@ -585,8 +586,14 @@ export default function OrdenDetalleClient({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 print:hidden">
+          <WhatsAppButton
+            clientName={initialOrder.client.full_name}
+            clientPhone={initialOrder.client.phone}
+            vehicleLabel={`${initialOrder.vehicle.brand} ${initialOrder.vehicle.model} ${initialOrder.vehicle.year}`}
+            orderCode={`OT-${initialOrder.id.slice(0, 6).toUpperCase()}`}
+            status={status}
+          />
           <PrintButton />
-          {/* Generate invoice button — shown once order has items */}
           {items.length > 0 && (
             <button
               onClick={handleGenerateInvoice}
