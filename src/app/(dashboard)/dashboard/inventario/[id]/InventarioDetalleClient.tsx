@@ -2,9 +2,24 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { Inventory } from "@/types/database";
 import { toast, ConfirmDialog } from "@/components/ui";
 import { updateInventoryItem, deleteInventoryItem, adjustStock } from "../actions";
+
+export interface StockMovement {
+  id: string;
+  quantity: number;
+  unit_price: number;
+  total: number;
+  created_at: string;
+  work_order_id: string | null;
+  work_order_description: string | null;
+  work_order_status: string | null;
+  work_order_received_at: string | null;
+  client_name: string | null;
+  vehicle_label: string | null;
+}
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 
@@ -257,7 +272,23 @@ function EditModal({ item, onClose, onSaved }: { item: Inventory; onClose: () =>
 
 // ── Main Component ─────────────────────────────────────────────────────────
 
-export default function InventarioDetalleClient({ item: initialItem }: { item: Inventory }) {
+const WO_STATUS_LABELS: Record<string, string> = {
+  received: "Recibido",
+  diagnosing: "Diagnóstico",
+  repairing: "En reparación",
+  ready: "Listo",
+  delivered: "Entregado",
+};
+
+const WO_STATUS_COLORS: Record<string, string> = {
+  received: "bg-gray-500/20 text-gray-300",
+  diagnosing: "bg-yellow-500/20 text-yellow-300",
+  repairing: "bg-blue-500/20 text-blue-300",
+  ready: "bg-green-500/20 text-green-300",
+  delivered: "bg-gray-600/20 text-gray-500",
+};
+
+export default function InventarioDetalleClient({ item: initialItem, stockMovements = [] }: { item: Inventory; stockMovements?: StockMovement[] }) {
   const router = useRouter();
   const [item, setItem] = useState<Inventory>(initialItem);
   const [showEdit, setShowEdit] = useState(false);
@@ -411,6 +442,95 @@ export default function InventarioDetalleClient({ item: initialItem }: { item: I
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Stock movements */}
+      <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-gray-400 text-xs font-semibold uppercase tracking-wide">
+            Movimientos de stock
+          </h2>
+          {stockMovements.length > 0 && (
+            <span className="text-xs text-gray-500">
+              {stockMovements.length} uso{stockMovements.length !== 1 ? "s" : ""} registrado{stockMovements.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+
+        {stockMovements.length === 0 ? (
+          <p className="text-gray-600 text-sm py-4 text-center">
+            Este repuesto no ha sido utilizado en ninguna orden de trabajo.
+          </p>
+        ) : (
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-sm min-w-[580px]">
+              <thead>
+                <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/5">
+                  <th className="text-left pb-3 px-1 font-medium">Orden / Cliente</th>
+                  <th className="text-left pb-3 px-1 font-medium">Vehículo</th>
+                  <th className="text-left pb-3 px-1 font-medium">Estado</th>
+                  <th className="text-right pb-3 px-1 font-medium">Cant.</th>
+                  <th className="text-right pb-3 px-1 font-medium">Total</th>
+                  <th className="text-right pb-3 px-1 font-medium">Fecha</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {stockMovements.map((mov) => {
+                  const woStatus = mov.work_order_status ?? "received";
+                  return (
+                    <tr key={mov.id} className="hover:bg-white/[0.03] transition-colors group">
+                      <td className="py-3 px-1">
+                        {mov.work_order_id ? (
+                          <Link href={`/dashboard/ordenes/${mov.work_order_id}`} className="block">
+                            <p className="text-[#e94560] font-mono text-xs group-hover:underline">
+                              OT-{mov.work_order_id.slice(0, 6).toUpperCase()}
+                            </p>
+                            <p className="text-white text-sm mt-0.5 truncate max-w-[180px]">
+                              {mov.client_name ?? "—"}
+                            </p>
+                          </Link>
+                        ) : (
+                          <span className="text-gray-600 text-xs">Sin orden</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-1">
+                        <span className="text-gray-300 text-sm truncate block max-w-[160px]">
+                          {mov.vehicle_label ?? "—"}
+                        </span>
+                      </td>
+                      <td className="py-3 px-1">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${WO_STATUS_COLORS[woStatus] ?? "bg-gray-500/20 text-gray-300"}`}>
+                          {WO_STATUS_LABELS[woStatus] ?? woStatus}
+                        </span>
+                      </td>
+                      <td className="py-3 px-1 text-right">
+                        <span className="text-orange-400 font-medium">-{mov.quantity}</span>
+                      </td>
+                      <td className="py-3 px-1 text-right">
+                        <span className="text-gray-300">{fmt(mov.total)}</span>
+                      </td>
+                      <td className="py-3 px-1 text-right">
+                        <span className="text-gray-500 text-xs">
+                          {fmtDate(mov.work_order_received_at ?? mov.created_at)}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            {/* Summary row */}
+            <div className="flex items-center justify-between pt-3 mt-1 border-t border-white/10 px-1">
+              <span className="text-gray-500 text-xs">
+                Total consumido: <span className="text-orange-400 font-medium">{stockMovements.reduce((s, m) => s + m.quantity, 0)} uds.</span>
+              </span>
+              <span className="text-gray-500 text-xs">
+                Valor total: <span className="text-white font-medium">{fmt(stockMovements.reduce((s, m) => s + m.total, 0))}</span>
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Compatible brands */}
