@@ -88,25 +88,65 @@ const SERVICE_TYPES = [
   "Otro",
 ];
 
-const TIME_SLOTS = [
+const FALLBACK_TIME_SLOTS = [
   "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
   "11:00", "11:30", "12:00", "12:30", "14:00", "14:30",
   "15:00", "15:30", "16:00", "16:30", "17:00",
 ];
 
-
 const DAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const MONTHS_ES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+const JS_DAY_TO_SCHEDULE_KEY = [
+  "domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado",
+];
+
+// ── Schedule types ────────────────────────────────────────────────────────
+
+interface DaySchedule {
+  open: string;
+  close: string;
+  closed: boolean;
+}
+
+type WeekSchedule = Record<string, DaySchedule>;
+
+function generateTimeSlots(open: string, close: string): string[] {
+  const slots: string[] = [];
+  const [openH, openM] = open.split(":").map(Number);
+  const [closeH, closeM] = close.split(":").map(Number);
+  let minutes = openH * 60 + openM;
+  const end = closeH * 60 + closeM;
+  while (minutes < end) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    minutes += 30;
+  }
+  return slots;
+}
+
+function isDayClosed(d: Date, schedule: WeekSchedule | null): boolean {
+  if (!schedule) {
+    const day = d.getDay();
+    return day === 0 || day === 6;
+  }
+  const key = JS_DAY_TO_SCHEDULE_KEY[d.getDay()];
+  return schedule[key]?.closed ?? false;
+}
+
+function getSlotsForDate(d: Date, schedule: WeekSchedule | null): string[] {
+  if (!schedule) return FALLBACK_TIME_SLOTS;
+  const key = JS_DAY_TO_SCHEDULE_KEY[d.getDay()];
+  const day = schedule[key];
+  if (!day || day.closed) return [];
+  return generateTimeSlots(day.open, day.close);
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function toDateKey(d: Date) {
   return d.toISOString().slice(0, 10);
-}
-
-function isWeekend(d: Date) {
-  const day = d.getDay();
-  return day === 0 || day === 6;
 }
 
 function isPast(d: Date) {
@@ -115,8 +155,8 @@ function isPast(d: Date) {
   return d < today;
 }
 
-function isFullyBooked(dateKey: string, bookedSlots: Record<string, string[]>) {
-  return (bookedSlots[dateKey] ?? []).length >= TIME_SLOTS.length;
+function isFullyBooked(dateKey: string, bookedSlots: Record<string, string[]>, slotCount: number) {
+  return (bookedSlots[dateKey] ?? []).length >= slotCount;
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
@@ -126,9 +166,10 @@ interface CalendarProps {
   onSelect: (key: string) => void;
   bookedSlots: Record<string, string[]>;
   onMonthChange: (year: number, month: number) => void;
+  schedule: WeekSchedule | null;
 }
 
-function Calendar({ selected, onSelect, bookedSlots, onMonthChange }: CalendarProps) {
+function Calendar({ selected, onSelect, bookedSlots, onMonthChange, schedule }: CalendarProps) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -161,7 +202,7 @@ function Calendar({ selected, onSelect, bookedSlots, onMonthChange }: CalendarPr
   const canGoPrev = !(viewYear === today.getFullYear() && viewMonth === today.getMonth());
 
   return (
-    <div className="bg-[#16213e] border border-white/10 rounded-xl p-4">
+    <div className="bg-secondary border border-white/10 rounded-xl p-4">
       {/* Month nav */}
       <div className="flex items-center justify-between mb-4">
         <button
@@ -196,8 +237,10 @@ function Calendar({ selected, onSelect, bookedSlots, onMonthChange }: CalendarPr
         {days.map((day, i) => {
           if (!day) return <div key={`empty-${i}`} />;
           const key = toDateKey(day);
-          const fullyBooked = isFullyBooked(key, bookedSlots);
-          const disabled = isPast(day) || isWeekend(day) || fullyBooked;
+          const closed = isDayClosed(day, schedule);
+          const daySlots = getSlotsForDate(day, schedule);
+          const fullyBooked = !closed && isFullyBooked(key, bookedSlots, daySlots.length);
+          const disabled = isPast(day) || closed || fullyBooked;
           const isSelected = selected === key;
 
           return (
@@ -207,7 +250,7 @@ function Calendar({ selected, onSelect, bookedSlots, onMonthChange }: CalendarPr
               disabled={disabled}
               className={`
                 relative aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-colors
-                ${isSelected ? "bg-[#e94560] text-white" : ""}
+                ${isSelected ? "bg-primary text-white" : ""}
                 ${!isSelected && !disabled ? "text-gray-200 hover:bg-white/10" : ""}
                 ${disabled && !fullyBooked ? "text-gray-600 cursor-not-allowed" : ""}
                 ${fullyBooked ? "text-gray-700 cursor-not-allowed line-through" : ""}
@@ -216,7 +259,7 @@ function Calendar({ selected, onSelect, bookedSlots, onMonthChange }: CalendarPr
               aria-pressed={isSelected}
             >
               {day.getDate()}
-              {fullyBooked && !isPast(day) && !isWeekend(day) && (
+              {fullyBooked && !isPast(day) && !closed && (
                 <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-red-500/60" />
               )}
             </button>
@@ -226,7 +269,7 @@ function Calendar({ selected, onSelect, bookedSlots, onMonthChange }: CalendarPr
 
       <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
         <span className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-[#e94560]" /> Seleccionado
+          <span className="w-2 h-2 rounded-full bg-primary" /> Seleccionado
         </span>
         <span className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-red-500/60" /> Sin disponibilidad
@@ -244,12 +287,13 @@ interface TimeSlotsProps {
   onSelect: (slot: string) => void;
   bookedSlots: Record<string, string[]>;
   loading?: boolean;
+  availableSlots: string[];
 }
 
-function TimeSlots({ dateKey, selected, onSelect, bookedSlots, loading }: TimeSlotsProps) {
+function TimeSlots({ dateKey, selected, onSelect, bookedSlots, loading, availableSlots }: TimeSlotsProps) {
   const booked = bookedSlots[dateKey] ?? [];
   return (
-    <div className="bg-[#16213e] border border-white/10 rounded-xl p-4">
+    <div className="bg-secondary border border-white/10 rounded-xl p-4">
       <h3 className="text-white font-semibold text-sm mb-3 flex items-center gap-2">
         <IconClock />
         Horario disponible
@@ -264,7 +308,7 @@ function TimeSlots({ dateKey, selected, onSelect, bookedSlots, loading }: TimeSl
         </div>
       ) : (
         <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-          {TIME_SLOTS.map((slot) => {
+          {availableSlots.map((slot) => {
             const isBooked = booked.includes(slot);
             const isSelected = selected === slot;
             return (
@@ -274,9 +318,9 @@ function TimeSlots({ dateKey, selected, onSelect, bookedSlots, loading }: TimeSl
                 disabled={isBooked}
                 className={`
                   py-2 rounded-lg text-xs font-medium transition-colors
-                  ${isSelected ? "bg-[#e94560] text-white" : ""}
-                  ${!isSelected && !isBooked ? "bg-[#1a1a2e] border border-white/10 text-gray-300 hover:border-[#e94560]/50 hover:text-white" : ""}
-                  ${isBooked ? "bg-[#1a1a2e] border border-white/5 text-gray-700 cursor-not-allowed line-through" : ""}
+                  ${isSelected ? "bg-primary text-white" : ""}
+                  ${!isSelected && !isBooked ? "bg-surface border border-white/10 text-gray-300 hover:border-primary/50 hover:text-white" : ""}
+                  ${isBooked ? "bg-surface border border-white/5 text-gray-700 cursor-not-allowed line-through" : ""}
                 `}
                 aria-label={`${slot}${isBooked ? " — no disponible" : ""}`}
                 aria-pressed={isSelected}
@@ -303,7 +347,7 @@ interface NewVehicle {
 const EMPTY_VEHICLE: NewVehicle = { brand: "", model: "", year: "", plate: "" };
 
 const inputClass =
-  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors";
+  "w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors";
 
 interface NewVehicleFormProps {
   value: NewVehicle;
@@ -316,19 +360,19 @@ function NewVehicleForm({ value, onChange, errors }: NewVehicleFormProps) {
     onChange({ ...value, [field]: val });
   }
   return (
-    <div className="grid grid-cols-2 gap-3 mt-3 p-4 bg-[#1a1a2e] rounded-xl border border-white/10">
+    <div className="grid grid-cols-2 gap-3 mt-3 p-4 bg-surface rounded-xl border border-white/10">
       <div>
-        <label className="block text-xs font-medium text-gray-400 mb-1.5">Marca <span className="text-[#e94560]">*</span></label>
+        <label className="block text-xs font-medium text-gray-400 mb-1.5">Marca <span className="text-primary">*</span></label>
         <input className={inputClass} placeholder="Toyota" value={value.brand} onChange={(e) => set("brand", e.target.value)} />
         {errors.brand && <p className="text-red-400 text-xs mt-1">{errors.brand}</p>}
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-400 mb-1.5">Modelo <span className="text-[#e94560]">*</span></label>
+        <label className="block text-xs font-medium text-gray-400 mb-1.5">Modelo <span className="text-primary">*</span></label>
         <input className={inputClass} placeholder="Corolla" value={value.model} onChange={(e) => set("model", e.target.value)} />
         {errors.model && <p className="text-red-400 text-xs mt-1">{errors.model}</p>}
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-400 mb-1.5">Año <span className="text-[#e94560]">*</span></label>
+        <label className="block text-xs font-medium text-gray-400 mb-1.5">Año <span className="text-primary">*</span></label>
         <input className={inputClass} placeholder="2020" maxLength={4} value={value.year} onChange={(e) => set("year", e.target.value)} />
         {errors.year && <p className="text-red-400 text-xs mt-1">{errors.year}</p>}
       </div>
@@ -386,6 +430,21 @@ function CitasPageInner() {
   const [bookedSlots, setBookedSlots] = useState<Record<string, string[]>>({});
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [userVehicles, setUserVehicles] = useState<UserVehicle[]>([]);
+  const [schedule, setSchedule] = useState<WeekSchedule | null>(null);
+
+  // Load shop schedule on mount
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("shop_config")
+      .select("schedule")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.schedule) setSchedule(data.schedule as WeekSchedule);
+      });
+  }, []);
 
   // Load user vehicles on mount (only if logged in)
   useEffect(() => {
@@ -526,7 +585,7 @@ function CitasPageInner() {
 
   if (submitted) {
     return (
-      <main className="min-h-screen" style={{ background: "#1a1a2e" }}>
+      <main className="min-h-screen" style={{ background: "var(--color-surface)" }}>
         <div className="max-w-lg mx-auto px-4 py-20 text-center">
           <div className="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-6 text-green-400">
             <IconCheck />
@@ -538,7 +597,7 @@ function CitasPageInner() {
           <p className="text-gray-500 text-sm mb-8">Te contactaremos al {form.phone} para confirmar.</p>
           <button
             onClick={() => { setSubmitted(false); setForm(EMPTY_FORM); setSelectedDate(null); setSelectedSlot(null); }}
-            className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
           >
             Agendar otra cita
           </button>
@@ -548,11 +607,11 @@ function CitasPageInner() {
   }
 
   return (
-    <main className="min-h-screen" style={{ background: "#1a1a2e" }}>
+    <main className="min-h-screen" style={{ background: "var(--color-surface)" }}>
       <div className="max-w-5xl mx-auto px-4 py-10 sm:py-16">
         {/* Header */}
         <div className="mb-10">
-          <div className="inline-flex items-center gap-2 text-[#e94560] text-sm font-medium mb-3">
+          <div className="inline-flex items-center gap-2 text-primary text-sm font-medium mb-3">
             <IconCalendar />
             Agenda tu cita
           </div>
@@ -565,7 +624,7 @@ function CitasPageInner() {
             {/* Left column — calendar + slots */}
             <div className="space-y-4">
               <h2 className="text-white font-semibold flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-[#e94560] text-white text-xs flex items-center justify-center font-bold">1</span>
+                <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">1</span>
                 Selecciona fecha y hora
               </h2>
               <Calendar
@@ -573,6 +632,7 @@ function CitasPageInner() {
                 onSelect={handleDateSelect}
                 bookedSlots={bookedSlots}
                 onMonthChange={fetchMonthSlots}
+                schedule={schedule}
               />
               {selectedDate && (
                 <TimeSlots
@@ -581,13 +641,17 @@ function CitasPageInner() {
                   onSelect={setSelectedSlot}
                   bookedSlots={bookedSlots}
                   loading={slotsLoading}
+                  availableSlots={(() => {
+                    const [y, m, d] = selectedDate.split("-").map(Number);
+                    return getSlotsForDate(new Date(y, m - 1, d), schedule);
+                  })()}
                 />
               )}
               {!selectedDate && (
                 <p className="text-gray-600 text-sm text-center py-4">Selecciona un día en el calendario para ver los horarios disponibles.</p>
               )}
               {selectedDate && !selectedSlot && (
-                <p className="text-[#e94560] text-xs">Selecciona un horario para continuar.</p>
+                <p className="text-primary text-xs">Selecciona un horario para continuar.</p>
               )}
             </div>
 
@@ -596,18 +660,18 @@ function CitasPageInner() {
               {/* Contact info */}
               <div>
                 <h2 className="text-white font-semibold flex items-center gap-2 mb-4">
-                  <span className="w-6 h-6 rounded-full bg-[#e94560] text-white text-xs flex items-center justify-center font-bold">2</span>
+                  <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">2</span>
                   Tus datos
                 </h2>
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Nombre completo <span className="text-[#e94560]">*</span></label>
+                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Nombre completo <span className="text-primary">*</span></label>
                     <input className={inputClass} placeholder="Carlos Mendoza" value={form.name} onChange={(e) => setField("name", e.target.value)} />
                     {formErrors.name && <p className="text-red-400 text-xs mt-1">{formErrors.name}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1.5">Teléfono <span className="text-[#e94560]">*</span></label>
+                      <label className="block text-sm font-medium text-gray-300 mb-1.5">Teléfono <span className="text-primary">*</span></label>
                       <input className={inputClass} placeholder="55 1234 5678" value={form.phone} onChange={(e) => setField("phone", e.target.value)} />
                       {formErrors.phone && <p className="text-red-400 text-xs mt-1">{formErrors.phone}</p>}
                     </div>
@@ -623,14 +687,14 @@ function CitasPageInner() {
               {/* Vehicle */}
               <div>
                 <h2 className="text-white font-semibold flex items-center gap-2 mb-4">
-                  <span className="w-6 h-6 rounded-full bg-[#e94560] text-white text-xs flex items-center justify-center font-bold">3</span>
+                  <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">3</span>
                   Vehículo
                 </h2>
                 <div className="relative">
                   <select
                     value={form.vehicleId}
                     onChange={(e) => { setField("vehicleId", e.target.value); setVehicleErrors({}); }}
-                    className="w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors appearance-none"
+                    className="w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors appearance-none"
                   >
                     <option value="">Seleccionar vehículo…</option>
                     {userVehicles.map((v) => (
@@ -649,7 +713,7 @@ function CitasPageInner() {
               {/* Service type */}
               <div>
                 <h2 className="text-white font-semibold flex items-center gap-2 mb-4">
-                  <span className="w-6 h-6 rounded-full bg-[#e94560] text-white text-xs flex items-center justify-center font-bold">4</span>
+                  <span className="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">4</span>
                   Tipo de servicio
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -660,8 +724,8 @@ function CitasPageInner() {
                       onClick={() => setField("serviceType", s)}
                       className={`text-left px-3 py-2.5 rounded-lg text-sm border transition-colors ${
                         form.serviceType === s
-                          ? "bg-[#e94560]/20 border-[#e94560]/60 text-white"
-                          : "bg-[#1a1a2e] border-white/10 text-gray-400 hover:text-white hover:border-white/20"
+                          ? "bg-primary/20 border-primary/60 text-white"
+                          : "bg-surface border-white/10 text-gray-400 hover:text-white hover:border-white/20"
                       }`}
                     >
                       {s}
@@ -685,10 +749,10 @@ function CitasPageInner() {
 
               {/* Summary + submit */}
               {selectedDate && selectedSlot && (
-                <div className="bg-[#16213e] border border-[#e94560]/30 rounded-xl p-4 text-sm">
+                <div className="bg-secondary border border-primary/30 rounded-xl p-4 text-sm">
                   <p className="text-gray-400">Resumen de tu cita:</p>
                   <p className="text-white font-medium mt-1 capitalize">{dateLabel}</p>
-                  <p className="text-[#e94560] font-semibold">{selectedSlot} hrs</p>
+                  <p className="text-primary font-semibold">{selectedSlot} hrs</p>
                   {form.serviceType && <p className="text-gray-300 mt-1">{form.serviceType}</p>}
                 </div>
               )}
@@ -702,7 +766,7 @@ function CitasPageInner() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white font-semibold px-6 py-3.5 rounded-xl transition-colors text-sm"
+                className="w-full inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-60 text-white font-semibold px-6 py-3.5 rounded-xl transition-colors text-sm"
               >
                 {submitting ? (
                   <>
