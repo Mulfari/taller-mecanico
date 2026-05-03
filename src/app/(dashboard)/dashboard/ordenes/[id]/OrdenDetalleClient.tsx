@@ -643,10 +643,16 @@ export default function OrdenDetalleClient({
 
       {/* Vehicle + Client grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-4">
+        <Link
+          href={`/dashboard/vehiculos/${initialOrder.vehicle.id}`}
+          className="block bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-4 hover:border-[#e94560]/30 transition-colors group"
+        >
           <div className="flex items-center gap-2 text-gray-400">
             <IconCar />
             <p className="text-xs uppercase tracking-wide font-medium">Vehículo</p>
+            <svg className="w-3.5 h-3.5 ml-auto text-gray-600 group-hover:text-[#e94560] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
           </div>
           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
             <InfoRow label="Marca / Modelo" value={`${initialOrder.vehicle.brand} ${initialOrder.vehicle.model}`} />
@@ -656,7 +662,7 @@ export default function OrdenDetalleClient({
             <InfoRow label="Kilometraje" value={initialOrder.vehicle.mileage != null ? `${initialOrder.vehicle.mileage.toLocaleString("es-MX")} km` : "—"} />
             <InfoRow label="VIN" value={initialOrder.vehicle.vin ?? "—"} />
           </div>
-        </div>
+        </Link>
 
         <div className="space-y-4">
           <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-4">
@@ -665,9 +671,41 @@ export default function OrdenDetalleClient({
               <p className="text-xs uppercase tracking-wide font-medium">Cliente</p>
             </div>
             <div className="grid grid-cols-1 gap-3">
-              <InfoRow label="Nombre" value={initialOrder.client.full_name ?? "—"} />
-              <InfoRow label="Teléfono" value={initialOrder.client.phone ?? "—"} />
-              <InfoRow label="Correo" value={initialOrder.client.email ?? "—"} />
+              <div>
+                <p className="text-gray-500 text-xs mb-0.5">Nombre</p>
+                <Link
+                  href={`/dashboard/clientes/${initialOrder.client.id}`}
+                  className="text-gray-200 text-sm hover:text-[#e94560] transition-colors"
+                >
+                  {initialOrder.client.full_name ?? "—"}
+                </Link>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs mb-0.5">Teléfono</p>
+                {initialOrder.client.phone ? (
+                  <a
+                    href={`tel:${initialOrder.client.phone}`}
+                    className="text-gray-200 text-sm hover:text-[#e94560] transition-colors"
+                  >
+                    {initialOrder.client.phone}
+                  </a>
+                ) : (
+                  <p className="text-gray-200 text-sm">—</p>
+                )}
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs mb-0.5">Correo</p>
+                {initialOrder.client.email ? (
+                  <a
+                    href={`mailto:${initialOrder.client.email}`}
+                    className="text-gray-200 text-sm hover:text-[#e94560] transition-colors"
+                  >
+                    {initialOrder.client.email}
+                  </a>
+                ) : (
+                  <p className="text-gray-200 text-sm">—</p>
+                )}
+              </div>
             </div>
           </div>
           <div className="bg-[#16213e] border border-white/10 rounded-xl p-5">
