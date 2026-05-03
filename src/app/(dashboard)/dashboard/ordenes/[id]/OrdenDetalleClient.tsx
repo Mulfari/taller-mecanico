@@ -412,16 +412,38 @@ interface VehicleHistoryItem {
   delivered_at: string | null;
 }
 
+interface LinkedInvoice {
+  id: string;
+  status: string;
+  total: number | null;
+  created_at: string;
+  paid_at: string | null;
+}
+
+const INVOICE_STATUS_LABELS: Record<string, string> = {
+  draft: "Borrador",
+  sent: "Enviada",
+  paid: "Pagada",
+};
+
+const INVOICE_STATUS_COLORS: Record<string, string> = {
+  draft: "bg-gray-500/20 text-gray-300",
+  sent: "bg-blue-500/20 text-blue-300",
+  paid: "bg-green-500/20 text-green-300",
+};
+
 export default function OrdenDetalleClient({
   order: initialOrder,
   mechanics = [],
   inventoryItems = [],
   vehicleHistory = [],
+  linkedInvoice = null,
 }: {
   order: WorkOrderWithRelations;
   mechanics?: Mechanic[];
   inventoryItems?: InventoryOption[];
   vehicleHistory?: VehicleHistoryItem[];
+  linkedInvoice?: LinkedInvoice | null;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<WorkOrderStatus>(initialOrder.status);
@@ -594,7 +616,17 @@ export default function OrdenDetalleClient({
             status={status}
           />
           <PrintButton />
-          {items.length > 0 && (
+          {linkedInvoice ? (
+            <Link
+              href={`/dashboard/facturas/${linkedInvoice.id}`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 text-gray-300 text-sm font-medium transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+              </svg>
+              Ver factura
+            </Link>
+          ) : items.length > 0 ? (
             <button
               onClick={handleGenerateInvoice}
               disabled={generatingInvoice || isPending}
@@ -617,7 +649,7 @@ export default function OrdenDetalleClient({
                 </>
               )}
             </button>
-          )}
+          ) : null}
           {nextLabel && (
             <button
               onClick={handleAdvanceStatus}
@@ -968,6 +1000,50 @@ export default function OrdenDetalleClient({
           </div>
         )}
       </div>
+
+      {/* Linked invoice */}
+      {linkedInvoice && (
+        <Link
+          href={`/dashboard/facturas/${linkedInvoice.id}`}
+          className="block bg-[#16213e] border border-white/10 rounded-xl p-5 hover:border-[#e94560]/30 transition-colors group"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-lg bg-[#e94560]/10 border border-[#e94560]/20 flex items-center justify-center text-[#e94560] shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-white font-medium text-sm group-hover:text-[#e94560] transition-colors">
+                    Factura #{linkedInvoice.id.slice(0, 8).toUpperCase()}
+                  </p>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${INVOICE_STATUS_COLORS[linkedInvoice.status] ?? "bg-gray-500/20 text-gray-400"}`}>
+                    {INVOICE_STATUS_LABELS[linkedInvoice.status] ?? linkedInvoice.status}
+                  </span>
+                </div>
+                <p className="text-gray-500 text-xs mt-0.5">
+                  Creada el {new Date(linkedInvoice.created_at).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}
+                  {linkedInvoice.paid_at && (
+                    <> · Pagada el {new Date(linkedInvoice.paid_at).toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}</>
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              {linkedInvoice.total != null && (
+                <p className="text-white font-semibold text-lg">
+                  ${linkedInvoice.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}
+                </p>
+              )}
+              <svg className="w-4 h-4 text-gray-600 group-hover:text-[#e94560] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </Link>
+      )}
 
       {/* Vehicle history */}
       {vehicleHistory.length > 0 && (
