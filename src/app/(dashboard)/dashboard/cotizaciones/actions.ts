@@ -60,6 +60,8 @@ export async function createInvoiceFromQuoteAction(quoteId: string) {
   if (existing) redirect(`/dashboard/facturas/${existing.id}`);
 
   const subtotal = Number(quote.total ?? 0);
+  const tax = Math.round(subtotal * 0.16 * 100) / 100;
+  const invoiceTotal = Math.round((subtotal + tax) * 100) / 100;
 
   const { data: invoice, error: invoiceError } = await supabase
     .from("invoices")
@@ -69,8 +71,8 @@ export async function createInvoiceFromQuoteAction(quoteId: string) {
       client_id: quote.client_id,
       items: quote.items ?? [],
       subtotal,
-      tax: 0,
-      total: subtotal,
+      tax,
+      total: invoiceTotal,
       status: "draft",
     })
     .select("id")

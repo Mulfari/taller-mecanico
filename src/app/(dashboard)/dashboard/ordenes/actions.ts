@@ -18,6 +18,7 @@ export async function createWorkOrder(formData: FormData) {
     : null;
   const estimated_delivery = (formData.get("estimated_delivery") as string) || null;
   const received_at_raw = (formData.get("received_at") as string) || null;
+  const itemsJson = formData.get("items") as string | null;
 
   const { data, error } = await supabase
     .from("work_orders")
@@ -40,7 +41,53 @@ export async function createWorkOrder(formData: FormData) {
 
   if (error) throw new Error(error.message);
 
+  if (itemsJson) {
+    const items: {
+      type: WorkOrderItemType;
+      description: string;
+      quantity: number;
+      unit_price: number;
+      inventory_id?: string;
+    }[] = JSON.parse(itemsJson);
+
+    if (items.length > 0) {
+      const rows = items.map((i) => ({
+        work_order_id: data.id,
+        type: i.type,
+        description: i.description,
+        quantity: i.quantity,
+        unit_price: i.unit_price,
+        total: i.quantity * i.unit_price,
+        inventory_id: i.type === "part" && i.inventory_id ? i.inventory_id : null,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from("work_order_items")
+        .insert(rows);
+
+      if (itemsError) throw new Error(itemsError.message);
+
+      const partItems = items.filter((i) => i.type === "part" && i.inventory_id);
+      for (const part of partItems) {
+        const { data: inv } = await supabase
+          .from("inventory")
+          .select("quantity")
+          .eq("id", part.inventory_id!)
+          .single();
+
+        if (inv) {
+          const newQty = Math.max(0, inv.quantity - part.quantity);
+          await supabase
+            .from("inventory")
+            .update({ quantity: newQty })
+            .eq("id", part.inventory_id!);
+        }
+      }
+    }
+  }
+
   revalidatePath("/dashboard/ordenes");
+  revalidatePath("/dashboard/inventario");
   redirect(`/dashboard/ordenes/${data.id}`);
 }
 
@@ -92,6 +139,7 @@ export async function addWorkOrderItem(
     quantity: item.quantity,
     unit_price: item.unit_price,
     total,
+    inventory_id: item.type === "part" && item.inventoryItemId ? item.inventoryItemId : null,
   });
 
   if (error) throw new Error(error.message);
@@ -121,6 +169,13 @@ export async function addWorkOrderItem(
 export async function removeWorkOrderItem(itemId: string, orderId: string) {
   const supabase = await createClient();
 
+  // Read the item before deleting to restore inventory stock if applicable
+  const { data: item } = await supabase
+    .from("work_order_items")
+    .select("type, quantity, inventory_id")
+    .eq("id", itemId)
+    .single();
+
   const { error } = await supabase
     .from("work_order_items")
     .delete()
@@ -128,12 +183,30 @@ export async function removeWorkOrderItem(itemId: string, orderId: string) {
 
   if (error) throw new Error(error.message);
 
+  // Restore inventory stock when removing a part linked to inventory
+  if (item && item.type === "part" && item.inventory_id) {
+    const { data: inv } = await supabase
+      .from("inventory")
+      .select("quantity")
+      .eq("id", item.inventory_id)
+      .single();
+
+    if (inv) {
+      await supabase
+        .from("inventory")
+        .update({ quantity: inv.quantity + Number(item.quantity) })
+        .eq("id", item.inventory_id);
+    }
+  }
+
   revalidatePath(`/dashboard/ordenes/${orderId}`);
+  revalidatePath("/dashboard/inventario");
+  revalidatePath("/dashboard");
 }
 
 export async function updateWorkOrderNotes(
   orderId: string,
-  fields: { diagnosis?: string; estimated_cost?: number; final_cost?: number; estimated_delivery?: string | null }
+  fields: { description?: string; diagnosis?: string; estimated_cost?: number; final_cost?: number; estimated_delivery?: string | null }
 ) {
   const supabase = await createClient();
 
@@ -213,8 +286,8 @@ export async function generateInvoiceFromWorkOrder(orderId: string): Promise<str
   }[];
 
   const subtotal = items.reduce((sum, i) => sum + i.total, 0);
-  const tax = 0;
-  const total = subtotal + tax;
+  const tax = Math.round(subtotal * 0.16 * 100) / 100;
+  const total = Math.round((subtotal + tax) * 100) / 100;
 
   const { data: invoice, error } = await supabase
     .from("invoices")
