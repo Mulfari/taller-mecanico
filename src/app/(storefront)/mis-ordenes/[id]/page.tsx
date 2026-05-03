@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import PrintButton from "./PrintButton";
 
 export const metadata = { title: "Orden de trabajo — TallerPro" };
 
@@ -219,15 +220,18 @@ export default async function MisOrdenesDetailPage({
             </div>
           </div>
 
-          {isActive && (
-            <Link
-              href={`/seguimiento?orden=${order.id}`}
-              className="shrink-0 inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
-            >
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              Seguimiento en vivo
-            </Link>
-          )}
+          <div className="flex items-center gap-2 shrink-0">
+            <PrintButton />
+            {isActive && (
+              <Link
+                href={`/seguimiento?orden=${order.id}`}
+                className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+              >
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                Seguimiento en vivo
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Status timeline */}
