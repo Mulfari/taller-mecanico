@@ -142,15 +142,6 @@ function CotizacionForm() {
       // Try to get logged-in user
       const { data: { user } } = await supabase.auth.getUser();
 
-      // Build notes with contact info for guest requests
-      const contactLine = `Contacto: ${name} | Tel: ${phone}${email ? ` | Email: ${email}` : ""}`;
-      const vehicleLine =
-        vehicleBrand || vehicleModel
-          ? `Vehículo: ${[vehicleBrand, vehicleModel, vehicleYear, vehiclePlate].filter(Boolean).join(" ")}`
-          : null;
-      const notesLine = notes.trim() ? `Notas: ${notes.trim()}` : null;
-      const fullNotes = [contactLine, vehicleLine, notesLine].filter(Boolean).join("\n");
-
       const itemsPayload = validItems.map((i) => ({
         description: i.description.trim(),
         quantity: i.quantity,
@@ -159,7 +150,31 @@ function CotizacionForm() {
         type: "part",
       }));
 
-      const total = itemsPayload.reduce((s, i) => s + i.total, 0);
+      // For guest requests, prepend a contact-info item so the data isn't lost
+      // (quotes table has no separate notes/contact columns)
+      if (!user) {
+        const vehiclePart = vehicleBrand || vehicleModel
+          ? ` | Vehículo: ${[vehicleBrand, vehicleModel, vehicleYear, vehiclePlate].filter(Boolean).join(" ")}`
+          : "";
+        const notesPart = notes.trim() ? ` | Notas: ${notes.trim()}` : "";
+        itemsPayload.unshift({
+          description: `[Contacto] ${name} | Tel: ${phone}${email ? ` | Email: ${email}` : ""}${vehiclePart}${notesPart}`,
+          quantity: 1,
+          unit_price: 0,
+          total: 0,
+          type: "labor",
+        });
+      } else if (notes.trim()) {
+        itemsPayload.push({
+          description: `[Notas] ${notes.trim()}`,
+          quantity: 1,
+          unit_price: 0,
+          total: 0,
+          type: "labor",
+        });
+      }
+
+      const total = itemsPayload.filter((i) => i.type === "part").reduce((s, i) => s + i.total, 0);
 
       const { error: insertError } = await supabase.from("quotes").insert({
         client_id: user?.id ?? null,
@@ -168,7 +183,6 @@ function CotizacionForm() {
         total,
         status: "draft",
         valid_until: null,
-        notes: fullNotes,
       });
 
       if (insertError) throw insertError;
