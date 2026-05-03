@@ -30,6 +30,7 @@ interface Props {
   vehiclesByClient: Record<string, Vehicle[]>;
   defaultClientId?: string;
   defaultVehicleId?: string;
+  defaultMechanicId?: string;
 }
 
 const STATUS_OPTIONS: { value: WorkOrderStatus; label: string }[] = [
@@ -199,9 +200,10 @@ function AddVehicleForm({ onSave, onCancel, clientId }: AddVehicleFormProps) {
   );
 }
 
-export default function NuevaOrdenForm({ clients, mechanics, vehiclesByClient, defaultClientId = "", defaultVehicleId = "" }: Props) {
+export default function NuevaOrdenForm({ clients, mechanics, vehiclesByClient, defaultClientId = "", defaultVehicleId = "", defaultMechanicId = "" }: Props) {
   const [clientId, setClientId] = useState(defaultClientId);
   const [vehicleId, setVehicleId] = useState(defaultVehicleId);
+  const [mechanicId, setMechanicId] = useState(defaultMechanicId);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [localVehicles, setLocalVehicles] = useState<Record<string, Vehicle[]>>({});
@@ -358,7 +360,13 @@ export default function NuevaOrdenForm({ clients, mechanics, vehiclesByClient, d
           <div>
             <FieldLabel htmlFor="mechanic_id">Mecánico asignado</FieldLabel>
             <div className="relative">
-              <select id="mechanic_id" name="mechanic_id" defaultValue="" className={selectClass}>
+              <select
+                id="mechanic_id"
+                name="mechanic_id"
+                value={mechanicId}
+                onChange={(e) => setMechanicId(e.target.value)}
+                className={selectClass}
+              >
                 <option value="">Sin asignar</option>
                 {mechanics.map((m) => (
                   <option key={m.id} value={m.id}>{m.full_name ?? m.id}</option>

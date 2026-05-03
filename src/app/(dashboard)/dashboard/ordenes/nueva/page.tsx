@@ -15,9 +15,9 @@ function IconArrowLeft() {
 export default async function NuevaOrdenPage({
   searchParams,
 }: {
-  searchParams: Promise<{ client?: string; vehicle?: string }>;
+  searchParams: Promise<{ client?: string; vehicle?: string; mechanic?: string }>;
 }) {
-  const { client: defaultClientId, vehicle: defaultVehicleId } = await searchParams;
+  const { client: defaultClientId, vehicle: defaultVehicleId, mechanic: defaultMechanicId } = await searchParams;
   const [clients, mechanics] = await Promise.all([getClients(), getMechanics()]);
 
   // Pre-fetch vehicles for all clients so the client component can filter without extra requests
@@ -50,6 +50,7 @@ export default async function NuevaOrdenPage({
         vehiclesByClient={vehiclesByClient}
         defaultClientId={defaultClientId}
         defaultVehicleId={defaultVehicleId}
+        defaultMechanicId={defaultMechanicId}
       />
     </div>
   );
