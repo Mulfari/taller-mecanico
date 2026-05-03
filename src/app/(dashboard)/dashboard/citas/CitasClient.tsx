@@ -535,6 +535,197 @@ function WeekView({ appointments, onDayClick, onStatusUpdate, updatingId, isPend
   );
 }
 
+// ── Month View ────────────────────────────────────────────────────────────
+
+function IconCalendarMonth() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" />
+    </svg>
+  );
+}
+
+interface MonthViewProps {
+  appointments: AppointmentWithRelations[];
+  onDayClick: (key: string) => void;
+  onEdit: (appt: AppointmentWithRelations) => void;
+}
+
+function MonthView({ appointments, onDayClick, onEdit }: MonthViewProps) {
+  const todayKey = toDateKey(new Date());
+  const todayDate = new Date();
+  const [viewYear, setViewYear] = useState(todayDate.getFullYear());
+  const [viewMonth, setViewMonth] = useState(todayDate.getMonth());
+
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  const lastDay = new Date(viewYear, viewMonth + 1, 0);
+  const startOffset = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+  const cells: (Date | null)[] = [];
+  for (let i = 0; i < startOffset; i++) cells.push(null);
+  for (let d = 1; d <= lastDay.getDate(); d++) cells.push(new Date(viewYear, viewMonth, d));
+  const trailing = (7 - (cells.length % 7)) % 7;
+  for (let i = 0; i < trailing; i++) cells.push(null);
+
+  const apptsByDay = useMemo(() => {
+    const map: Record<string, AppointmentWithRelations[]> = {};
+    for (const appt of appointments) {
+      if (!map[appt.date]) map[appt.date] = [];
+      map[appt.date].push(appt);
+    }
+    for (const key of Object.keys(map)) {
+      map[key].sort((a, b) => a.time_slot.localeCompare(b.time_slot));
+    }
+    return map;
+  }, [appointments]);
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
+    else setViewMonth(m => m - 1);
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
+    else setViewMonth(m => m + 1);
+  }
+  function goToday() {
+    setViewYear(todayDate.getFullYear());
+    setViewMonth(todayDate.getMonth());
+  }
+
+  const monthStats = useMemo(() => {
+    let total = 0, pending = 0, confirmed = 0, completed = 0;
+    for (const appt of appointments) {
+      const d = new Date(appt.date + "T00:00:00");
+      if (d.getFullYear() === viewYear && d.getMonth() === viewMonth) {
+        total++;
+        if (appt.status === "pending") pending++;
+        else if (appt.status === "confirmed") confirmed++;
+        else if (appt.status === "completed") completed++;
+      }
+    }
+    return { total, pending, confirmed, completed };
+  }, [appointments, viewYear, viewMonth]);
+
+  const MAX_VISIBLE = 3;
+
+  return (
+    <div className="space-y-3">
+      {/* Month nav */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={prevMonth}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Mes anterior"
+          >
+            <IconChevronLeft />
+          </button>
+          <span className="text-white font-semibold text-sm min-w-[180px] text-center">
+            {MONTHS_ES[viewMonth]} {viewYear}
+          </span>
+          <button
+            onClick={nextMonth}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Mes siguiente"
+          >
+            <IconChevronRight />
+          </button>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-3 text-xs text-gray-500">
+            <span>{monthStats.total} citas</span>
+            {monthStats.pending > 0 && <span className="text-yellow-400">{monthStats.pending} pend.</span>}
+            {monthStats.confirmed > 0 && <span className="text-blue-400">{monthStats.confirmed} conf.</span>}
+            {monthStats.completed > 0 && <span className="text-green-400">{monthStats.completed} comp.</span>}
+          </div>
+          <button
+            onClick={goToday}
+            className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-colors"
+          >
+            Hoy
+          </button>
+        </div>
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-1">
+        {WEEK_DAYS_ES.map(d => (
+          <div key={d} className="text-center text-xs text-gray-500 font-medium py-2">{d}</div>
+        ))}
+      </div>
+
+      {/* Calendar grid */}
+      <div className="grid grid-cols-7 gap-1">
+        {cells.map((day, i) => {
+          if (!day) {
+            return <div key={`empty-${i}`} className="min-h-[100px] rounded-lg bg-white/[0.01]" />;
+          }
+          const key = toDateKey(day);
+          const dayAppts = apptsByDay[key] ?? [];
+          const isToday = key === todayKey;
+          const hasMore = dayAppts.length > MAX_VISIBLE;
+
+          return (
+            <div
+              key={key}
+              className={`min-h-[100px] rounded-lg p-1.5 flex flex-col cursor-pointer transition-colors ${
+                isToday
+                  ? "bg-[#e94560]/10 border border-[#e94560]/30 hover:bg-[#e94560]/15"
+                  : "bg-[#16213e]/60 border border-white/5 hover:border-white/15 hover:bg-[#16213e]"
+              }`}
+              onClick={() => onDayClick(key)}
+            >
+              {/* Day number */}
+              <div className="flex items-center justify-between mb-1">
+                <span className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full ${
+                  isToday ? "bg-[#e94560] text-white" : "text-gray-400"
+                }`}>
+                  {day.getDate()}
+                </span>
+                {dayAppts.length > 0 && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                    isToday ? "bg-[#e94560]/20 text-[#e94560]" : "bg-white/10 text-gray-500"
+                  }`}>
+                    {dayAppts.length}
+                  </span>
+                )}
+              </div>
+
+              {/* Appointment pills */}
+              <div className="flex-1 space-y-0.5 overflow-hidden">
+                {dayAppts.slice(0, MAX_VISIBLE).map((appt) => (
+                  <div
+                    key={appt.id}
+                    className={`rounded px-1.5 py-0.5 text-[10px] leading-tight truncate cursor-pointer transition-colors ${
+                      appt.status === "cancelled"
+                        ? "bg-white/[0.03] text-gray-600 line-through"
+                        : appt.status === "confirmed"
+                        ? "bg-blue-500/15 text-blue-300 hover:bg-blue-500/25"
+                        : appt.status === "completed"
+                        ? "bg-green-500/15 text-green-300 hover:bg-green-500/25"
+                        : "bg-yellow-500/15 text-yellow-300 hover:bg-yellow-500/25"
+                    }`}
+                    onClick={(e) => { e.stopPropagation(); onEdit(appt); }}
+                    title={`${appt.time_slot} — ${appt.client?.full_name ?? "Cliente"}: ${appt.service_type}`}
+                  >
+                    <span className="font-bold">{appt.time_slot}</span>{" "}
+                    {appt.client?.full_name?.split(" ")[0] ?? "Cliente"}
+                  </div>
+                ))}
+                {hasMore && (
+                  <div className="text-[10px] text-gray-500 px-1.5 font-medium">
+                    +{dayAppts.length - MAX_VISIBLE} más
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── New Cita Modal ─────────────────────────────────────────────────────────
 
 function NewCitaModal({
@@ -1005,7 +1196,7 @@ export default function CitasClient({
   const [preselectedVehicleId, setPreselectedVehicleId] = useState<string>("");
   const [editingAppt, setEditingAppt] = useState<AppointmentWithRelations | null>(null);
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<"day" | "week">("day");
+  const [viewMode, setViewMode] = useState<"day" | "week" | "month">("day");
 
   // Honor ?client= and ?vehicle= URL params: pre-select and auto-open new cita modal
   useEffect(() => {
@@ -1130,6 +1321,19 @@ export default function CitasClient({
               <IconGrid />
               Semana
             </button>
+            <button
+              onClick={() => setViewMode("month")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                viewMode === "month"
+                  ? "bg-[#e94560] text-white"
+                  : "text-gray-400 hover:text-white"
+              }`}
+              aria-label="Vista mensual"
+              title="Vista mensual"
+            >
+              <IconCalendarMonth />
+              Mes
+            </button>
           </div>
           {/* Search */}
           <div className="relative">
@@ -1220,7 +1424,13 @@ export default function CitasClient({
         </div>
       )}
 
-      {viewMode === "week" ? (
+      {viewMode === "month" ? (
+        <MonthView
+          appointments={appointments}
+          onDayClick={(key) => { setSelectedDate(key); setViewMode("day"); setActiveFilter("all"); }}
+          onEdit={setEditingAppt}
+        />
+      ) : viewMode === "week" ? (
         <WeekView
           appointments={appointments}
           onDayClick={(key) => { setSelectedDate(key); setViewMode("day"); setActiveFilter("all"); }}
