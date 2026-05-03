@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import PrintButton from "./PrintButton";
 import StatusActions from "./StatusActions";
+import WhatsAppInvoiceButton from "./WhatsAppInvoiceButton";
 
 export const metadata = { title: "Factura — TallerPro" };
 
@@ -134,6 +135,14 @@ export default async function FacturaDetailPage({
         </div>
         <div className="flex items-center gap-2">
           <StatusActions invoiceId={invoice.id} currentStatus={invoice.status as import("@/types/database").InvoiceStatus} />
+          <WhatsAppInvoiceButton
+            clientName={client?.full_name ?? null}
+            clientPhone={client?.phone ?? null}
+            invoiceNumber={invoiceNumber}
+            total={invoice.total}
+            status={invoice.status}
+            shopName={shopName}
+          />
           <PrintButton />
         </div>
       </div>
