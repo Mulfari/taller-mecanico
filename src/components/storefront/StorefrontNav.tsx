@@ -12,6 +12,7 @@ const navLinks = [
   { href: "/vehiculos", label: "Vehículos en Venta" },
   { href: "/citas", label: "Agendar Cita" },
   { href: "/seguimiento", label: "Seguimiento" },
+  { href: "/contacto", label: "Contacto" },
 ];
 
 interface Props {
@@ -33,7 +34,7 @@ function UserMenu({ user, onClose }: { user: User; onClose: () => void }) {
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <div className="absolute right-0 top-full mt-2 w-56 bg-[#16213e] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
+    <div className="absolute right-0 top-full mt-2 w-56 bg-secondary border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50">
       <div className="px-4 py-3 border-b border-white/5">
         <p className="text-white text-sm font-medium truncate">{displayName}</p>
         <p className="text-gray-500 text-xs truncate mt-0.5">{user.email}</p>
@@ -169,7 +170,7 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
   const initials = displayName.slice(0, 2).toUpperCase();
 
   return (
-    <header className="bg-[#16213e] border-b border-[#e94560]/20 sticky top-0 z-50">
+    <header className="bg-secondary border-b border-primary/20 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -177,7 +178,7 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
             {logoUrl ? (
               <Image src={logoUrl} alt={shopName} width={32} height={32} className="object-contain rounded" />
             ) : (
-              <span className="text-[#e94560] text-2xl">⚙</span>
+              <span className="text-primary text-2xl">⚙</span>
             )}
             <span className="text-white font-bold text-xl tracking-tight">{shopName}</span>
           </Link>
@@ -188,7 +189,7 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-gray-300 hover:text-[#e94560] text-sm font-medium transition-colors"
+                className="text-gray-300 hover:text-primary text-sm font-medium transition-colors"
               >
                 {link.label}
               </Link>
@@ -207,7 +208,7 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
                   aria-expanded={userMenuOpen}
                   aria-haspopup="true"
                 >
-                  <span className="w-8 h-8 rounded-full bg-[#e94560]/20 border border-[#e94560]/30 flex items-center justify-center text-[#e94560] text-xs font-bold">
+                  <span className="w-8 h-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-xs font-bold">
                     {initials}
                   </span>
                   <span className="max-w-[120px] truncate">{displayName}</span>
@@ -229,7 +230,7 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
                 </Link>
                 <Link
                   href="/registro"
-                  className="bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                  className="bg-primary hover:bg-primary-hover text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                 >
                   Registrarse
                 </Link>
@@ -256,23 +257,23 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="md:hidden bg-[#16213e] border-t border-[#e94560]/20 px-4 pb-4">
+        <div className="md:hidden bg-secondary border-t border-primary/20 px-4 pb-4">
           <nav className="flex flex-col gap-1 pt-2">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-gray-300 hover:text-[#e94560] text-sm font-medium py-2 transition-colors"
+                className="text-gray-300 hover:text-primary text-sm font-medium py-2 transition-colors"
                 onClick={() => setMenuOpen(false)}
               >
                 {link.label}
               </Link>
             ))}
-            <div className="border-t border-[#e94560]/20 mt-2 pt-3 flex flex-col gap-2">
+            <div className="border-t border-primary/20 mt-2 pt-3 flex flex-col gap-2">
               {user ? (
                 <>
                   <div className="flex items-center gap-2 py-1">
-                    <span className="w-7 h-7 rounded-full bg-[#e94560]/20 border border-[#e94560]/30 flex items-center justify-center text-[#e94560] text-xs font-bold shrink-0">
+                    <span className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-xs font-bold shrink-0">
                       {initials}
                     </span>
                     <span className="text-gray-300 text-sm truncate">{displayName}</span>
@@ -306,7 +307,7 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
                   </Link>
                   <Link
                     href="/registro"
-                    className="bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors text-center"
+                    className="bg-primary hover:bg-primary-hover text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors text-center"
                     onClick={() => setMenuOpen(false)}
                   >
                     Registrarse
