@@ -132,6 +132,22 @@ function IconChevronDown() {
   );
 }
 
+function IconList() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+    </svg>
+  );
+}
+
+function IconGrid() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M14 3v18M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6z" />
+    </svg>
+  );
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const STATUS_LABELS: Record<AppointmentStatus, string> = {
@@ -331,6 +347,187 @@ function MiniCalendar({ selected, onSelect, appointmentDates }: MiniCalendarProp
                 <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#e94560]" />
               )}
             </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Week View ──────────────────────────────────────────────────────────────
+
+const WEEK_DAYS_ES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+function getWeekStart(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  // Monday-based week
+  const day = d.getDay(); // 0=Sun
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  return d;
+}
+
+function addDays(date: Date, n: number): Date {
+  const d = new Date(date);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+interface WeekViewProps {
+  appointments: AppointmentWithRelations[];
+  onDayClick: (key: string) => void;
+  onStatusUpdate: (id: string, status: AppointmentStatus) => void;
+  updatingId: string | null;
+  isPending: boolean;
+  onEdit: (appt: AppointmentWithRelations) => void;
+}
+
+function WeekView({ appointments, onDayClick, onStatusUpdate, updatingId, isPending, onEdit }: WeekViewProps) {
+  const todayKey = toDateKey(new Date());
+  const [weekStart, setWeekStart] = useState(() => getWeekStart(new Date()));
+
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const weekEnd = addDays(weekStart, 6);
+
+  const weekLabel = (() => {
+    const s = weekStart;
+    const e = weekEnd;
+    const sMonth = MONTHS_ES[s.getMonth()];
+    const eMonth = MONTHS_ES[e.getMonth()];
+    if (s.getMonth() === e.getMonth()) {
+      return `${s.getDate()} – ${e.getDate()} de ${sMonth} ${s.getFullYear()}`;
+    }
+    return `${s.getDate()} ${sMonth} – ${e.getDate()} ${eMonth} ${s.getFullYear()}`;
+  })();
+
+  function prevWeek() { setWeekStart(d => addDays(d, -7)); }
+  function nextWeek() { setWeekStart(d => addDays(d, 7)); }
+  function goToday() { setWeekStart(getWeekStart(new Date())); }
+
+  const apptsByDay = useMemo(() => {
+    const map: Record<string, AppointmentWithRelations[]> = {};
+    for (const appt of appointments) {
+      if (!map[appt.date]) map[appt.date] = [];
+      map[appt.date].push(appt);
+    }
+    for (const key of Object.keys(map)) {
+      map[key].sort((a, b) => a.time_slot.localeCompare(b.time_slot));
+    }
+    return map;
+  }, [appointments]);
+
+  return (
+    <div className="space-y-3">
+      {/* Week nav */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={prevWeek}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Semana anterior"
+          >
+            <IconChevronLeft />
+          </button>
+          <span className="text-white font-semibold text-sm min-w-[220px] text-center">{weekLabel}</span>
+          <button
+            onClick={nextWeek}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/10 transition-colors"
+            aria-label="Semana siguiente"
+          >
+            <IconChevronRight />
+          </button>
+        </div>
+        <button
+          onClick={goToday}
+          className="text-xs px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:border-white/20 transition-colors"
+        >
+          Hoy
+        </button>
+      </div>
+
+      {/* Grid */}
+      <div className="grid grid-cols-7 gap-2">
+        {days.map((day, idx) => {
+          const key = toDateKey(day);
+          const dayAppts = apptsByDay[key] ?? [];
+          const isToday = key === todayKey;
+
+          return (
+            <div key={key} className="flex flex-col min-h-[160px]">
+              {/* Day header */}
+              <button
+                onClick={() => onDayClick(key)}
+                className={`flex flex-col items-center py-2 rounded-t-lg border-b transition-colors ${
+                  isToday
+                    ? "bg-[#e94560]/10 border-[#e94560]/30 text-[#e94560]"
+                    : "bg-[#16213e] border-white/5 text-gray-400 hover:text-white hover:bg-white/5"
+                }`}
+              >
+                <span className="text-xs font-medium">{WEEK_DAYS_ES[idx]}</span>
+                <span className={`text-lg font-bold leading-tight ${isToday ? "text-[#e94560]" : "text-white"}`}>
+                  {day.getDate()}
+                </span>
+                {dayAppts.length > 0 && (
+                  <span className={`text-[10px] mt-0.5 ${isToday ? "text-[#e94560]/70" : "text-gray-500"}`}>
+                    {dayAppts.length} cita{dayAppts.length !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </button>
+
+              {/* Appointments */}
+              <div className={`flex-1 rounded-b-lg p-1.5 space-y-1 ${isToday ? "bg-[#e94560]/5 border border-t-0 border-[#e94560]/20" : "bg-[#16213e]/60 border border-t-0 border-white/5"}`}>
+                {dayAppts.length === 0 ? (
+                  <div className="h-full flex items-center justify-center">
+                    <span className="text-gray-700 text-xs">—</span>
+                  </div>
+                ) : (
+                  dayAppts.map((appt) => (
+                    <div
+                      key={appt.id}
+                      className={`rounded p-1.5 cursor-pointer group transition-colors ${
+                        appt.status === "cancelled"
+                          ? "bg-white/[0.02] opacity-50"
+                          : appt.status === "confirmed"
+                          ? "bg-blue-500/10 border border-blue-500/20 hover:border-blue-500/40"
+                          : appt.status === "completed"
+                          ? "bg-green-500/10 border border-green-500/20 hover:border-green-500/40"
+                          : "bg-yellow-500/10 border border-yellow-500/20 hover:border-yellow-500/40"
+                      }`}
+                      onClick={() => onEdit(appt)}
+                      title={`${appt.time_slot} — ${appt.client?.full_name ?? "Cliente"}: ${appt.service_type}`}
+                    >
+                      <p className="text-[#e94560] font-bold text-[10px] leading-none">{appt.time_slot}</p>
+                      <p className="text-white text-[10px] leading-tight mt-0.5 truncate font-medium">
+                        {appt.client?.full_name ?? "Cliente"}
+                      </p>
+                      <p className="text-gray-400 text-[9px] leading-tight truncate">{appt.service_type}</p>
+                      {/* Quick actions on hover */}
+                      {appt.status !== "completed" && appt.status !== "cancelled" && (
+                        <div className="hidden group-hover:flex items-center gap-1 mt-1" onClick={e => e.stopPropagation()}>
+                          {appt.status === "pending" && (
+                            <button
+                              onClick={() => onStatusUpdate(appt.id, "confirmed")}
+                              disabled={isPending && updatingId === appt.id}
+                              className="flex-1 text-[9px] py-0.5 rounded bg-blue-500/30 text-blue-300 hover:bg-blue-500/50 disabled:opacity-50 transition-colors"
+                            >
+                              Confirmar
+                            </button>
+                          )}
+                          <button
+                            onClick={() => onStatusUpdate(appt.id, "cancelled")}
+                            disabled={isPending && updatingId === appt.id}
+                            className="flex-1 text-[9px] py-0.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 disabled:opacity-50 transition-colors"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
@@ -808,6 +1005,7 @@ export default function CitasClient({
   const [preselectedVehicleId, setPreselectedVehicleId] = useState<string>("");
   const [editingAppt, setEditingAppt] = useState<AppointmentWithRelations | null>(null);
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"day" | "week">("day");
 
   // Honor ?client= and ?vehicle= URL params: pre-select and auto-open new cita modal
   useEffect(() => {
@@ -904,6 +1102,35 @@ export default function CitasClient({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {/* View toggle */}
+          <div className="flex items-center bg-[#16213e] border border-white/10 rounded-lg p-0.5">
+            <button
+              onClick={() => setViewMode("day")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                viewMode === "day"
+                  ? "bg-[#e94560] text-white"
+                  : "text-gray-400 hover:text-white"
+              }`}
+              aria-label="Vista por día"
+              title="Vista por día"
+            >
+              <IconList />
+              Día
+            </button>
+            <button
+              onClick={() => setViewMode("week")}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                viewMode === "week"
+                  ? "bg-[#e94560] text-white"
+                  : "text-gray-400 hover:text-white"
+              }`}
+              aria-label="Vista semanal"
+              title="Vista semanal"
+            >
+              <IconGrid />
+              Semana
+            </button>
+          </div>
           {/* Search */}
           <div className="relative">
             <span className="absolute inset-y-0 left-3 flex items-center text-gray-500 pointer-events-none">
@@ -993,6 +1220,16 @@ export default function CitasClient({
         </div>
       )}
 
+      {viewMode === "week" ? (
+        <WeekView
+          appointments={appointments}
+          onDayClick={(key) => { setSelectedDate(key); setViewMode("day"); setActiveFilter("all"); }}
+          onStatusUpdate={handleStatusUpdate}
+          updatingId={updatingId}
+          isPending={isPending}
+          onEdit={setEditingAppt}
+        />
+      ) : (
       <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr] gap-6">
         {/* Left — mini calendar */}
         <div className="space-y-4">
@@ -1135,6 +1372,7 @@ export default function CitasClient({
           )}
         </div>
       </div>
+      )}
 
       {showNewCita && (
         <NewCitaModal
