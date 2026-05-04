@@ -6,6 +6,15 @@ import type { InvoiceStatus } from "@/types/database";
 import { updateInvoiceStatus } from "./actions";
 import NuevaFacturaModal from "./NuevaFacturaModal";
 
+export interface InventoryOption {
+  id: string;
+  name: string;
+  sell_price: number;
+  category: string | null;
+  sku: string | null;
+  quantity: number;
+}
+
 interface InvoiceRow {
   id: string;
   client_id: string | null;
@@ -69,11 +78,13 @@ export default function FacturasClient({
   initialClientId,
   clients,
   workOrders,
+  inventory,
 }: {
   facturas: InvoiceRow[];
   initialClientId?: string;
   clients: ClientOption[];
   workOrders: WorkOrderOption[];
+  inventory: InventoryOption[];
 }) {
   const [activeFilter, setActiveFilter] = useState<InvoiceStatus | "all">("all");
   const [facturas, setFacturas] = useState(initialFacturas);
@@ -389,6 +400,7 @@ export default function FacturasClient({
         <NuevaFacturaModal
           clients={clients}
           workOrders={workOrders}
+          inventory={inventory}
           onClose={() => setShowNuevaFactura(false)}
         />
       )}

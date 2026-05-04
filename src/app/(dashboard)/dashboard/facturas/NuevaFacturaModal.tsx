@@ -16,9 +16,19 @@ interface WorkOrderOption {
   client_id: string | null;
 }
 
+interface InventoryOption {
+  id: string;
+  name: string;
+  sell_price: number;
+  category: string | null;
+  sku: string | null;
+  quantity: number;
+}
+
 interface Props {
   clients: ClientOption[];
   workOrders: WorkOrderOption[];
+  inventory: InventoryOption[];
   onClose: () => void;
 }
 
@@ -70,11 +80,11 @@ const EMPTY_ITEM = (): InvoiceItemInput => ({
   total: 0,
 });
 
-export default function NuevaFacturaModal({ clients, workOrders, onClose }: Props) {
+export default function NuevaFacturaModal({ clients, workOrders, inventory, onClose }: Props) {
   const router = useRouter();
   const [clientId, setClientId] = useState("");
   const [workOrderId, setWorkOrderId] = useState("");
-  const [taxRate, setTaxRate] = useState(0);
+  const [taxRate, setTaxRate] = useState(16);
   const [items, setItems] = useState<InvoiceItemInput[]>([EMPTY_ITEM()]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,6 +93,16 @@ export default function NuevaFacturaModal({ clients, workOrders, onClose }: Prop
     () => workOrders.filter((o) => !clientId || o.client_id === clientId),
     [workOrders, clientId]
   );
+
+  function fillFromInventory(index: number, inventoryId: string) {
+    const inv = inventory.find((i) => i.id === inventoryId);
+    if (!inv) return;
+    updateItem(index, {
+      type: "part",
+      description: inv.name,
+      unit_price: inv.sell_price,
+    });
+  }
 
   function handleClientChange(id: string) {
     setClientId(id);
@@ -230,60 +250,83 @@ export default function NuevaFacturaModal({ clients, workOrders, onClose }: Prop
               </div>
 
               {items.map((item, i) => (
-                <div key={i} className="grid grid-cols-[80px_1fr_60px_100px_32px] gap-2 items-center">
-                  {/* Type */}
-                  <div className="relative">
-                    <select
-                      className={`${selectClass} text-xs py-2`}
-                      value={item.type}
-                      onChange={(e) => updateItem(i, { type: e.target.value as "labor" | "part" })}
+                <div key={i} className="space-y-1.5">
+                  <div className="grid grid-cols-[80px_1fr_60px_100px_32px] gap-2 items-center">
+                    {/* Type */}
+                    <div className="relative">
+                      <select
+                        className={`${selectClass} text-xs py-2`}
+                        value={item.type}
+                        onChange={(e) => updateItem(i, { type: e.target.value as "labor" | "part" })}
+                      >
+                        <option value="labor">Mano obra</option>
+                        <option value="part">Repuesto</option>
+                      </select>
+                    </div>
+
+                    {/* Description */}
+                    <input
+                      type="text"
+                      className={`${inputClass} py-2 text-xs`}
+                      placeholder="Descripción…"
+                      value={item.description}
+                      onChange={(e) => updateItem(i, { description: e.target.value })}
+                      required
+                    />
+
+                    {/* Quantity */}
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      className={`${inputClass} py-2 text-xs text-right`}
+                      value={item.quantity}
+                      onChange={(e) => updateItem(i, { quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                    />
+
+                    {/* Unit price */}
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      className={`${inputClass} py-2 text-xs text-right`}
+                      placeholder="0.00"
+                      value={item.unit_price || ""}
+                      onChange={(e) => updateItem(i, { unit_price: parseFloat(e.target.value) || 0 })}
+                    />
+
+                    {/* Remove */}
+                    <button
+                      type="button"
+                      onClick={() => removeItem(i)}
+                      disabled={items.length === 1}
+                      className="flex items-center justify-center text-gray-600 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      aria-label="Eliminar ítem"
                     >
-                      <option value="labor">Mano obra</option>
-                      <option value="part">Repuesto</option>
-                    </select>
+                      <IconTrash />
+                    </button>
                   </div>
 
-                  {/* Description */}
-                  <input
-                    type="text"
-                    className={`${inputClass} py-2 text-xs`}
-                    placeholder="Descripción…"
-                    value={item.description}
-                    onChange={(e) => updateItem(i, { description: e.target.value })}
-                    required
-                  />
-
-                  {/* Quantity */}
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    className={`${inputClass} py-2 text-xs text-right`}
-                    value={item.quantity}
-                    onChange={(e) => updateItem(i, { quantity: Math.max(1, parseInt(e.target.value) || 1) })}
-                  />
-
-                  {/* Unit price */}
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className={`${inputClass} py-2 text-xs text-right`}
-                    placeholder="0.00"
-                    value={item.unit_price || ""}
-                    onChange={(e) => updateItem(i, { unit_price: parseFloat(e.target.value) || 0 })}
-                  />
-
-                  {/* Remove */}
-                  <button
-                    type="button"
-                    onClick={() => removeItem(i)}
-                    disabled={items.length === 1}
-                    className="flex items-center justify-center text-gray-600 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    aria-label="Eliminar ítem"
-                  >
-                    <IconTrash />
-                  </button>
+                  {/* Inventory lookup for parts */}
+                  {item.type === "part" && inventory.length > 0 && (
+                    <div className="ml-[88px] mr-[40px]">
+                      <select
+                        className="w-full bg-[#16213e] border border-white/10 rounded-lg px-2.5 py-1.5 text-gray-400 text-xs focus:outline-none focus:border-[#e94560]/60 transition-colors appearance-none"
+                        defaultValue=""
+                        onChange={(e) => {
+                          if (e.target.value) fillFromInventory(i, e.target.value);
+                          e.target.value = "";
+                        }}
+                      >
+                        <option value="">Cargar del inventario…</option>
+                        {inventory.map((inv) => (
+                          <option key={inv.id} value={inv.id}>
+                            {inv.name}{inv.sku ? ` (${inv.sku})` : ""} — {fmt(inv.sell_price)} · {inv.quantity} uds.
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

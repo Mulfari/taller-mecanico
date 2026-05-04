@@ -11,7 +11,7 @@ export default async function FacturasPage({
   const { client: clientParam } = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: facturas }, { data: clientRows }, { data: orderRows }] = await Promise.all([
+  const [{ data: facturas }, { data: clientRows }, { data: orderRows }, { data: inventoryRows }] = await Promise.all([
     supabase
       .from("invoices")
       .select(
@@ -32,6 +32,11 @@ export default async function FacturasPage({
       .not("status", "eq", "delivered")
       .order("created_at", { ascending: false })
       .limit(100),
+    supabase
+      .from("inventory")
+      .select("id, name, sell_price, category, sku, quantity")
+      .gt("quantity", 0)
+      .order("name"),
   ]);
 
   // Supabase returns joined relations as arrays; normalize to single objects
@@ -43,6 +48,7 @@ export default async function FacturasPage({
 
   const clients = (clientRows ?? []) as { id: string; full_name: string | null; email: string }[];
   const workOrders = (orderRows ?? []) as { id: string; description: string | null; client_id: string | null }[];
+  const inventory = (inventoryRows ?? []) as { id: string; name: string; sell_price: number; category: string | null; sku: string | null; quantity: number }[];
 
   return (
     <div className="space-y-6">
@@ -60,6 +66,7 @@ export default async function FacturasPage({
         initialClientId={clientParam}
         clients={clients}
         workOrders={workOrders}
+        inventory={inventory}
       />
     </div>
   );
