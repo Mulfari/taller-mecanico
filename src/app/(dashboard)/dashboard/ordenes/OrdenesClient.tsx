@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition, useCallback } from "react";
+import { useState, useEffect, useTransition, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { WorkOrderListItem, WorkOrderStatus } from "@/types/database";
@@ -160,12 +160,16 @@ function KanbanCard({
   generatingInvoice,
   onAdvanceStatus,
   advancingId,
+  onDragStart,
+  isDragging,
 }: {
   order: WorkOrderListItem;
   onGenerateInvoice: (id: string) => void;
   generatingInvoice: string | null;
   onAdvanceStatus: (id: string, next: WorkOrderStatus) => void;
   advancingId: string | null;
+  onDragStart: (orderId: string) => void;
+  isDragging: boolean;
 }) {
   const cost =
     order.status === "delivered" && order.final_cost != null && order.final_cost > 0
@@ -175,7 +179,15 @@ function KanbanCard({
       : null;
 
   return (
-    <div className={`bg-[#1a1a2e] border ${STATUS_BORDER[order.status]} rounded-xl p-3.5 space-y-2.5 hover:border-white/20 transition-colors group`}>
+    <div
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", order.id);
+        onDragStart(order.id);
+      }}
+      className={`bg-[#1a1a2e] border ${STATUS_BORDER[order.status]} rounded-xl p-3.5 space-y-2.5 hover:border-white/20 transition-colors group cursor-grab active:cursor-grabbing ${isDragging ? "opacity-40 scale-95" : ""}`}
+    >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <Link href={`/dashboard/ordenes/${order.id}`} className="block min-w-0">
@@ -263,19 +275,72 @@ function KanbanView({
   generatingInvoice,
   onAdvanceStatus,
   advancingId,
+  onDropToStatus,
+  draggingId,
+  onDragStart,
 }: {
   orders: WorkOrderListItem[];
   onGenerateInvoice: (id: string) => void;
   generatingInvoice: string | null;
   onAdvanceStatus: (id: string, next: WorkOrderStatus) => void;
   advancingId: string | null;
+  onDropToStatus: (orderId: string, newStatus: WorkOrderStatus) => void;
+  draggingId: string | null;
+  onDragStart: (orderId: string) => void;
 }) {
+  const [dropTarget, setDropTarget] = useState<WorkOrderStatus | null>(null);
+  const dragCounters = useRef<Record<string, number>>({});
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }
+
+  function handleDragEnter(status: WorkOrderStatus, e: React.DragEvent) {
+    e.preventDefault();
+    dragCounters.current[status] = (dragCounters.current[status] || 0) + 1;
+    setDropTarget(status);
+  }
+
+  function handleDragLeave(status: WorkOrderStatus) {
+    dragCounters.current[status] = (dragCounters.current[status] || 0) - 1;
+    if (dragCounters.current[status] <= 0) {
+      dragCounters.current[status] = 0;
+      if (dropTarget === status) setDropTarget(null);
+    }
+  }
+
+  function handleDrop(status: WorkOrderStatus, e: React.DragEvent) {
+    e.preventDefault();
+    dragCounters.current[status] = 0;
+    setDropTarget(null);
+    const orderId = e.dataTransfer.getData("text/plain");
+    if (orderId) {
+      const order = orders.find((o) => o.id === orderId);
+      if (order && order.status !== status) {
+        onDropToStatus(orderId, status);
+      }
+    }
+  }
+
   return (
     <div className="flex gap-4 overflow-x-auto pb-4 min-h-[400px]" style={{ scrollbarWidth: "thin" }}>
       {KANBAN_COLUMNS.map((status) => {
         const colOrders = orders.filter((o) => o.status === status);
+        const isOver = dropTarget === status && draggingId != null;
+        const draggingOrder = draggingId ? orders.find((o) => o.id === draggingId) : null;
+        const isDifferentColumn = draggingOrder ? draggingOrder.status !== status : false;
+        const showHighlight = isOver && isDifferentColumn;
+
         return (
-          <div key={status} className="flex-none w-72">
+          <div
+            key={status}
+            className="flex-none w-72"
+            onDragOver={handleDragOver}
+            onDragEnter={(e) => handleDragEnter(status, e)}
+            onDragLeave={() => handleDragLeave(status)}
+            onDrop={(e) => handleDrop(status, e)}
+          >
             {/* Column header */}
             <div className="flex items-center gap-2 mb-3 px-1">
               <span className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[status]}`} />
@@ -286,10 +351,12 @@ function KanbanView({
             </div>
 
             {/* Cards */}
-            <div className="space-y-3">
+            <div className={`space-y-3 min-h-[80px] rounded-xl p-1.5 -m-1.5 transition-all duration-200 ${showHighlight ? "bg-[#e94560]/10 ring-2 ring-[#e94560]/40 ring-dashed" : ""}`}>
               {colOrders.length === 0 ? (
-                <div className="bg-[#16213e] border border-white/5 rounded-xl py-8 text-center">
-                  <p className="text-gray-600 text-xs">Sin órdenes</p>
+                <div className={`border rounded-xl py-8 text-center transition-colors ${showHighlight ? "bg-[#e94560]/5 border-[#e94560]/30" : "bg-[#16213e] border-white/5"}`}>
+                  <p className={`text-xs ${showHighlight ? "text-[#e94560]" : "text-gray-600"}`}>
+                    {showHighlight ? "Soltar aquí" : "Sin órdenes"}
+                  </p>
                 </div>
               ) : (
                 colOrders.map((order) => (
@@ -300,8 +367,15 @@ function KanbanView({
                     generatingInvoice={generatingInvoice}
                     onAdvanceStatus={onAdvanceStatus}
                     advancingId={advancingId}
+                    onDragStart={onDragStart}
+                    isDragging={draggingId === order.id}
                   />
                 ))
+              )}
+              {showHighlight && colOrders.length > 0 && (
+                <div className="border-2 border-dashed border-[#e94560]/40 rounded-xl py-4 text-center">
+                  <p className="text-[#e94560] text-xs font-medium">Soltar aquí</p>
+                </div>
               )}
             </div>
           </div>
@@ -357,6 +431,7 @@ export default function OrdenesClient({
   const [view, setView] = useState<"list" | "kanban">("list");
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
   const [advancingId, setAdvancingId] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [, startTransition] = useTransition();
 
@@ -417,6 +492,29 @@ export default function OrdenesClient({
   useEffect(() => {
     syncOrders();
   }, [syncOrders]);
+
+  // Clear drag state on global dragend (e.g. user drops outside any column)
+  useEffect(() => {
+    function onDragEnd() {
+      setDraggingId(null);
+    }
+    document.addEventListener("dragend", onDragEnd);
+    return () => document.removeEventListener("dragend", onDragEnd);
+  }, []);
+
+  function handleDropToStatus(orderId: string, newStatus: WorkOrderStatus) {
+    setDraggingId(null);
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    );
+    startTransition(async () => {
+      try {
+        await advanceWorkOrderStatus(orderId, newStatus);
+      } catch {
+        setOrders(initialOrders);
+      }
+    });
+  }
 
   async function handleGenerateInvoice(orderId: string) {
     setGeneratingInvoice(orderId);
@@ -624,6 +722,9 @@ export default function OrdenesClient({
           generatingInvoice={generatingInvoice}
           onAdvanceStatus={handleAdvanceStatus}
           advancingId={advancingId}
+          onDropToStatus={handleDropToStatus}
+          draggingId={draggingId}
+          onDragStart={setDraggingId}
         />
       )}
 
