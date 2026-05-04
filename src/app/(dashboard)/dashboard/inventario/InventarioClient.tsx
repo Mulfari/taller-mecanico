@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useTransition, useRef } from "react";
+import Link from "next/link";
 import type { Inventory } from "@/types/database";
 import { toast, ConfirmDialog, EmptyState } from "@/components/ui";
 import { createInventoryItem, updateInventoryItem, deleteInventoryItem, adjustStock, bulkUpsertInventoryItems } from "./actions";
@@ -917,6 +918,16 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {alertCount > 0 && (
+            <Link
+              href="/dashboard/inventario/reposicion"
+              className="shrink-0 inline-flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/20 hover:border-orange-500/40 text-orange-400 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+              title="Ver pedidos de reposición por proveedor"
+            >
+              <IconAlertTriangle />
+              Reposición
+            </Link>
+          )}
           <button
             onClick={() => setShowImport(true)}
             className="shrink-0 inline-flex items-center gap-2 bg-[#16213e] border border-white/10 hover:border-white/20 text-gray-300 hover:text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
