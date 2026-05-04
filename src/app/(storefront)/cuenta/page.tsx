@@ -85,7 +85,7 @@ function LogoutButton() {
   }
 
   return (
-    <div className="bg-[#16213e] border border-white/10 rounded-xl p-4">
+    <div className="bg-secondary border border-white/10 rounded-xl p-4">
       <button
         onClick={handleLogout}
         disabled={loggingOut}
@@ -108,7 +108,7 @@ interface Stats {
 }
 
 const inputClass =
-  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors";
+  "w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors";
 
 // ── Main Page ──────────────────────────────────────────────────────────────
 
@@ -255,7 +255,7 @@ export default function CuentaPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#1a1a2e" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="flex items-center gap-3 text-gray-400">
           <IconSpinner />
           <span className="text-sm">Cargando…</span>
@@ -268,9 +268,9 @@ export default function CuentaPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#1a1a2e" }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="text-center max-w-sm">
-          <div className="w-20 h-20 rounded-2xl bg-[#16213e] border border-white/10 flex items-center justify-center mx-auto mb-6 text-gray-500">
+          <div className="w-20 h-20 rounded-2xl bg-secondary border border-white/10 flex items-center justify-center mx-auto mb-6 text-gray-500">
             <IconLock />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Acceso requerido</h1>
@@ -281,7 +281,7 @@ export default function CuentaPage() {
             <Link
               href="/login"
               className="block w-full text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Iniciar sesión
             </Link>
@@ -302,12 +302,12 @@ export default function CuentaPage() {
   // ── Main view ────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Hero */}
-      <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-10">
+      <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-10">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-[#e94560]/10 border border-[#e94560]/20 flex items-center justify-center text-[#e94560] text-2xl font-bold shrink-0">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-2xl font-bold shrink-0">
               {initials}
             </div>
             <div>
@@ -332,9 +332,9 @@ export default function CuentaPage() {
               <Link
                 key={stat.label}
                 href={stat.href}
-                className="bg-[#16213e] border border-white/10 rounded-xl p-4 hover:border-[#e94560]/30 transition-colors group"
+                className="bg-secondary border border-white/10 rounded-xl p-4 hover:border-primary/30 transition-colors group"
               >
-                <div className="text-gray-500 group-hover:text-[#e94560] transition-colors mb-2">
+                <div className="text-gray-500 group-hover:text-primary transition-colors mb-2">
                   {stat.icon}
                 </div>
                 <p className="text-2xl font-bold text-white">{stat.value}</p>
@@ -345,7 +345,7 @@ export default function CuentaPage() {
         )}
 
         {/* Profile form */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-6">
+        <div className="bg-secondary border border-white/10 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-5">
             <span className="text-gray-400"><IconUser /></span>
             <h2 className="text-white font-semibold text-sm uppercase tracking-wide">Datos personales</h2>
@@ -402,7 +402,7 @@ export default function CuentaPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
               >
                 {saving ? (
                   <>
@@ -423,7 +423,7 @@ export default function CuentaPage() {
         </div>
 
         {/* Password change form */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-6">
+        <div className="bg-secondary border border-white/10 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-5">
             <span className="text-gray-400"><IconLock /></span>
             <h2 className="text-white font-semibold text-sm uppercase tracking-wide">Cambiar contraseña</h2>
@@ -492,7 +492,7 @@ export default function CuentaPage() {
               <button
                 type="submit"
                 disabled={passwordSaving}
-                className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
               >
                 {passwordSaving ? (
                   <>
@@ -508,7 +508,7 @@ export default function CuentaPage() {
         </div>
 
         {/* Quick links */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl divide-y divide-white/5">
+        <div className="bg-secondary border border-white/10 rounded-xl divide-y divide-white/5">
           {[
             { href: "/mis-vehiculos", icon: <IconCar />, label: "Mis vehículos", desc: "Consultá los vehículos que tenés registrados en el taller" },
             { href: "/mis-ordenes", icon: <IconClipboard />, label: "Mis órdenes de trabajo", desc: "Revisá el estado y detalle de todas tus órdenes" },
@@ -524,7 +524,7 @@ export default function CuentaPage() {
               href={item.href}
               className="flex items-center gap-4 px-5 py-4 hover:bg-white/[0.03] transition-colors group"
             >
-              <span className="text-gray-500 group-hover:text-[#e94560] transition-colors shrink-0">
+              <span className="text-gray-500 group-hover:text-primary transition-colors shrink-0">
                 {item.icon}
               </span>
               <div className="flex-1 min-w-0">

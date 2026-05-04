@@ -70,7 +70,7 @@ function StatusTimeline({ current }: { current: OrderStatus }) {
                   done
                     ? "bg-green-500/20 border-green-500 text-green-400"
                     : active
-                    ? "bg-[#e94560]/20 border-[#e94560] text-[#e94560]"
+                    ? "bg-primary/20 border-primary text-primary"
                     : "bg-white/5 border-white/10 text-gray-600"
                 }`}
               >
@@ -84,7 +84,7 @@ function StatusTimeline({ current }: { current: OrderStatus }) {
               </div>
               <span
                 className={`text-xs text-center leading-tight px-1 ${
-                  done ? "text-green-400" : active ? "text-[#e94560] font-medium" : "text-gray-600"
+                  done ? "text-green-400" : active ? "text-primary font-medium" : "text-gray-600"
                 }`}
               >
                 {STATUS_LABELS[step]}
@@ -175,9 +175,9 @@ export default async function MisOrdenesDetailPage({
       : null;
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e]">
+    <div className="min-h-screen bg-surface">
       {/* Header */}
-      <div className="bg-[#16213e] border-b border-white/5 py-4">
+      <div className="bg-secondary border-b border-white/5 py-4">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-500">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
@@ -225,7 +225,7 @@ export default async function MisOrdenesDetailPage({
             {isActive && (
               <Link
                 href={`/seguimiento?orden=${order.id}`}
-                className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
               >
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                 Seguimiento en vivo
@@ -235,7 +235,7 @@ export default async function MisOrdenesDetailPage({
         </div>
 
         {/* Status timeline */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-5">
+        <div className="bg-secondary border border-white/10 rounded-xl p-5">
           <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-4">
             Estado del servicio
           </p>
@@ -246,7 +246,7 @@ export default async function MisOrdenesDetailPage({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Vehicle */}
           {vehicle && (
-            <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-3">
+            <div className="bg-secondary border border-white/10 rounded-xl p-5 space-y-3">
               <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">Vehículo</p>
               <p className="text-white font-semibold">
                 {vehicle.brand} {vehicle.model} {vehicle.year}
@@ -269,7 +269,7 @@ export default async function MisOrdenesDetailPage({
           )}
 
           {/* Dates & cost */}
-          <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-3">
+          <div className="bg-secondary border border-white/10 rounded-xl p-5 space-y-3">
             <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">Detalles</p>
             <div className="grid grid-cols-2 gap-3">
               <InfoRow label="Ingreso" value={fmtDate(order.received_at ?? order.created_at)} />
@@ -285,7 +285,7 @@ export default async function MisOrdenesDetailPage({
               {costToShow && (
                 <div>
                   <p className="text-gray-500 text-xs mb-0.5">{costToShow.label}</p>
-                  <p className={`text-sm font-semibold ${costToShow.highlight ? "text-[#e94560]" : "text-gray-200"}`}>
+                  <p className={`text-sm font-semibold ${costToShow.highlight ? "text-primary" : "text-gray-200"}`}>
                     {costToShow.value}
                   </p>
                 </div>
@@ -297,7 +297,7 @@ export default async function MisOrdenesDetailPage({
 
         {/* Description / diagnosis */}
         {(order.description || order.diagnosis) && (
-          <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-4">
+          <div className="bg-secondary border border-white/10 rounded-xl p-5 space-y-4">
             {order.description && (
               <div>
                 <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-2">
@@ -323,7 +323,7 @@ export default async function MisOrdenesDetailPage({
 
         {/* Line items */}
         {items.length > 0 && (
-          <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
+          <div className="bg-secondary border border-white/10 rounded-xl overflow-hidden">
             <div className="px-5 py-4 border-b border-white/5">
               <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">
                 Detalle de trabajos y repuestos
@@ -398,7 +398,7 @@ export default async function MisOrdenesDetailPage({
                   )}
                   <div className="flex justify-between text-base font-bold border-t border-white/10 pt-2">
                     <span className="text-white">{costToShow.label}</span>
-                    <span className="text-[#e94560]">{costToShow.value}</span>
+                    <span className="text-primary">{costToShow.value}</span>
                   </div>
                 </div>
               </div>
@@ -418,7 +418,7 @@ export default async function MisOrdenesDetailPage({
             <Link
               href={`/seguimiento?orden=${order.id}`}
               className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors text-sm"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Ver seguimiento en vivo
             </Link>

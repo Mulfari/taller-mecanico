@@ -125,9 +125,9 @@ export default async function MisCotizacionesDetailPage({
     : false;
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e]">
+    <div className="min-h-screen bg-surface">
       {/* Header */}
-      <div className="bg-[#16213e] border-b border-white/5 py-4">
+      <div className="bg-secondary border-b border-white/5 py-4">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-500">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
@@ -156,7 +156,7 @@ export default async function MisCotizacionesDetailPage({
               </svg>
             </Link>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#e94560]/10 border border-[#e94560]/20 flex items-center justify-center text-[#e94560] shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
                 <IconFileText />
               </div>
               <div>
@@ -178,10 +178,10 @@ export default async function MisCotizacionesDetailPage({
 
         {/* Vehicle info */}
         {vehicle && (
-          <div className="bg-[#16213e] border border-white/10 rounded-xl p-5">
+          <div className="bg-secondary border border-white/10 rounded-xl p-5">
             <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-3">Vehículo</p>
             <div className="flex items-center gap-3">
-              <span className="text-[#e94560]"><IconCar /></span>
+              <span className="text-primary"><IconCar /></span>
               <div>
                 <p className="text-white font-semibold">
                   {vehicle.brand} {vehicle.model} {vehicle.year}
@@ -195,7 +195,7 @@ export default async function MisCotizacionesDetailPage({
         )}
 
         {/* Line items */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
+        <div className="bg-secondary border border-white/10 rounded-xl overflow-hidden">
           {items.length === 0 ? (
             <div className="px-6 py-10 text-center text-gray-600 text-sm">
               Sin ítems registrados en esta cotización.
@@ -253,7 +253,7 @@ export default async function MisCotizacionesDetailPage({
               {/* Total */}
               <div className="px-5 py-4 border-t border-white/10 flex justify-between items-center">
                 <span className="text-gray-300 font-semibold">Total</span>
-                <span className="text-[#e94560] text-2xl font-bold tabular-nums">
+                <span className="text-primary text-2xl font-bold tabular-nums">
                   {fmt(quote.total)}
                 </span>
               </div>
@@ -286,7 +286,7 @@ export default async function MisCotizacionesDetailPage({
 
         {/* Shop contact */}
         {(shopConfig?.phone || shopConfig?.address) && (
-          <div className="bg-[#16213e] border border-white/10 rounded-xl p-5">
+          <div className="bg-secondary border border-white/10 rounded-xl p-5">
             <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-3">
               Contacto del taller
             </p>
@@ -297,7 +297,7 @@ export default async function MisCotizacionesDetailPage({
             {shopConfig.phone && (
               <a
                 href={`tel:${shopConfig.phone}`}
-                className="inline-flex items-center gap-1.5 text-[#e94560] hover:text-white text-sm mt-1 transition-colors"
+                className="inline-flex items-center gap-1.5 text-primary hover:text-white text-sm mt-1 transition-colors"
               >
                 {shopConfig.phone}
               </a>
@@ -315,7 +315,7 @@ export default async function MisCotizacionesDetailPage({
           </Link>
           <Link
             href="/cotizacion"
-            className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white bg-[#e94560] hover:bg-[#c73652] transition-colors text-sm"
+            className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white bg-primary hover:bg-primary-hover transition-colors text-sm"
           >
             Solicitar nueva cotización
           </Link>

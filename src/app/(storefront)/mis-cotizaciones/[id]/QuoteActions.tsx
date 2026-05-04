@@ -45,7 +45,7 @@ function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+      <div className="relative bg-secondary border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl">
         <h2 className="text-white font-semibold text-lg mb-2">
           {isAccept ? "Aceptar cotización" : "Rechazar cotización"}
         </h2>

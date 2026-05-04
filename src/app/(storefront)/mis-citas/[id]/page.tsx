@@ -151,9 +151,9 @@ export default async function MisCitasDetailPage({
   const isPast = apptDate < new Date();
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e]">
+    <div className="min-h-screen bg-surface">
       {/* Header */}
-      <div className="bg-[#16213e] border-b border-white/5 py-4">
+      <div className="bg-secondary border-b border-white/5 py-4">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-500">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
@@ -198,7 +198,7 @@ export default async function MisCitasDetailPage({
         </div>
 
         {/* Main info card */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-6 space-y-5">
+        <div className="bg-secondary border border-white/10 rounded-xl p-6 space-y-5">
           <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">
             Detalles de la cita
           </p>
@@ -242,7 +242,7 @@ export default async function MisCitasDetailPage({
 
         {/* Shop info */}
         {(shopConfig?.phone || shopConfig?.address) && (
-          <div className="bg-[#16213e] border border-white/10 rounded-xl p-6 space-y-4">
+          <div className="bg-secondary border border-white/10 rounded-xl p-6 space-y-4">
             <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">
               Información del taller
             </p>
@@ -316,7 +316,7 @@ export default async function MisCitasDetailPage({
           {(status === "completed" || status === "cancelled" || isPast) && (
             <Link
               href="/citas"
-              className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors text-sm bg-[#e94560] hover:bg-[#c73652]"
+              className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors text-sm bg-primary hover:bg-primary-hover"
             >
               Agendar nueva cita
             </Link>

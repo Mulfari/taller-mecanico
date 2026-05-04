@@ -46,10 +46,10 @@ export default function VehiculosFilters({ marcas, transmisiones, currentParams 
     currentParams.anio_max ||
     currentParams.transmision
 
-  const cardStyle = { backgroundColor: "#16213e" }
+  const cardStyle = { backgroundColor: "var(--color-secondary)" }
   const inputStyle = { backgroundColor: "#0f172a" }
   const inputClass =
-    "w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-[#e94560]/50 focus:outline-none transition-colors"
+    "w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors"
 
   return (
     <div className="space-y-6">
@@ -59,7 +59,7 @@ export default function VehiculosFilters({ marcas, transmisiones, currentParams 
           <div className="space-y-1.5">
             <button
               onClick={() => updateParam("marca", "")}
-              className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${!currentParams.marca ? "text-[#e94560] bg-[#e94560]/10" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+              className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${!currentParams.marca ? "text-primary bg-primary/10" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
             >
               Todas las marcas
             </button>
@@ -67,7 +67,7 @@ export default function VehiculosFilters({ marcas, transmisiones, currentParams 
               <button
                 key={m}
                 onClick={() => updateParam("marca", m)}
-                className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${currentParams.marca === m ? "text-[#e94560] bg-[#e94560]/10" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+                className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${currentParams.marca === m ? "text-primary bg-primary/10" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
               >
                 {m}
               </button>
@@ -100,7 +100,7 @@ export default function VehiculosFilters({ marcas, transmisiones, currentParams 
           <div className="space-y-1.5">
             <button
               onClick={() => updateParam("transmision", "")}
-              className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${!currentParams.transmision ? "text-[#e94560] bg-[#e94560]/10" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+              className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${!currentParams.transmision ? "text-primary bg-primary/10" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
             >
               Todas
             </button>
@@ -108,7 +108,7 @@ export default function VehiculosFilters({ marcas, transmisiones, currentParams 
               <button
                 key={t}
                 onClick={() => updateParam("transmision", t)}
-                className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors capitalize ${currentParams.transmision === t ? "text-[#e94560] bg-[#e94560]/10" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
+                className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors capitalize ${currentParams.transmision === t ? "text-primary bg-primary/10" : "text-gray-400 hover:text-white hover:bg-white/5"}`}
               >
                 {t}
               </button>
@@ -120,7 +120,7 @@ export default function VehiculosFilters({ marcas, transmisiones, currentParams 
       {hasFilters && (
         <button
           onClick={() => router.push(pathname)}
-          className="w-full py-2 rounded-lg text-sm text-gray-400 border border-white/10 hover:border-[#e94560]/30 hover:text-[#e94560] transition-colors"
+          className="w-full py-2 rounded-lg text-sm text-gray-400 border border-white/10 hover:border-primary/30 hover:text-primary transition-colors"
         >
           Limpiar filtros
         </button>

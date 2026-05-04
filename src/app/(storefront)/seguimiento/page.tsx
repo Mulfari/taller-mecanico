@@ -41,13 +41,13 @@ function SearchForm({ defaultValue }: { defaultValue?: string }) {
           defaultValue={defaultValue}
           placeholder="Ej. ABC123 o AB 123 CD"
           autoComplete="off"
-          className="w-full bg-[#1a1a2e] border border-white/10 rounded-xl pl-11 pr-4 py-3.5 text-white text-base placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-2 focus:ring-[#e94560]/20 transition-colors font-mono uppercase tracking-widest"
+          className="w-full bg-surface border border-white/10 rounded-xl pl-11 pr-4 py-3.5 text-white text-base placeholder-gray-600 focus:outline-none focus:border-primary/60 focus:ring-2 focus:ring-primary/20 transition-colors font-mono uppercase tracking-widest"
           aria-label="Número de patente"
         />
       </div>
       <button
         type="submit"
-        className="bg-[#e94560] hover:bg-[#c73652] text-white font-semibold px-6 py-3.5 rounded-xl transition-colors shrink-0"
+        className="bg-primary hover:bg-primary-hover text-white font-semibold px-6 py-3.5 rounded-xl transition-colors shrink-0"
       >
         Buscar
       </button>
@@ -142,15 +142,15 @@ export default async function SeguimientoPage({
   const notFound = (orden || query) && !result;
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e]">
+    <div className="min-h-screen bg-surface">
       {/* Hero */}
-      <div className="bg-[#16213e] border-b border-white/5 py-14">
+      <div className="bg-secondary border-b border-white/5 py-14">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#e94560]/10 border border-[#e94560]/20 text-[#e94560] mx-auto mb-5">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 text-primary mx-auto mb-5">
             <IconCar />
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">
-            Seguimiento de <span className="text-[#e94560]">Vehículo</span>
+            Seguimiento de <span className="text-primary">Vehículo</span>
           </h1>
           <p className="text-gray-400 mb-8 max-w-md mx-auto">
             Ingresá la patente de tu vehículo para ver el estado actual en el taller.
@@ -175,7 +175,7 @@ export default async function SeguimientoPage({
             </p>
             <Link
               href="/citas"
-              className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
             >
               Agendar una cita
             </Link>

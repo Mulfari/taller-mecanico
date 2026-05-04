@@ -216,9 +216,9 @@ const services = [
 
 export default function ServiciosPage() {
   return (
-    <div className="min-h-screen bg-[#1a1a2e]">
+    <div className="min-h-screen bg-surface">
       {/* Hero */}
-      <div className="bg-[#16213e] border-b border-white/5 py-14">
+      <div className="bg-secondary border-b border-white/5 py-14">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-500 mb-6">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
@@ -226,7 +226,7 @@ export default function ServiciosPage() {
             <span className="text-white">Servicios</span>
           </nav>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
-            Nuestros <span className="text-[#e94560]">Servicios</span>
+            Nuestros <span className="text-primary">Servicios</span>
           </h1>
           <p className="text-gray-400 max-w-2xl text-lg">
             Equipos de diagnóstico de última generación y técnicos certificados para cualquier marca y modelo. Todos los trabajos con garantía.
@@ -240,9 +240,9 @@ export default function ServiciosPage() {
           {services.map((service) => (
             <div
               key={service.title}
-              className="bg-[#16213e] border border-white/5 rounded-xl p-6 flex flex-col hover:border-[#e94560]/30 transition-colors group"
+              className="bg-secondary border border-white/5 rounded-xl p-6 flex flex-col hover:border-primary/30 transition-colors group"
             >
-              <div className="text-[#e94560] mb-4 group-hover:scale-110 transition-transform inline-block">
+              <div className="text-primary mb-4 group-hover:scale-110 transition-transform inline-block">
                 {service.icon}
               </div>
               <h2 className="text-white font-bold text-xl mb-2">{service.title}</h2>
@@ -251,7 +251,7 @@ export default function ServiciosPage() {
               <ul className="space-y-2 mb-6 flex-1">
                 {service.items.map((item) => (
                   <li key={item} className="flex items-start gap-2 text-sm text-gray-400">
-                    <svg className="w-4 h-4 text-[#e94560] shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <svg className="w-4 h-4 text-primary shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                     {item}
@@ -261,7 +261,7 @@ export default function ServiciosPage() {
 
               <Link
                 href={`/citas?servicio=${encodeURIComponent(service.serviceType)}`}
-                className="block text-center border border-[#e94560]/40 hover:border-[#e94560] hover:bg-[#e94560]/10 text-gray-300 hover:text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
+                className="block text-center border border-primary/40 hover:border-primary hover:bg-primary/10 text-gray-300 hover:text-white text-sm font-medium py-2.5 rounded-lg transition-colors"
               >
                 {service.cta}
               </Link>
@@ -271,7 +271,7 @@ export default function ServiciosPage() {
       </div>
 
       {/* CTA banner */}
-      <div className="bg-[#e94560] py-14">
+      <div className="bg-primary py-14">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
             ¿No encontrás lo que buscás?
@@ -282,7 +282,7 @@ export default function ServiciosPage() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/cotizacion"
-              className="bg-white text-[#e94560] hover:bg-gray-100 font-semibold px-8 py-3.5 rounded-lg transition-colors"
+              className="bg-white text-primary hover:bg-gray-100 font-semibold px-8 py-3.5 rounded-lg transition-colors"
             >
               Solicitar Cotización
             </Link>

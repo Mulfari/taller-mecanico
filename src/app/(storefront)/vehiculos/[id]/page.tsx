@@ -60,9 +60,9 @@ export default async function VehiculoDetailPage({
       : "bg-red-500/10 text-red-400 border-red-500/20"
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Breadcrumb */}
-      <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-4">
+      <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-400">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
@@ -94,7 +94,7 @@ export default async function VehiculoDetailPage({
             </div>
 
             <div className="flex items-end gap-4">
-              <span className="text-4xl font-bold text-[#e94560]">
+              <span className="text-4xl font-bold text-primary">
                 ${(v.price as number)?.toLocaleString("es-AR")}
               </span>
             </div>
@@ -102,7 +102,7 @@ export default async function VehiculoDetailPage({
             {/* Specs */}
             <div
               className="rounded-xl border border-white/5 p-5 space-y-3"
-              style={{ backgroundColor: "#16213e" }}
+              style={{ backgroundColor: "var(--color-secondary)" }}
             >
               <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">
                 Especificaciones
@@ -119,7 +119,7 @@ export default async function VehiculoDetailPage({
             {features.length > 0 && (
               <div
                 className="rounded-xl border border-white/5 p-5"
-                style={{ backgroundColor: "#16213e" }}
+                style={{ backgroundColor: "var(--color-secondary)" }}
               >
                 <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">
                   Equipamiento
@@ -142,7 +142,7 @@ export default async function VehiculoDetailPage({
             {v.description && (
               <div
                 className="rounded-xl border border-white/5 p-5"
-                style={{ backgroundColor: "#16213e" }}
+                style={{ backgroundColor: "var(--color-secondary)" }}
               >
                 <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-3">
                   Descripción
@@ -158,7 +158,7 @@ export default async function VehiculoDetailPage({
           <div className="mt-12 max-w-2xl">
             <div
               className="rounded-2xl border border-white/5 p-6 sm:p-8"
-              style={{ backgroundColor: "#16213e" }}
+              style={{ backgroundColor: "var(--color-secondary)" }}
             >
               <h2 className="text-white font-bold text-xl mb-1">¿Te interesa este vehículo?</h2>
               <p className="text-gray-400 text-sm mb-6">

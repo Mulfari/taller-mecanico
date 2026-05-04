@@ -159,7 +159,7 @@ function QuoteCard({
   const canRespond = quote.status === "sent" && !expired;
 
   return (
-    <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-colors">
+    <div className="bg-secondary border border-white/10 rounded-xl overflow-hidden hover:border-white/20 transition-colors">
       <div className="p-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
           {/* Left: ID + status + vehicle */}
@@ -207,7 +207,7 @@ function QuoteCard({
           {/* Right: total + link */}
           <div className="flex items-center gap-3 shrink-0">
             {quote.total != null && quote.total > 0 && (
-              <span className="text-[#e94560] font-bold text-lg">
+              <span className="text-primary font-bold text-lg">
                 {fmt(quote.total)}
               </span>
             )}
@@ -361,7 +361,7 @@ export default function MisCotizacionesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#1a1a2e" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="flex items-center gap-3 text-gray-400">
           <IconSpinner />
           <span className="text-sm">Cargando cotizaciones…</span>
@@ -374,9 +374,9 @@ export default function MisCotizacionesPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#1a1a2e" }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="text-center max-w-sm">
-          <div className="w-20 h-20 rounded-2xl bg-[#16213e] border border-white/10 flex items-center justify-center mx-auto mb-6 text-gray-500">
+          <div className="w-20 h-20 rounded-2xl bg-secondary border border-white/10 flex items-center justify-center mx-auto mb-6 text-gray-500">
             <IconLock />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Acceso requerido</h1>
@@ -387,7 +387,7 @@ export default function MisCotizacionesPage() {
             <Link
               href="/login"
               className="block w-full text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Iniciar sesión
             </Link>
@@ -410,9 +410,9 @@ export default function MisCotizacionesPage() {
   ).length;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Hero */}
-      <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-10">
+      <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
@@ -420,7 +420,7 @@ export default function MisCotizacionesPage() {
             <span className="text-white">Mis cotizaciones</span>
           </nav>
           <div className="flex items-center gap-3 mb-2">
-            <span className="text-[#e94560]"><IconClipboard /></span>
+            <span className="text-primary"><IconClipboard /></span>
             <h1 className="text-3xl font-bold text-white">Mis Cotizaciones</h1>
             {pendingSent > 0 && (
               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
@@ -457,8 +457,8 @@ export default function MisCotizacionesPage() {
                   onClick={() => setFilterStatus(key)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     filterStatus === key
-                      ? "bg-[#e94560] text-white"
-                      : "bg-[#16213e] border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
+                      ? "bg-primary text-white"
+                      : "bg-secondary border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
                   }`}
                 >
                   {label}
@@ -478,7 +478,7 @@ export default function MisCotizacionesPage() {
         {/* Quote list */}
         {quotes.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-[#16213e] border border-white/10 flex items-center justify-center mx-auto mb-4 text-gray-600">
+            <div className="w-16 h-16 rounded-2xl bg-secondary border border-white/10 flex items-center justify-center mx-auto mb-4 text-gray-600">
               <IconClipboard />
             </div>
             <p className="text-gray-400 text-lg mb-2">Sin cotizaciones</p>
@@ -488,13 +488,13 @@ export default function MisCotizacionesPage() {
             <Link
               href="/cotizacion"
               className="inline-block py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Solicitar cotización
             </Link>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-[#16213e] border border-white/10 rounded-xl py-12 text-center">
+          <div className="bg-secondary border border-white/10 rounded-xl py-12 text-center">
             <p className="text-gray-500 text-sm">
               No hay cotizaciones con estado &ldquo;{STATUS_LABELS[filterStatus as QuoteStatus]}&rdquo;.
             </p>
@@ -519,7 +519,7 @@ export default function MisCotizacionesPage() {
             <Link
               href="/cotizacion"
               className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors text-sm"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Solicitar nueva cotización
             </Link>

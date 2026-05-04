@@ -70,6 +70,7 @@ export interface WorkOrderItem {
   quantity: number;
   unit_price: number;
   total: number;
+  inventory_id: string | null;
 }
 
 export interface Appointment {

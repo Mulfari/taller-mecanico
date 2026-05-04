@@ -98,7 +98,8 @@ create table work_order_items (
   description    text not null,
   quantity       numeric(10, 3) not null default 1 check (quantity > 0),
   unit_price     numeric(10, 2) not null check (unit_price >= 0),
-  total          numeric(10, 2) not null check (total >= 0)
+  total          numeric(10, 2) not null check (total >= 0),
+  inventory_id   uuid references inventory(id) on delete set null
 );
 
 -- ============================================================

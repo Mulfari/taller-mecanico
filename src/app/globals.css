@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #e94560;
+  --color-primary-hover: #c73652;
+  --color-secondary: #16213e;
+  --color-surface: #1a1a2e;
+}
+
 @media print {
   /* Reset dark backgrounds to white for paper */
   body,

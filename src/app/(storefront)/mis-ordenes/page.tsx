@@ -122,7 +122,7 @@ function OrderCard({ order }: { order: WorkOrder }) {
 
   return (
     <div
-      className={`bg-[#16213e] border rounded-xl overflow-hidden transition-colors ${
+      className={`bg-secondary border rounded-xl overflow-hidden transition-colors ${
         order.status === "delivered" ? "border-white/5" : "border-white/10 hover:border-white/20"
       }`}
     >
@@ -133,7 +133,7 @@ function OrderCard({ order }: { order: WorkOrder }) {
             className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
               order.status === "delivered"
                 ? "bg-white/5 text-gray-600"
-                : "bg-[#e94560]/10 border border-[#e94560]/20 text-[#e94560]"
+                : "bg-primary/10 border border-primary/20 text-primary"
             }`}
           >
             <IconWrench />
@@ -142,7 +142,7 @@ function OrderCard({ order }: { order: WorkOrder }) {
             <div className="flex items-center gap-2 flex-wrap">
               <Link
                 href={`/mis-ordenes/${order.id}`}
-                className="text-white font-semibold text-sm font-mono hover:text-[#e94560] transition-colors"
+                className="text-white font-semibold text-sm font-mono hover:text-primary transition-colors"
               >
                 {shortId}
               </Link>
@@ -163,7 +163,7 @@ function OrderCard({ order }: { order: WorkOrder }) {
           {isActive && (
             <Link
               href={`/seguimiento?orden=${order.id}`}
-              className="inline-flex items-center gap-1.5 text-xs text-[#e94560] border border-[#e94560]/30 hover:border-[#e94560]/60 hover:bg-[#e94560]/5 px-3 py-1.5 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-primary border border-primary/30 hover:border-primary/60 hover:bg-primary/5 px-3 py-1.5 rounded-lg transition-colors"
             >
               Seguir en vivo
               <IconChevronRight />
@@ -200,7 +200,7 @@ function OrderCard({ order }: { order: WorkOrder }) {
           <div className="text-sm">
             <p className="text-gray-500 text-xs">Costo</p>
             {order.final_cost != null && order.final_cost > 0 ? (
-              <p className="text-[#e94560] font-semibold">{fmt(order.final_cost)}</p>
+              <p className="text-primary font-semibold">{fmt(order.final_cost)}</p>
             ) : order.estimated_cost != null && order.estimated_cost > 0 ? (
               <p className="text-gray-300">
                 {fmt(order.estimated_cost)}
@@ -305,7 +305,7 @@ export default function MisOrdenesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#1a1a2e" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="flex items-center gap-3 text-gray-400">
           <IconSpinner />
           <span className="text-sm">Cargando órdenes…</span>
@@ -318,9 +318,9 @@ export default function MisOrdenesPage() {
 
   if (!authed) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#1a1a2e" }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="text-center max-w-sm">
-          <div className="w-20 h-20 rounded-2xl bg-[#16213e] border border-white/10 flex items-center justify-center mx-auto mb-6 text-gray-500">
+          <div className="w-20 h-20 rounded-2xl bg-secondary border border-white/10 flex items-center justify-center mx-auto mb-6 text-gray-500">
             <IconLock />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Acceso requerido</h1>
@@ -331,7 +331,7 @@ export default function MisOrdenesPage() {
             <Link
               href="/login"
               className="block w-full text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Iniciar sesión
             </Link>
@@ -350,9 +350,9 @@ export default function MisOrdenesPage() {
   // ── Main view ────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Hero */}
-      <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-10">
+      <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
@@ -363,7 +363,7 @@ export default function MisOrdenesPage() {
           </nav>
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <div className="flex items-center gap-2 text-[#e94560] text-sm font-medium mb-2">
+              <div className="flex items-center gap-2 text-primary text-sm font-medium mb-2">
                 <IconWrench />
                 Mis órdenes de trabajo
               </div>
@@ -377,7 +377,7 @@ export default function MisOrdenesPage() {
             {activeCount > 0 && (
               <Link
                 href="/seguimiento"
-                className="shrink-0 inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+                className="shrink-0 inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
               >
                 <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                 Seguimiento en vivo
@@ -406,8 +406,8 @@ export default function MisOrdenesPage() {
                   onClick={() => setFilter(key)}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     filter === key
-                      ? "bg-[#e94560] text-white"
-                      : "bg-[#16213e] border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
+                      ? "bg-primary text-white"
+                      : "bg-secondary border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
                   }`}
                 >
                   {label}
@@ -427,7 +427,7 @@ export default function MisOrdenesPage() {
         {/* Order list */}
         {orders.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-16 h-16 rounded-2xl bg-[#16213e] border border-white/10 flex items-center justify-center mx-auto mb-4 text-gray-600">
+            <div className="w-16 h-16 rounded-2xl bg-secondary border border-white/10 flex items-center justify-center mx-auto mb-4 text-gray-600">
               <IconWrench />
             </div>
             <p className="text-gray-400 text-lg mb-2">Sin órdenes registradas</p>
@@ -437,13 +437,13 @@ export default function MisOrdenesPage() {
             <Link
               href="/citas"
               className="inline-block py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Agendar un servicio
             </Link>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-[#16213e] border border-white/10 rounded-xl py-12 text-center">
+          <div className="bg-secondary border border-white/10 rounded-xl py-12 text-center">
             <p className="text-gray-500 text-sm">No hay órdenes con ese filtro.</p>
           </div>
         ) : (
@@ -466,7 +466,7 @@ export default function MisOrdenesPage() {
             <Link
               href="/cuenta"
               className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors text-sm"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Mi cuenta
             </Link>

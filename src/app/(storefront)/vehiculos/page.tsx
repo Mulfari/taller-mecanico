@@ -71,8 +71,8 @@ export default async function VehiculosPage({
   const transmisiones = [...new Set(transRows?.map((r) => r.transmission as string) ?? [])].sort()
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
-      <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-12">
+    <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+      <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-white">Vehículos en Venta</h1>
           <p className="text-gray-400 mt-2">
@@ -105,8 +105,8 @@ export default async function VehiculosPage({
                     <Link
                       key={v.id}
                       href={`/vehiculos/${v.id}`}
-                      className="group rounded-xl border border-white/5 overflow-hidden transition-all hover:border-[#e94560]/30 hover:shadow-lg hover:shadow-[#e94560]/5"
-                      style={{ backgroundColor: "#16213e" }}
+                      className="group rounded-xl border border-white/5 overflow-hidden transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                      style={{ backgroundColor: "var(--color-secondary)" }}
                     >
                       <div className="relative h-48 overflow-hidden" style={{ backgroundColor: "#0f172a" }}>
                         {mainPhoto ? (
@@ -129,7 +129,7 @@ export default async function VehiculosPage({
                       </div>
 
                       <div className="p-4">
-                        <h3 className="text-white font-semibold text-lg leading-tight group-hover:text-[#e94560] transition-colors">
+                        <h3 className="text-white font-semibold text-lg leading-tight group-hover:text-primary transition-colors">
                           {v.brand} {v.model}
                         </h3>
                         <p className="text-gray-400 text-sm mt-0.5">{v.year}</p>
@@ -150,7 +150,7 @@ export default async function VehiculosPage({
                         </div>
 
                         <div className="mt-3 pt-3 border-t border-white/5">
-                          <span className="text-[#e94560] font-bold text-xl">
+                          <span className="text-primary font-bold text-xl">
                             ${v.price?.toLocaleString("es-AR")}
                           </span>
                         </div>

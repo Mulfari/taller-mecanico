@@ -104,9 +104,9 @@ export default async function MisFacturasDetailPage({
   const shopName = shopConfig?.name ?? "TallerPro";
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e]">
+    <div className="min-h-screen bg-surface">
       {/* Screen-only header */}
-      <div className="bg-[#16213e] border-b border-white/5 py-4 print:hidden">
+      <div className="bg-secondary border-b border-white/5 py-4 print:hidden">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-500 mb-0">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
@@ -154,7 +154,7 @@ export default async function MisFacturasDetailPage({
 
         {/* ── Printable invoice document ──────────────────────────────── */}
         <div
-          className="bg-[#16213e] border border-white/10 rounded-2xl overflow-hidden
+          className="bg-secondary border border-white/10 rounded-2xl overflow-hidden
                      print:bg-white print:border-0 print:rounded-none print:shadow-none"
         >
           {/* Invoice header */}
@@ -182,7 +182,7 @@ export default async function MisFacturasDetailPage({
 
               {/* Invoice meta */}
               <div className="text-right">
-                <p className="text-[#e94560] font-bold text-2xl font-mono print:text-gray-900">
+                <p className="text-primary font-bold text-2xl font-mono print:text-gray-900">
                   FACTURA
                 </p>
                 <p className="text-gray-300 font-mono text-sm mt-1 print:text-gray-700">
@@ -341,7 +341,7 @@ export default async function MisFacturasDetailPage({
                 )}
                 <div className="flex justify-between text-base font-bold border-t border-white/10 pt-2 print:border-gray-200">
                   <span className="text-white print:text-gray-900">Total</span>
-                  <span className="text-[#e94560] print:text-gray-900">{fmt(invoice.total)}</span>
+                  <span className="text-primary print:text-gray-900">{fmt(invoice.total)}</span>
                 </div>
               </div>
             </div>

@@ -257,6 +257,14 @@ export async function createVehicleForClient(
   return vehicle;
 }
 
+export async function deleteWorkOrderPhoto(orderId: string, fileName: string) {
+  const supabase = await createClient();
+  const path = `work-orders/${orderId}/${fileName}`;
+  const { error } = await supabase.storage.from("shop-assets").remove([path]);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/dashboard/ordenes/${orderId}`);
+}
+
 export async function generateInvoiceFromWorkOrder(orderId: string): Promise<string> {
   const supabase = await createClient();
 

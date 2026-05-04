@@ -108,7 +108,7 @@ function StatusTimeline({ current }: { current: WorkOrderStatus }) {
                   done
                     ? "bg-green-500/20 border-green-500 text-green-400"
                     : active
-                    ? "bg-[#e94560]/20 border-[#e94560] text-[#e94560]"
+                    ? "bg-primary/20 border-primary text-primary"
                     : "bg-white/5 border-white/10 text-gray-600"
                 }`}
               >
@@ -116,7 +116,7 @@ function StatusTimeline({ current }: { current: WorkOrderStatus }) {
               </div>
               <span
                 className={`text-xs text-center leading-tight whitespace-nowrap ${
-                  done ? "text-green-400" : active ? "text-[#e94560] font-medium" : "text-gray-600"
+                  done ? "text-green-400" : active ? "text-primary font-medium" : "text-gray-600"
                 }`}
               >
                 {STATUS_LABELS[step]}
@@ -150,7 +150,7 @@ function WorkOrderCard({ order, live }: { order: WorkOrder; live: boolean }) {
   const isActive = order.status !== "delivered";
 
   return (
-    <div className="bg-[#16213e] border border-white/10 rounded-2xl overflow-hidden">
+    <div className="bg-secondary border border-white/10 rounded-2xl overflow-hidden">
       {/* Status banner */}
       <div
         className={`px-6 py-4 border-b border-white/5 flex items-center justify-between gap-4 ${
@@ -232,7 +232,7 @@ function WorkOrderCard({ order, live }: { order: WorkOrder; live: boolean }) {
         {/* Description */}
         <div>
           <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-2">Motivo de ingreso</p>
-          <p className="text-gray-300 text-sm leading-relaxed bg-[#1a1a2e] rounded-xl px-4 py-3 border border-white/5">
+          <p className="text-gray-300 text-sm leading-relaxed bg-surface rounded-xl px-4 py-3 border border-white/5">
             {order.description}
           </p>
         </div>
@@ -241,7 +241,7 @@ function WorkOrderCard({ order, live }: { order: WorkOrder; live: boolean }) {
         {order.diagnosis && (
           <div>
             <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-2">Diagnóstico</p>
-            <p className="text-gray-300 text-sm leading-relaxed bg-[#1a1a2e] rounded-xl px-4 py-3 border border-white/5">
+            <p className="text-gray-300 text-sm leading-relaxed bg-surface rounded-xl px-4 py-3 border border-white/5">
               {order.diagnosis}
             </p>
           </div>
@@ -307,8 +307,8 @@ export default function SeguimientoRealtimeClient({ vehicle, initialOrders }: Pr
   return (
     <div className="space-y-8">
       {/* Vehicle info */}
-      <div className="flex items-center gap-4 bg-[#16213e] border border-white/10 rounded-2xl px-6 py-4">
-        <div className="w-12 h-12 rounded-xl bg-[#e94560]/10 border border-[#e94560]/20 flex items-center justify-center text-[#e94560] shrink-0">
+      <div className="flex items-center gap-4 bg-secondary border border-white/10 rounded-2xl px-6 py-4">
+        <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
           <IconCar />
         </div>
         <div>
@@ -330,7 +330,7 @@ export default function SeguimientoRealtimeClient({ vehicle, initialOrders }: Pr
 
       {/* No orders */}
       {orders.length === 0 && (
-        <div className="text-center py-12 bg-[#16213e] border border-white/10 rounded-2xl">
+        <div className="text-center py-12 bg-secondary border border-white/10 rounded-2xl">
           <p className="text-gray-500 text-sm">
             No hay órdenes de trabajo registradas para este vehículo.
           </p>
@@ -341,7 +341,7 @@ export default function SeguimientoRealtimeClient({ vehicle, initialOrders }: Pr
       {activeOrders.length > 0 && (
         <div className="space-y-4">
           <h3 className="text-white font-semibold flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#e94560] animate-pulse" aria-hidden="true" />
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" aria-hidden="true" />
             Orden activa
           </h3>
           {activeOrders.map((order) => (
@@ -378,7 +378,7 @@ export default function SeguimientoRealtimeClient({ vehicle, initialOrders }: Pr
         <Link
           href="/citas"
           className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white text-sm transition-colors"
-          style={{ backgroundColor: "#e94560" }}
+          style={{ backgroundColor: "var(--color-primary)" }}
         >
           Agendar nuevo servicio
         </Link>

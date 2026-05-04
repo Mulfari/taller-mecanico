@@ -107,7 +107,7 @@ function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center">
+      <div className="relative bg-secondary border border-white/10 rounded-2xl w-full max-w-sm shadow-2xl p-6 text-center">
         <div
           className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 ${
             isAccept ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
@@ -253,7 +253,7 @@ export default function CotizacionPublicaPage() {
           </p>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
           >
             Ir al inicio
           </Link>
@@ -274,7 +274,7 @@ export default function CotizacionPublicaPage() {
     <div className="max-w-2xl mx-auto px-4 py-10 sm:py-16">
       {/* Header */}
       <div className="mb-8">
-        <div className="inline-flex items-center gap-2 text-[#e94560] text-sm font-medium mb-3">
+        <div className="inline-flex items-center gap-2 text-primary text-sm font-medium mb-3">
           <IconFileText />
           Cotización
         </div>
@@ -294,7 +294,7 @@ export default function CotizacionPublicaPage() {
       </div>
 
       {/* Client + Vehicle info */}
-      <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 mb-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
+      <div className="bg-secondary border border-white/10 rounded-xl p-5 mb-5 grid grid-cols-1 sm:grid-cols-2 gap-5">
         {quote.client && (
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1.5">Cliente</p>
@@ -306,7 +306,7 @@ export default function CotizacionPublicaPage() {
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1.5">Vehículo</p>
             <div className="flex items-center gap-2">
-              <span className="text-[#e94560]"><IconCar /></span>
+              <span className="text-primary"><IconCar /></span>
               <div>
                 <p className="text-white font-medium">
                   {quote.vehicle.brand} {quote.vehicle.model} {quote.vehicle.year}
@@ -321,7 +321,7 @@ export default function CotizacionPublicaPage() {
       </div>
 
       {/* Items */}
-      <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden mb-5">
+      <div className="bg-secondary border border-white/10 rounded-xl overflow-hidden mb-5">
         {laborItems.length > 0 && (
           <div className="p-5">
             <p className="text-xs text-gray-500 uppercase tracking-wide font-medium mb-3">
@@ -368,7 +368,7 @@ export default function CotizacionPublicaPage() {
         {/* Total */}
         <div className="px-5 py-4 border-t border-white/10 flex justify-between items-center">
           <span className="text-gray-300 font-medium">Total</span>
-          <span className="text-[#e94560] text-2xl font-bold tabular-nums">{fmt(quote.total)}</span>
+          <span className="text-primary text-2xl font-bold tabular-nums">{fmt(quote.total)}</span>
         </div>
       </div>
 

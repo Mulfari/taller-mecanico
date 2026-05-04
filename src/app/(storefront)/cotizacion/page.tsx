@@ -61,14 +61,14 @@ interface QuoteItem {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 const inputClass =
-  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors";
+  "w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors";
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
       <label className="block text-gray-400 text-xs font-medium">
         {label}
-        {required && <span className="text-[#e94560] ml-0.5">*</span>}
+        {required && <span className="text-primary ml-0.5">*</span>}
       </label>
       {children}
     </div>
@@ -211,7 +211,7 @@ function CotizacionForm() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               href="/"
-              className="inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
             >
               Volver al inicio
             </Link>
@@ -233,7 +233,7 @@ function CotizacionForm() {
     <div className="max-w-2xl mx-auto px-4 py-10 sm:py-16">
       {/* Header */}
       <div className="mb-8">
-        <div className="inline-flex items-center gap-2 text-[#e94560] text-sm font-medium mb-3">
+        <div className="inline-flex items-center gap-2 text-primary text-sm font-medium mb-3">
           <IconFileText />
           Cotización
         </div>
@@ -245,7 +245,7 @@ function CotizacionForm() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Contact */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-6 space-y-4">
+        <div className="bg-secondary border border-white/10 rounded-xl p-6 space-y-4">
           <h2 className="text-white font-semibold text-sm uppercase tracking-wide">Datos de contacto</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Nombre completo" required>
@@ -281,7 +281,7 @@ function CotizacionForm() {
         </div>
 
         {/* Vehicle */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-6 space-y-4">
+        <div className="bg-secondary border border-white/10 rounded-xl p-6 space-y-4">
           <h2 className="text-white font-semibold text-sm uppercase tracking-wide">Vehículo (opcional)</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Field label="Marca">
@@ -326,7 +326,7 @@ function CotizacionForm() {
         </div>
 
         {/* Items */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-6 space-y-4">
+        <div className="bg-secondary border border-white/10 rounded-xl p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-white font-semibold text-sm uppercase tracking-wide">
               Ítems a cotizar
@@ -334,7 +334,7 @@ function CotizacionForm() {
             <button
               type="button"
               onClick={addItem}
-              className="inline-flex items-center gap-1.5 text-xs text-[#e94560] hover:text-[#c73652] transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover transition-colors"
             >
               <IconPlus />
               Agregar ítem
@@ -404,7 +404,7 @@ function CotizacionForm() {
         </div>
 
         {/* Notes */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-6 space-y-4">
+        <div className="bg-secondary border border-white/10 rounded-xl p-6 space-y-4">
           <h2 className="text-white font-semibold text-sm uppercase tracking-wide">Notas adicionales</h2>
           <textarea
             value={notes}
@@ -425,7 +425,7 @@ function CotizacionForm() {
           <button
             type="submit"
             disabled={submitting}
-            className="flex-1 flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+            className="flex-1 flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-60 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
           >
             {submitting ? (
               <><IconSpinner /> Enviando...</>

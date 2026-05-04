@@ -21,7 +21,7 @@ export default function VehiculoGallery({ photos, vehicleName }: Props) {
     return (
       <div
         className="rounded-2xl flex items-center justify-center aspect-video"
-        style={{ backgroundColor: "#16213e" }}
+        style={{ backgroundColor: "var(--color-secondary)" }}
       >
         <svg className="w-24 h-24 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={0.8}
@@ -76,7 +76,7 @@ export default function VehiculoGallery({ photos, vehicleName }: Props) {
             <button
               key={photo.id}
               onClick={() => setActive(i)}
-              className={`relative flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === active ? "border-[#e94560]" : "border-transparent hover:border-white/30"}`}
+              className={`relative flex-shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 transition-colors ${i === active ? "border-primary" : "border-transparent hover:border-white/30"}`}
             >
               <Image
                 src={photo.url}

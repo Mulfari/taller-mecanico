@@ -49,7 +49,7 @@ export default function VehiculoContactForm({ vehicleId, vehicleName }: Props) {
   }
 
   const inputClass =
-    "w-full px-4 py-2.5 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-[#e94560]/50 focus:outline-none transition-colors"
+    "w-full px-4 py-2.5 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors"
   const inputStyle = { backgroundColor: "#0f172a" }
 
   if (status === "sent") {
@@ -137,9 +137,9 @@ export default function VehiculoContactForm({ vehicleId, vehicleName }: Props) {
         type="submit"
         disabled={status === "sending"}
         className="w-full py-3 px-6 rounded-xl font-semibold text-white transition-colors disabled:opacity-60"
-        style={{ backgroundColor: "#e94560" }}
-        onMouseOver={(e) => { if (status !== "sending") (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#c73652" }}
-        onMouseOut={(e) => { if (status !== "sending") (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#e94560" }}
+        style={{ backgroundColor: "var(--color-primary)" }}
+        onMouseOver={(e) => { if (status !== "sending") (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-primary-hover)" }}
+        onMouseOut={(e) => { if (status !== "sending") (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--color-primary)" }}
       >
         {status === "sending" ? "Enviando..." : "Consultar por este vehículo"}
       </button>

@@ -60,7 +60,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
       {/* Búsqueda */}
       <div
         className="rounded-xl border border-white/5 p-4"
-        style={{ backgroundColor: "#16213e" }}
+        style={{ backgroundColor: "var(--color-secondary)" }}
       >
         <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">
           Buscar
@@ -94,7 +94,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
                 updateParam("q", val)
               }
             }}
-            className="w-full pl-9 pr-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-[#e94560]/50 focus:outline-none transition-colors"
+            className="w-full pl-9 pr-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors"
             style={{ backgroundColor: "#0f172a" }}
           />
         </div>
@@ -104,7 +104,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
       {categorias.length > 0 && (
         <div
           className="rounded-xl border border-white/5 p-4"
-          style={{ backgroundColor: "#16213e" }}
+          style={{ backgroundColor: "var(--color-secondary)" }}
         >
           <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">
             Categoría
@@ -114,7 +114,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
               onClick={() => updateParam("categoria", "")}
               className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${
                 !currentParams.categoria
-                  ? "text-[#e94560] bg-[#e94560]/10"
+                  ? "text-primary bg-primary/10"
                   : "text-gray-400 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -126,7 +126,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
                 onClick={() => updateParam("categoria", cat)}
                 className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${
                   currentParams.categoria === cat
-                    ? "text-[#e94560] bg-[#e94560]/10"
+                    ? "text-primary bg-primary/10"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -141,7 +141,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
       {marcas.length > 0 && (
         <div
           className="rounded-xl border border-white/5 p-4"
-          style={{ backgroundColor: "#16213e" }}
+          style={{ backgroundColor: "var(--color-secondary)" }}
         >
           <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">
             Marca
@@ -151,7 +151,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
               onClick={() => updateParam("marca", "")}
               className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${
                 !currentParams.marca
-                  ? "text-[#e94560] bg-[#e94560]/10"
+                  ? "text-primary bg-primary/10"
                   : "text-gray-400 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -163,7 +163,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
                 onClick={() => updateParam("marca", m)}
                 className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${
                   currentParams.marca === m
-                    ? "text-[#e94560] bg-[#e94560]/10"
+                    ? "text-primary bg-primary/10"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -178,7 +178,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
       {compatibleMarcas.length > 0 && (
         <div
           className="rounded-xl border border-white/5 p-4"
-          style={{ backgroundColor: "#16213e" }}
+          style={{ backgroundColor: "var(--color-secondary)" }}
         >
           <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">
             Compatible con
@@ -188,7 +188,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
               onClick={() => updateParam("compatible_con", "")}
               className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${
                 !currentParams.compatible_con
-                  ? "text-[#e94560] bg-[#e94560]/10"
+                  ? "text-primary bg-primary/10"
                   : "text-gray-400 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -200,7 +200,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
                 onClick={() => updateParam("compatible_con", m)}
                 className={`w-full text-left text-sm px-3 py-1.5 rounded-lg transition-colors ${
                   currentParams.compatible_con === m
-                    ? "text-[#e94560] bg-[#e94560]/10"
+                    ? "text-primary bg-primary/10"
                     : "text-gray-400 hover:text-white hover:bg-white/5"
                 }`}
               >
@@ -214,7 +214,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
       {/* Rango de precio */}
       <div
         className="rounded-xl border border-white/5 p-4"
-        style={{ backgroundColor: "#16213e" }}
+        style={{ backgroundColor: "var(--color-secondary)" }}
       >
         <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">
           Precio
@@ -226,7 +226,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
             defaultValue={currentParams.precio_min ?? ""}
             onBlur={(e) => updateParam("precio_min", e.target.value)}
             min={0}
-            className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-[#e94560]/50 focus:outline-none transition-colors"
+            className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors"
             style={{ backgroundColor: "#0f172a" }}
           />
           <span className="text-gray-500 text-sm flex-shrink-0">—</span>
@@ -236,7 +236,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
             defaultValue={currentParams.precio_max ?? ""}
             onBlur={(e) => updateParam("precio_max", e.target.value)}
             min={0}
-            className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-[#e94560]/50 focus:outline-none transition-colors"
+            className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors"
             style={{ backgroundColor: "#0f172a" }}
           />
         </div>
@@ -246,7 +246,7 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
       {hasFilters && (
         <button
           onClick={clearAll}
-          className="w-full py-2 rounded-lg text-sm text-gray-400 border border-white/10 hover:border-[#e94560]/30 hover:text-[#e94560] transition-colors"
+          className="w-full py-2 rounded-lg text-sm text-gray-400 border border-white/10 hover:border-primary/30 hover:text-primary transition-colors"
         >
           Limpiar filtros
         </button>

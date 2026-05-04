@@ -70,8 +70,8 @@ export default async function RepuestosPage({
   const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE)
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
-      <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-12">
+    <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+      <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-white">Catálogo de Repuestos</h1>
           <p className="text-gray-400 mt-2">
@@ -103,8 +103,8 @@ export default async function RepuestosPage({
                   <Link
                     key={item.id}
                     href={`/repuestos/${item.id}`}
-                    className="group rounded-xl border border-white/5 overflow-hidden transition-all hover:border-[#e94560]/30 hover:shadow-lg hover:shadow-[#e94560]/5"
-                    style={{ backgroundColor: "#16213e" }}
+                    className="group rounded-xl border border-white/5 overflow-hidden transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+                    style={{ backgroundColor: "var(--color-secondary)" }}
                   >
                     <div
                       className="h-44 flex items-center justify-center"
@@ -133,11 +133,11 @@ export default async function RepuestosPage({
 
                     <div className="p-4">
                       {item.category && (
-                        <span className="text-xs font-medium px-2 py-0.5 rounded-full text-[#e94560] border border-[#e94560]/20 inline-block">
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full text-primary border border-primary/20 inline-block">
                           {item.category}
                         </span>
                       )}
-                      <h3 className="text-white font-semibold mt-2 group-hover:text-[#e94560] transition-colors line-clamp-2 leading-snug">
+                      <h3 className="text-white font-semibold mt-2 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
                         {item.name}
                       </h3>
                       {item.brand && (
@@ -147,7 +147,7 @@ export default async function RepuestosPage({
                         <p className="text-gray-500 text-xs mt-0.5">SKU: {item.sku}</p>
                       )}
                       <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/5">
-                        <span className="text-[#e94560] font-bold text-lg">
+                        <span className="text-primary font-bold text-lg">
                           ${item.sell_price?.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
                         </span>
                         <span

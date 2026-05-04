@@ -10,7 +10,7 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
   const [order, supabase] = await Promise.all([getWorkOrderById(id), createClient()]);
   if (!order) notFound();
 
-  const [{ data: mechanicRows }, { data: inventoryRows }, { data: historyRows }, { data: invoiceRow }] = await Promise.all([
+  const [{ data: mechanicRows }, { data: inventoryRows }, { data: historyRows }, { data: invoiceRow }, { data: photoFiles }] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name")
@@ -33,6 +33,7 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
       .select("id, status, total, created_at, paid_at")
       .eq("work_order_id", id)
       .maybeSingle(),
+    supabase.storage.from("shop-assets").list(`work-orders/${id}`, { sortBy: { column: "created_at", order: "asc" } }),
   ]);
 
   const mechanics = (mechanicRows ?? []) as { id: string; full_name: string | null }[];
@@ -58,5 +59,11 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
     ? (invoiceRow as { id: string; status: string; total: number | null; created_at: string; paid_at: string | null })
     : null;
 
-  return <OrdenDetalleClient order={order} mechanics={mechanics} inventoryItems={inventoryItems} vehicleHistory={vehicleHistory} linkedInvoice={linkedInvoice} />;
+  const { data: { publicUrl: baseUrl } } = supabase.storage.from("shop-assets").getPublicUrl(`work-orders/${id}/`);
+  const storageBase = baseUrl.replace(/\/$/, "");
+  const orderPhotos = (photoFiles ?? [])
+    .filter((f) => f.name && /\.(jpe?g|png|webp|gif)$/i.test(f.name))
+    .map((f) => ({ name: f.name, url: `${storageBase}/${f.name}`, createdAt: f.created_at ?? "" }));
+
+  return <OrdenDetalleClient order={order} mechanics={mechanics} inventoryItems={inventoryItems} vehicleHistory={vehicleHistory} linkedInvoice={linkedInvoice} orderPhotos={orderPhotos} />;
 }

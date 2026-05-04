@@ -25,9 +25,9 @@ export default async function RepuestoDetailPage({
     : []
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Breadcrumb */}
-      <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-4">
+      <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-400">
             <Link href="/" className="hover:text-white transition-colors">
@@ -48,7 +48,7 @@ export default async function RepuestoDetailPage({
           {/* Imagen */}
           <div
             className="rounded-2xl flex items-center justify-center aspect-square max-h-96 lg:max-h-none"
-            style={{ backgroundColor: "#16213e" }}
+            style={{ backgroundColor: "var(--color-secondary)" }}
           >
             <svg
               className="w-32 h-32 text-gray-600"
@@ -75,7 +75,7 @@ export default async function RepuestoDetailPage({
           <div className="flex flex-col gap-6">
             <div>
               {item.category && (
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full text-[#e94560] border border-[#e94560]/20 inline-block mb-3">
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full text-primary border border-primary/20 inline-block mb-3">
                   {item.category}
                 </span>
               )}
@@ -86,7 +86,7 @@ export default async function RepuestoDetailPage({
             </div>
 
             <div className="flex items-end gap-4">
-              <span className="text-4xl font-bold text-[#e94560]">
+              <span className="text-4xl font-bold text-primary">
                 ${item.sell_price?.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
               </span>
               <span
@@ -109,7 +109,7 @@ export default async function RepuestoDetailPage({
             {/* Detalles */}
             <div
               className="rounded-xl border border-white/5 p-5 space-y-3"
-              style={{ backgroundColor: "#16213e" }}
+              style={{ backgroundColor: "var(--color-secondary)" }}
             >
               <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">
                 Detalles del producto
@@ -150,7 +150,7 @@ export default async function RepuestoDetailPage({
             {compatibleBrands.length > 0 && (
               <div
                 className="rounded-xl border border-white/5 p-5"
-                style={{ backgroundColor: "#16213e" }}
+                style={{ backgroundColor: "var(--color-secondary)" }}
               >
                 <h2 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">
                   Compatible con
@@ -174,12 +174,12 @@ export default async function RepuestoDetailPage({
               <Link
                 href={`/cotizacion?repuesto=${item.id}&nombre=${encodeURIComponent(item.name)}`}
                 className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-                style={{ backgroundColor: "#e94560" }}
+                style={{ backgroundColor: "var(--color-primary)" }}
                 onMouseOver={(e) =>
-                  ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#c73652")
+                  ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "var(--color-primary-hover)")
                 }
                 onMouseOut={(e) =>
-                  ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "#e94560")
+                  ((e.currentTarget as HTMLAnchorElement).style.backgroundColor = "var(--color-primary)")
                 }
               >
                 Solicitar cotización

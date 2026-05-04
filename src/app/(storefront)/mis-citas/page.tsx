@@ -109,9 +109,9 @@ const TIME_SLOTS = [
 ];
 
 const inputClass =
-  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors";
+  "w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors";
 const selectClass =
-  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors appearance-none";
+  "w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors appearance-none";
 
 function IconChevronDown() {
   return (
@@ -172,7 +172,7 @@ function RescheduleModal({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl my-8">
+      <div className="relative bg-secondary border border-white/10 rounded-2xl w-full max-w-md shadow-2xl my-8">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 className="text-white font-semibold text-lg">Reprogramar cita</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label="Cerrar">
@@ -194,7 +194,7 @@ function RescheduleModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1.5">
-              Nueva fecha <span className="text-[#e94560]">*</span>
+              Nueva fecha <span className="text-primary">*</span>
             </label>
             <input
               type="date"
@@ -208,7 +208,7 @@ function RescheduleModal({
 
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1.5">
-              Nuevo horario <span className="text-[#e94560]">*</span>
+              Nuevo horario <span className="text-primary">*</span>
             </label>
             <div className="relative">
               <select
@@ -237,7 +237,7 @@ function RescheduleModal({
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
             >
               {saving ? (
                 <>
@@ -279,7 +279,7 @@ function AppointmentCard({
 
   return (
     <div
-      className={`bg-[#16213e] border rounded-xl overflow-hidden transition-colors ${
+      className={`bg-secondary border rounded-xl overflow-hidden transition-colors ${
         appt.status === "cancelled"
           ? "border-white/5 opacity-60"
           : "border-white/10"
@@ -292,7 +292,7 @@ function AppointmentCard({
             className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
               appt.status === "cancelled"
                 ? "bg-white/5 text-gray-600"
-                : "bg-[#e94560]/10 border border-[#e94560]/20 text-[#e94560]"
+                : "bg-primary/10 border border-primary/20 text-primary"
             }`}
           >
             <IconCalendar />
@@ -487,7 +487,7 @@ export default function MisCitasPage() {
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
           >
             Iniciar sesión
           </Link>
@@ -510,9 +510,9 @@ export default function MisCitasPage() {
 
   return (
     <>
-    <div className="min-h-screen bg-[#1a1a2e]">
+    <div className="min-h-screen bg-surface">
       {/* Hero */}
-      <div className="bg-[#16213e] border-b border-white/5 py-12">
+      <div className="bg-secondary border-b border-white/5 py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-500 mb-5">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
@@ -523,7 +523,7 @@ export default function MisCitasPage() {
           </nav>
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
-              <div className="inline-flex items-center gap-2 text-[#e94560] text-sm font-medium mb-2">
+              <div className="inline-flex items-center gap-2 text-primary text-sm font-medium mb-2">
                 <IconCalendar />
                 Mis citas
               </div>
@@ -534,7 +534,7 @@ export default function MisCitasPage() {
             </div>
             <Link
               href="/citas"
-              className="shrink-0 inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+              className="shrink-0 inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
             >
               <IconCalendar />
               Nueva cita
@@ -567,7 +567,7 @@ export default function MisCitasPage() {
             </p>
             <Link
               href="/citas"
-              className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-6 py-3 rounded-xl transition-colors"
+              className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-6 py-3 rounded-xl transition-colors"
             >
               Agendar una cita
             </Link>
@@ -578,7 +578,7 @@ export default function MisCitasPage() {
             {upcoming.length > 0 && (
               <section className="space-y-4">
                 <h2 className="text-white font-semibold flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#e94560] animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                   Próximas ({upcoming.length})
                 </h2>
                 {upcoming.map((appt) => (
@@ -647,7 +647,7 @@ export default function MisCitasPage() {
                 <p className="text-gray-500 text-sm mb-4">No tenés citas próximas.</p>
                 <Link
                   href="/citas"
-                  className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
+                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors"
                 >
                   Agendar nueva cita
                 </Link>

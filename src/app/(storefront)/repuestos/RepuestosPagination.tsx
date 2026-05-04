@@ -39,7 +39,7 @@ export default function RepuestosPagination({ currentPage, totalPages, currentPa
       <button
         onClick={() => goTo(currentPage - 1)}
         disabled={currentPage === 1}
-        className="px-3 py-2 rounded-lg text-sm text-gray-400 border border-white/10 hover:border-[#e94560]/30 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="px-3 py-2 rounded-lg text-sm text-gray-400 border border-white/10 hover:border-primary/30 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
         ← Anterior
       </button>
@@ -55,8 +55,8 @@ export default function RepuestosPagination({ currentPage, totalPages, currentPa
             onClick={() => goTo(p as number)}
             className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
               p === currentPage
-                ? "bg-[#e94560] text-white"
-                : "text-gray-400 border border-white/10 hover:border-[#e94560]/30 hover:text-white"
+                ? "bg-primary text-white"
+                : "text-gray-400 border border-white/10 hover:border-primary/30 hover:text-white"
             }`}
           >
             {p}
@@ -67,7 +67,7 @@ export default function RepuestosPagination({ currentPage, totalPages, currentPa
       <button
         onClick={() => goTo(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="px-3 py-2 rounded-lg text-sm text-gray-400 border border-white/10 hover:border-[#e94560]/30 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        className="px-3 py-2 rounded-lg text-sm text-gray-400 border border-white/10 hover:border-primary/30 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
       >
         Siguiente →
       </button>

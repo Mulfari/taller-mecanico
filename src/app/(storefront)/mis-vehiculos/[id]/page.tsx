@@ -145,9 +145,9 @@ export default async function MisVehiculosDetailPage({
   const vehicleLabel = `${vehicle.brand} ${vehicle.model} ${vehicle.year}`;
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e]">
+    <div className="min-h-screen bg-surface">
       {/* Header */}
-      <div className="bg-[#16213e] border-b border-white/5 py-4">
+      <div className="bg-secondary border-b border-white/5 py-4">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-500">
             <Link href="/" className="hover:text-white transition-colors">Inicio</Link>
@@ -176,7 +176,7 @@ export default async function MisVehiculosDetailPage({
               </svg>
             </Link>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#e94560]/10 border border-[#e94560]/20 flex items-center justify-center text-[#e94560] shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
                 <IconCar />
               </div>
               <div>
@@ -193,7 +193,7 @@ export default async function MisVehiculosDetailPage({
             {activeOrder && (
               <Link
                 href={`/seguimiento?orden=${activeOrder.id}`}
-                className="inline-flex items-center gap-1.5 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                 Seguimiento
@@ -217,7 +217,7 @@ export default async function MisVehiculosDetailPage({
         </div>
 
         {/* Vehicle info card */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl p-6">
+        <div className="bg-secondary border border-white/10 rounded-xl p-6">
           <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-4">
             Datos del vehículo
           </p>
@@ -258,7 +258,7 @@ export default async function MisVehiculosDetailPage({
             </div>
             <div>
               <p className="text-gray-500 text-xs">Total invertido</p>
-              <p className="text-[#e94560] font-bold text-xl mt-0.5">
+              <p className="text-primary font-bold text-xl mt-0.5">
                 {totalSpent > 0 ? fmt(totalSpent) : "—"}
               </p>
             </div>
@@ -267,9 +267,9 @@ export default async function MisVehiculosDetailPage({
 
         {/* Active order banner */}
         {activeOrder && (
-          <div className="bg-[#e94560]/10 border border-[#e94560]/30 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#e94560] animate-pulse shrink-0" />
+              <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0" />
               <div>
                 <p className="text-white font-medium text-sm">
                   Orden activa — {STATUS_LABELS[activeOrder.status]}
@@ -290,7 +290,7 @@ export default async function MisVehiculosDetailPage({
               </Link>
               <Link
                 href={`/seguimiento?orden=${activeOrder.id}`}
-                className="inline-flex items-center gap-1.5 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
               >
                 <IconSignal />
                 Seguimiento en vivo
@@ -300,7 +300,7 @@ export default async function MisVehiculosDetailPage({
         )}
 
         {/* Service history */}
-        <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
+        <div className="bg-secondary border border-white/10 rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between">
             <p className="text-gray-500 text-xs uppercase tracking-wide font-medium">
               Historial de servicios
@@ -316,7 +316,7 @@ export default async function MisVehiculosDetailPage({
               <p className="text-gray-500 text-sm">Sin servicios registrados para este vehículo.</p>
               <Link
                 href={`/citas?vehiculo=${vehicle.id}`}
-                className="inline-flex items-center gap-1.5 mt-4 text-[#e94560] hover:text-white text-sm font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 mt-4 text-primary hover:text-white text-sm font-medium transition-colors"
               >
                 <IconCalendar />
                 Agendar primer servicio
@@ -338,7 +338,7 @@ export default async function MisVehiculosDetailPage({
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className={`w-2 h-2 rounded-full shrink-0 ${
-                          isActive ? "bg-[#e94560] animate-pulse" : "bg-gray-600"
+                          isActive ? "bg-primary animate-pulse" : "bg-gray-600"
                         }`}
                       />
                       <div className="min-w-0">
@@ -391,7 +391,7 @@ export default async function MisVehiculosDetailPage({
           </Link>
           <Link
             href={vehicle.plate ? `/seguimiento?patente=${encodeURIComponent(vehicle.plate)}` : "/seguimiento"}
-            className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white bg-[#e94560] hover:bg-[#c73652] transition-colors text-sm"
+            className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white bg-primary hover:bg-primary-hover transition-colors text-sm"
           >
             Consultar estado en taller
           </Link>

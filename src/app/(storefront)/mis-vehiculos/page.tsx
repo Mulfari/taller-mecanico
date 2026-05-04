@@ -171,7 +171,7 @@ function EditVehicleModal({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl my-8">
+      <div className="relative bg-secondary border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl my-8">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 className="text-white font-semibold text-lg">Editar vehículo</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label="Cerrar">
@@ -189,13 +189,13 @@ function EditVehicleModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                Marca <span className="text-[#e94560]">*</span>
+                Marca <span className="text-primary">*</span>
               </label>
               <input type="text" className={inputClass} placeholder="Ej. Toyota" value={brand} onChange={(e) => setBrand(e.target.value)} required />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                Modelo <span className="text-[#e94560]">*</span>
+                Modelo <span className="text-primary">*</span>
               </label>
               <input type="text" className={inputClass} placeholder="Ej. Corolla" value={model} onChange={(e) => setModel(e.target.value)} required />
             </div>
@@ -204,7 +204,7 @@ function EditVehicleModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                Año <span className="text-[#e94560]">*</span>
+                Año <span className="text-primary">*</span>
               </label>
               <input type="number" className={inputClass} placeholder="Ej. 2020" min={1900} max={new Date().getFullYear() + 1} value={year} onChange={(e) => setYear(e.target.value)} required />
             </div>
@@ -239,7 +239,7 @@ function EditVehicleModal({
             <button type="button" onClick={onClose} className="flex-1 px-4 py-2.5 rounded-lg border border-white/10 text-gray-400 text-sm hover:text-white hover:border-white/20 transition-colors">
               Cancelar
             </button>
-            <button type="submit" disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
+            <button type="submit" disabled={saving} className="flex-1 inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors">
               {saving ? (
                 <>
                   <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
@@ -260,7 +260,7 @@ function EditVehicleModal({
 // ── Register Vehicle Modal ─────────────────────────────────────────────────
 
 const inputClass =
-  "w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors";
+  "w-full bg-surface border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-colors";
 
 function RegisterVehicleModal({
   onClose,
@@ -326,7 +326,7 @@ function RegisterVehicleModal({
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 overflow-y-auto">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#16213e] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl my-8">
+      <div className="relative bg-secondary border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl my-8">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
           <h2 className="text-white font-semibold text-lg">Registrar vehículo</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors" aria-label="Cerrar">
@@ -344,7 +344,7 @@ function RegisterVehicleModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                Marca <span className="text-[#e94560]">*</span>
+                Marca <span className="text-primary">*</span>
               </label>
               <input
                 type="text"
@@ -357,7 +357,7 @@ function RegisterVehicleModal({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                Modelo <span className="text-[#e94560]">*</span>
+                Modelo <span className="text-primary">*</span>
               </label>
               <input
                 type="text"
@@ -373,7 +373,7 @@ function RegisterVehicleModal({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                Año <span className="text-[#e94560]">*</span>
+                Año <span className="text-primary">*</span>
               </label>
               <input
                 type="number"
@@ -456,7 +456,7 @@ function RegisterVehicleModal({
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 inline-flex items-center justify-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover disabled:opacity-60 text-white text-sm font-medium px-4 py-2.5 rounded-lg transition-colors"
             >
               {saving ? (
                 <>
@@ -496,11 +496,11 @@ function VehicleCard({
 
   return (
     <>
-    <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden hover:border-[#e94560]/20 transition-colors">
+    <div className="bg-secondary border border-white/10 rounded-xl overflow-hidden hover:border-primary/20 transition-colors">
       {/* Header */}
       <div className="p-5 border-b border-white/5">
         <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#e94560]/10 border border-[#e94560]/20 flex items-center justify-center text-[#e94560] shrink-0">
+          <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
             <IconCar />
           </div>
           <div className="flex-1 min-w-0">
@@ -585,7 +585,7 @@ function VehicleCard({
         <Link
           href={vehicle.plate ? `/seguimiento?patente=${encodeURIComponent(vehicle.plate)}` : "/seguimiento"}
           className="flex-1 inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium text-white transition-colors"
-          style={{ backgroundColor: "#e94560" }}
+          style={{ backgroundColor: "var(--color-primary)" }}
         >
           <IconSearch />
           Ver estado actual
@@ -680,7 +680,7 @@ export default function MisVehiculosPage() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#1a1a2e" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="flex items-center gap-3 text-gray-400">
           <IconSpinner />
           <span className="text-sm">Cargando vehículos…</span>
@@ -692,9 +692,9 @@ export default function MisVehiculosPage() {
   // ── Not logged in ────────────────────────────────────────────────────────
   if (!authed) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#1a1a2e" }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="text-center max-w-sm">
-          <div className="w-20 h-20 rounded-2xl bg-[#16213e] border border-white/10 flex items-center justify-center mx-auto mb-6 text-gray-500">
+          <div className="w-20 h-20 rounded-2xl bg-secondary border border-white/10 flex items-center justify-center mx-auto mb-6 text-gray-500">
             <IconLock />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Acceso requerido</h1>
@@ -705,7 +705,7 @@ export default function MisVehiculosPage() {
             <Link
               href="/login"
               className="block w-full text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Iniciar sesión
             </Link>
@@ -733,8 +733,8 @@ export default function MisVehiculosPage() {
   // ── No vehicles ──────────────────────────────────────────────────────────
   if (vehicles.length === 0) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
-        <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-10">
+      <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-10">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
               <Link href="/cuenta" className="hover:text-white transition-colors">Mi cuenta</Link>
@@ -745,7 +745,7 @@ export default function MisVehiculosPage() {
           </div>
         </div>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#16213e] border border-white/10 flex items-center justify-center mx-auto mb-4 text-gray-600">
+          <div className="w-16 h-16 rounded-2xl bg-secondary border border-white/10 flex items-center justify-center mx-auto mb-4 text-gray-600">
             <IconCar />
           </div>
           <p className="text-gray-400 text-lg">No tenés vehículos registrados</p>
@@ -756,7 +756,7 @@ export default function MisVehiculosPage() {
             <button
               onClick={() => setShowRegister(true)}
               className="inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               <IconPlus />
               Registrar mi vehículo
@@ -783,9 +783,9 @@ export default function MisVehiculosPage() {
 
   // ── Main view ────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Hero */}
-      <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-10">
+      <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center gap-2 text-sm text-gray-500 mb-4">
             <Link href="/cuenta" className="hover:text-white transition-colors">Mi cuenta</Link>
@@ -804,7 +804,7 @@ export default function MisVehiculosPage() {
             <button
               onClick={() => setShowRegister(true)}
               className="shrink-0 inline-flex items-center gap-2 py-2 px-4 rounded-lg text-sm font-medium text-white transition-colors"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               <IconPlus />
               Agregar vehículo
@@ -834,7 +834,7 @@ export default function MisVehiculosPage() {
           <Link
             href="/citas"
             className="flex-1 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-white transition-colors text-sm"
-            style={{ backgroundColor: "#e94560" }}
+            style={{ backgroundColor: "var(--color-primary)" }}
           >
             <IconCalendar />
             Agendar nuevo servicio

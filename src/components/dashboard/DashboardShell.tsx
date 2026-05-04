@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import NotificationBell from "@/components/dashboard/NotificationBell";
 import GlobalSearch from "@/components/dashboard/GlobalSearch";
@@ -142,6 +142,125 @@ const navItems = [
   { href: "/dashboard/reportes",          label: "Reportes",          icon: <IconChart /> },
   { href: "/dashboard/configuracion",     label: "Configuración",     icon: <IconCog /> },
 ];
+
+// ── User Dropdown ─────────────────────────────────────────────────────────
+
+function IconLogout() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+    </svg>
+  );
+}
+
+function IconUserCircle() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  );
+}
+
+function UserDropdown({
+  displayName,
+  userRole,
+  initials,
+}: {
+  displayName: string;
+  userRole: string;
+  initials: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-white/5 transition-colors"
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label="Menú de usuario"
+      >
+        <div className="hidden sm:block text-right">
+          <p className="text-white text-sm font-medium leading-none">{displayName}</p>
+          <p className="text-gray-500 text-xs mt-0.5">{userRole}</p>
+        </div>
+        <div className="w-9 h-9 rounded-full bg-[#e94560]/20 border border-[#e94560]/40 flex items-center justify-center text-[#e94560] font-bold text-sm">
+          {initials}
+        </div>
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 w-56 bg-[#16213e] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden"
+          role="menu"
+          aria-label="Opciones de usuario"
+        >
+          {/* User info header */}
+          <div className="px-4 py-3 border-b border-white/10">
+            <p className="text-white text-sm font-semibold truncate">{displayName}</p>
+            <p className="text-gray-500 text-xs mt-0.5">{userRole}</p>
+          </div>
+
+          {/* Menu items */}
+          <div className="py-1">
+            <Link
+              href="/dashboard/configuracion"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+              role="menuitem"
+            >
+              <IconCog />
+              Configuración
+            </Link>
+            <Link
+              href="/"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-300 hover:text-white hover:bg-white/5 transition-colors"
+              role="menuitem"
+            >
+              <IconUserCircle />
+              Ver Storefront
+            </Link>
+          </div>
+
+          {/* Sign out */}
+          <div className="border-t border-white/10 py-1">
+            <button
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+              role="menuitem"
+            >
+              <IconLogout />
+              {signingOut ? "Cerrando sesión..." : "Cerrar sesión"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Shell ──────────────────────────────────────────────────────────────────
 
@@ -301,15 +420,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
           <NotificationBell />
 
           {/* User menu */}
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:block text-right">
-              <p className="text-white text-sm font-medium leading-none">{displayName}</p>
-              <p className="text-gray-500 text-xs mt-0.5">{userRole}</p>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-[#e94560]/20 border border-[#e94560]/40 flex items-center justify-center text-[#e94560] font-bold text-sm">
-              {initials}
-            </div>
-          </div>
+          <UserDropdown
+            displayName={displayName}
+            userRole={userRole}
+            initials={initials}
+          />
         </header>
 
         {/* Page content */}

@@ -148,7 +148,7 @@ function StatusTimeline({ current }: { current: WorkOrderStatus }) {
                   done
                     ? "bg-green-500/20 border-green-500 text-green-400"
                     : active
-                    ? "bg-[#e94560]/20 border-[#e94560] text-[#e94560]"
+                    ? "bg-primary/20 border-primary text-primary"
                     : "bg-white/5 border-white/10 text-gray-600"
                 }`}
               >
@@ -160,7 +160,7 @@ function StatusTimeline({ current }: { current: WorkOrderStatus }) {
               </div>
               <span
                 className={`text-xs text-center leading-tight whitespace-nowrap ${
-                  done ? "text-green-400" : active ? "text-[#e94560] font-medium" : "text-gray-600"
+                  done ? "text-green-400" : active ? "text-primary font-medium" : "text-gray-600"
                 }`}
               >
                 {STATUS_LABELS[step]}
@@ -202,7 +202,7 @@ function WorkOrderCard({ order, vehicle }: { order: WorkOrder; vehicle: Vehicle 
   const isActive = order.status !== "delivered";
 
   return (
-    <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
+    <div className="bg-secondary border border-white/10 rounded-xl overflow-hidden">
       {/* Card header */}
       <div className="p-5">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
@@ -343,7 +343,7 @@ function WorkOrderCard({ order, vehicle }: { order: WorkOrder; vehicle: Vehicle 
               {/* Total */}
               <div className="px-5 py-3 border-t border-white/5 flex justify-between text-sm font-semibold">
                 <span className="text-gray-300">Total</span>
-                <span className="text-[#e94560]">{fmt(subtotal)}</span>
+                <span className="text-primary">{fmt(subtotal)}</span>
               </div>
             </div>
           )}
@@ -369,7 +369,7 @@ function VehicleSection({
     <section className="space-y-4">
       {/* Vehicle header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[#e94560]/10 border border-[#e94560]/20 flex items-center justify-center text-[#e94560]">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
           <IconCar />
         </div>
         <div>
@@ -383,7 +383,7 @@ function VehicleSection({
       </div>
 
       {orders.length === 0 ? (
-        <div className="bg-[#16213e] border border-white/10 rounded-xl px-5 py-8 text-center">
+        <div className="bg-secondary border border-white/10 rounded-xl px-5 py-8 text-center">
           <p className="text-gray-600 text-sm">No hay órdenes de trabajo para este vehículo.</p>
         </div>
       ) : (
@@ -561,7 +561,7 @@ export default function MiVehiculoPage() {
           </p>
           <Link
             href="/login"
-            className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
           >
             Iniciar sesión
           </Link>
@@ -574,7 +574,7 @@ export default function MiVehiculoPage() {
     <div className="max-w-3xl mx-auto px-4 py-10 sm:py-16">
       {/* Page header */}
       <div className="mb-10">
-        <div className="inline-flex items-center gap-2 text-[#e94560] text-sm font-medium mb-3">
+        <div className="inline-flex items-center gap-2 text-primary text-sm font-medium mb-3">
           <IconCar />
           Mi vehículo
         </div>
@@ -603,7 +603,7 @@ export default function MiVehiculoPage() {
           </p>
           <Link
             href="/citas"
-            className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
           >
             Agendar una cita
           </Link>

@@ -134,7 +134,7 @@ function WorkOrderCard({ order }: { order: WorkOrder }) {
     `$${n.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`;
 
   return (
-    <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
+    <div className="bg-secondary border border-white/10 rounded-xl overflow-hidden">
       {/* Header */}
       <button
         type="button"
@@ -144,7 +144,7 @@ function WorkOrderCard({ order }: { order: WorkOrder }) {
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="mt-0.5 text-[#e94560]">
+            <div className="mt-0.5 text-primary">
               <IconWrench />
             </div>
             <div>
@@ -170,7 +170,7 @@ function WorkOrderCard({ order }: { order: WorkOrder }) {
           </div>
           <div className="flex items-center gap-3 shrink-0">
             {subtotal > 0 && (
-              <span className="text-[#e94560] font-bold text-lg">{fmt(subtotal)}</span>
+              <span className="text-primary font-bold text-lg">{fmt(subtotal)}</span>
             )}
             <span className="text-gray-500">
               {expanded ? <IconChevronUp /> : <IconChevronDown />}
@@ -186,7 +186,7 @@ function WorkOrderCard({ order }: { order: WorkOrder }) {
           {order.diagnosis && (
             <div>
               <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-2">Diagnóstico</p>
-              <p className="text-gray-300 text-sm leading-relaxed bg-[#1a1a2e] rounded-lg px-4 py-3 border border-white/5">
+              <p className="text-gray-300 text-sm leading-relaxed bg-surface rounded-lg px-4 py-3 border border-white/5">
                 {order.diagnosis}
               </p>
             </div>
@@ -238,7 +238,7 @@ function WorkOrderCard({ order }: { order: WorkOrder }) {
               {/* Total */}
               <div className="flex justify-between text-sm font-semibold text-white border-t border-white/10 pt-3 mt-3">
                 <span>Total</span>
-                <span className="text-[#e94560]">{fmt(subtotal)}</span>
+                <span className="text-primary">{fmt(subtotal)}</span>
               </div>
             </div>
           )}
@@ -250,7 +250,7 @@ function WorkOrderCard({ order }: { order: WorkOrder }) {
           <div className="pt-2 border-t border-white/5">
             <Link
               href={`/mis-ordenes/${order.id}`}
-              className="inline-flex items-center gap-1.5 text-xs text-[#e94560] hover:text-[#c73652] font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary-hover font-medium transition-colors"
             >
               Ver detalle completo
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -271,7 +271,7 @@ function VehicleSection({ vehicle, orders }: { vehicle: Vehicle; orders: WorkOrd
     <div className="space-y-4">
       {/* Vehicle header */}
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[#e94560]/10 border border-[#e94560]/20 flex items-center justify-center text-[#e94560]">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
           <IconCar />
         </div>
         <div>
@@ -292,7 +292,7 @@ function VehicleSection({ vehicle, orders }: { vehicle: Vehicle; orders: WorkOrd
       </div>
 
       {orders.length === 0 ? (
-        <div className="bg-[#16213e] border border-white/5 rounded-xl px-5 py-8 text-center">
+        <div className="bg-secondary border border-white/5 rounded-xl px-5 py-8 text-center">
           <p className="text-gray-600 text-sm">Sin servicios registrados para este vehículo.</p>
         </div>
       ) : (
@@ -380,7 +380,7 @@ export default function HistorialPage() {
   // ── Loading ──────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#1a1a2e" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="flex items-center gap-3 text-gray-400">
           <IconSpinner />
           <span className="text-sm">Cargando historial…</span>
@@ -392,9 +392,9 @@ export default function HistorialPage() {
   // ── Not logged in ────────────────────────────────────────────────────────
   if (!authed) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#1a1a2e" }}>
+      <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "var(--color-surface)" }}>
         <div className="text-center max-w-sm">
-          <div className="w-20 h-20 rounded-2xl bg-[#16213e] border border-white/10 flex items-center justify-center mx-auto mb-6 text-gray-500">
+          <div className="w-20 h-20 rounded-2xl bg-secondary border border-white/10 flex items-center justify-center mx-auto mb-6 text-gray-500">
             <IconLock />
           </div>
           <h1 className="text-2xl font-bold text-white mb-2">Acceso requerido</h1>
@@ -405,7 +405,7 @@ export default function HistorialPage() {
             <Link
               href="/login"
               className="block w-full text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-              style={{ backgroundColor: "#e94560" }}
+              style={{ backgroundColor: "var(--color-primary)" }}
             >
               Iniciar sesión
             </Link>
@@ -424,15 +424,15 @@ export default function HistorialPage() {
   // ── No vehicles ──────────────────────────────────────────────────────────
   if (vehicles.length === 0) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
-        <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-10">
+      <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
+        <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-10">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 className="text-3xl font-bold text-white">Historial de Servicios</h1>
             <p className="text-gray-400 mt-2">Todos los trabajos realizados en tus vehículos</p>
           </div>
         </div>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-[#16213e] border border-white/10 flex items-center justify-center mx-auto mb-4 text-gray-600">
+          <div className="w-16 h-16 rounded-2xl bg-secondary border border-white/10 flex items-center justify-center mx-auto mb-4 text-gray-600">
             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m-1.745 1.437L5.909 7.5H4.5L2.25 3.75l1.5-1.5L7.5 4.5v1.409l4.26 4.26m-1.745 1.437l1.745-1.437m6.615 8.206L15.75 15.75M4.867 19.125h.008v.008h-.008v-.008z" />
             </svg>
@@ -444,7 +444,7 @@ export default function HistorialPage() {
           <Link
             href="/citas"
             className="inline-block py-3 px-6 rounded-xl font-semibold text-white transition-colors"
-            style={{ backgroundColor: "#e94560" }}
+            style={{ backgroundColor: "var(--color-primary)" }}
           >
             Agendar una cita
           </Link>
@@ -455,9 +455,9 @@ export default function HistorialPage() {
 
   // ── Main view ────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#1a1a2e" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--color-surface)" }}>
       {/* Hero */}
-      <div style={{ backgroundColor: "#16213e" }} className="border-b border-white/5 py-10">
+      <div style={{ backgroundColor: "var(--color-secondary)" }} className="border-b border-white/5 py-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-3xl font-bold text-white">Historial de Servicios</h1>
           <p className="text-gray-400 mt-2">
@@ -474,8 +474,8 @@ export default function HistorialPage() {
               onClick={() => setFilterVehicleId("all")}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 filterVehicleId === "all"
-                  ? "bg-[#e94560] text-white"
-                  : "bg-[#16213e] border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
+                  ? "bg-primary text-white"
+                  : "bg-secondary border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
               }`}
             >
               Todos los vehículos
@@ -486,8 +486,8 @@ export default function HistorialPage() {
                 onClick={() => setFilterVehicleId(v.id)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                   filterVehicleId === v.id
-                    ? "bg-[#e94560] text-white"
-                    : "bg-[#16213e] border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
+                    ? "bg-primary text-white"
+                    : "bg-secondary border border-white/10 text-gray-400 hover:text-white hover:border-white/20"
                 }`}
               >
                 {v.brand} {v.model} {v.year}
@@ -516,7 +516,7 @@ export default function HistorialPage() {
           <Link
             href="/citas"
             className="flex-1 text-center py-3 px-6 rounded-xl font-semibold text-white transition-colors text-sm"
-            style={{ backgroundColor: "#e94560" }}
+            style={{ backgroundColor: "var(--color-primary)" }}
           >
             Agendar nuevo servicio
           </Link>
