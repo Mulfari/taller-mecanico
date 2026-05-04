@@ -12,6 +12,8 @@ import {
   Pie,
   Cell,
   Legend,
+  ComposedChart,
+  Line,
 } from "recharts";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -268,6 +270,158 @@ export function TopServicesChart({ data }: { data: TopServiceItem[] }) {
           />
           <Bar dataKey="count" fill="#60a5fa" radius={[0, 4, 4, 0]} maxBarSize={28} />
         </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ── Monthly Profit vs Revenue Chart ───────────────────────────────────────
+
+interface MonthlyProfitItem {
+  label: string;
+  revenue: number;
+  cost: number;
+  profit: number;
+  margin: number;
+}
+
+export function MonthlyProfitChart({ data }: { data: MonthlyProfitItem[] }) {
+  const allZero = data.every((m) => m.revenue === 0);
+
+  if (allZero) {
+    return (
+      <p className="text-gray-600 text-sm text-center py-8">Sin datos de rentabilidad aún</p>
+    );
+  }
+
+  return (
+    <div className="w-full h-72">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke={CHART_THEME.grid} vertical={false} />
+          <XAxis
+            dataKey="label"
+            tick={{ fill: CHART_THEME.axis, fontSize: 12 }}
+            axisLine={{ stroke: CHART_THEME.grid }}
+            tickLine={false}
+          />
+          <YAxis
+            yAxisId="money"
+            tick={{ fill: CHART_THEME.axis, fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v: number) => fmt(v)}
+            width={70}
+          />
+          <YAxis
+            yAxisId="pct"
+            orientation="right"
+            tick={{ fill: CHART_THEME.axis, fontSize: 11 }}
+            axisLine={false}
+            tickLine={false}
+            tickFormatter={(v: number) => `${v}%`}
+            width={45}
+            domain={[0, 100]}
+          />
+          <Tooltip
+            content={({ active, payload, label }) => {
+              if (!active || !payload?.length) return null;
+              const item = payload[0]?.payload as MonthlyProfitItem;
+              return (
+                <div
+                  className="rounded-lg px-3 py-2 text-sm shadow-xl border"
+                  style={{
+                    backgroundColor: CHART_THEME.tooltipBg,
+                    borderColor: CHART_THEME.tooltipBorder,
+                  }}
+                >
+                  <p className="text-gray-400 text-xs mb-1">{label}</p>
+                  <p className="text-white font-semibold">Ingreso: ${item.revenue.toLocaleString("es-MX")}</p>
+                  <p className="text-red-400 text-xs">Costo: ${item.cost.toLocaleString("es-MX")}</p>
+                  <p className="text-green-400 text-xs font-semibold">Ganancia: ${item.profit.toLocaleString("es-MX")}</p>
+                  <p className="text-yellow-400 text-xs">Margen: {item.margin}%</p>
+                </div>
+              );
+            }}
+            cursor={{ fill: "rgba(255,255,255,0.03)" }}
+          />
+          <Bar yAxisId="money" dataKey="revenue" fill={CHART_THEME.accent} radius={[4, 4, 0, 0]} maxBarSize={32} opacity={0.3} name="Ingreso" />
+          <Bar yAxisId="money" dataKey="profit" fill="#4ade80" radius={[4, 4, 0, 0]} maxBarSize={32} name="Ganancia" />
+          <Line yAxisId="pct" type="monotone" dataKey="margin" stroke="#facc15" strokeWidth={2} dot={{ fill: "#facc15", r: 3 }} name="Margen %" />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+// ── Cost Breakdown Donut Chart ────────────────────────────────────────────
+
+interface CostBreakdownItem {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export function CostBreakdownChart({ data }: { data: CostBreakdownItem[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+
+  if (total === 0) {
+    return (
+      <p className="text-gray-600 text-sm text-center py-8">Sin datos de costos aún</p>
+    );
+  }
+
+  return (
+    <div className="w-full h-64">
+      <ResponsiveContainer width="100%" height="100%">
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            cx="50%"
+            cy="50%"
+            innerRadius={50}
+            outerRadius={85}
+            paddingAngle={2}
+            strokeWidth={0}
+          >
+            {data.map((entry) => (
+              <Cell key={entry.name} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip
+            content={({ active, payload }) => {
+              if (!active || !payload?.length) return null;
+              const item = payload[0].payload as CostBreakdownItem;
+              const pct = Math.round((item.value / total) * 100);
+              return (
+                <div
+                  className="rounded-lg px-3 py-2 text-sm shadow-xl border"
+                  style={{
+                    backgroundColor: CHART_THEME.tooltipBg,
+                    borderColor: CHART_THEME.tooltipBorder,
+                  }}
+                >
+                  <p className="text-gray-400 text-xs mb-0.5">{item.name}</p>
+                  <p className="text-white font-semibold">
+                    ${item.value.toLocaleString("es-MX", { minimumFractionDigits: 2 })} ({pct}%)
+                  </p>
+                </div>
+              );
+            }}
+          />
+          <Legend
+            verticalAlign="middle"
+            align="right"
+            layout="vertical"
+            iconType="circle"
+            iconSize={8}
+            formatter={(value: string) => (
+              <span className="text-gray-400 text-xs ml-1">{value}</span>
+            )}
+          />
+        </PieChart>
       </ResponsiveContainer>
     </div>
   );

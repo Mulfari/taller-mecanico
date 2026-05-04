@@ -7,6 +7,8 @@ import {
   MonthlyRevenueChart,
   OrdersByStatusChart,
   TopServicesChart,
+  MonthlyProfitChart,
+  CostBreakdownChart,
 } from "./ReporteCharts";
 
 export const metadata = { title: "Reportes — TallerPro" };
@@ -49,6 +51,14 @@ function IconAlert() {
   return (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+    </svg>
+  );
+}
+
+function IconProfit() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   );
 }
@@ -174,16 +184,22 @@ async function getReportData(since: string | null) {
     .select("id, total, status, created_at");
   if (since) quotesQuery = quotesQuery.gte("created_at", since);
 
+  let itemsQuery = supabase
+    .from("work_order_items")
+    .select("id, work_order_id, type, description, quantity, unit_price, total, inventory_id");
+
   const [
     { data: orders },
     { data: inventory },
     { data: appointments },
     { data: quotes },
+    { data: workOrderItems },
   ] = await Promise.all([
     ordersQuery,
-    supabase.from("inventory").select("id, name, quantity, min_stock, sell_price, category"),
+    supabase.from("inventory").select("id, name, quantity, min_stock, sell_price, cost_price, category"),
     apptQuery,
     quotesQuery,
+    itemsQuery,
   ]);
 
   // Revenue from delivered orders
@@ -279,6 +295,77 @@ async function getReportData(since: string | null) {
   }
   const mechanicStats = Object.values(mechanicMap).sort((a, b) => b.delivered - a.delivered);
 
+  // Profit margin analysis — cost from inventory items used in delivered orders
+  const deliveredOrderIds = new Set(deliveredOrders.map((o) => o.id));
+  const inventoryCostMap: Record<string, number> = {};
+  for (const inv of inventory ?? []) {
+    inventoryCostMap[inv.id] = inv.cost_price ?? 0;
+  }
+
+  const deliveredItems = (workOrderItems ?? []).filter((i) =>
+    deliveredOrderIds.has(i.work_order_id)
+  );
+
+  let totalLaborRevenue = 0;
+  let totalPartsRevenue = 0;
+  let totalPartsCost = 0;
+
+  for (const item of deliveredItems) {
+    if (item.type === "labor") {
+      totalLaborRevenue += item.total ?? 0;
+    } else {
+      totalPartsRevenue += item.total ?? 0;
+      if (item.inventory_id && inventoryCostMap[item.inventory_id] !== undefined) {
+        totalPartsCost += inventoryCostMap[item.inventory_id] * (item.quantity ?? 1);
+      }
+    }
+  }
+
+  const grossProfit = totalRevenue - totalPartsCost;
+  const profitMargin = totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 100) : 0;
+
+  // Monthly profit trend (last 6 months)
+  const orderIdToDeliveredMonth: Record<string, { year: number; month: number }> = {};
+  for (const o of deliveredOrders) {
+    const date = new Date(o.delivered_at ?? o.created_at);
+    orderIdToDeliveredMonth[o.id] = { year: date.getFullYear(), month: date.getMonth() };
+  }
+
+  const monthlyProfit: { label: string; revenue: number; cost: number; profit: number; margin: number }[] = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const label = d.toLocaleDateString("es-MX", { month: "short", year: "2-digit" });
+    const yr = d.getFullYear();
+    const mo = d.getMonth();
+
+    const monthRevenue = deliveredOrders
+      .filter((o) => {
+        const m = orderIdToDeliveredMonth[o.id];
+        return m && m.year === yr && m.month === mo;
+      })
+      .reduce((sum, o) => sum + (o.final_cost ?? o.estimated_cost ?? 0), 0);
+
+    const monthOrderIds = new Set(
+      deliveredOrders
+        .filter((o) => {
+          const m = orderIdToDeliveredMonth[o.id];
+          return m && m.year === yr && m.month === mo;
+        })
+        .map((o) => o.id)
+    );
+
+    let monthCost = 0;
+    for (const item of deliveredItems) {
+      if (monthOrderIds.has(item.work_order_id) && item.type === "part" && item.inventory_id) {
+        monthCost += (inventoryCostMap[item.inventory_id] ?? 0) * (item.quantity ?? 1);
+      }
+    }
+
+    const monthProfit = monthRevenue - monthCost;
+    const monthMargin = monthRevenue > 0 ? Math.round((monthProfit / monthRevenue) * 100) : 0;
+    monthlyProfit.push({ label, revenue: monthRevenue, cost: monthCost, profit: monthProfit, margin: monthMargin });
+  }
+
   return {
     totalRevenue,
     totalOrders: (orders ?? []).length,
@@ -294,6 +381,12 @@ async function getReportData(since: string | null) {
     acceptedQuotesCount: acceptedQuotes.length,
     mechanicStats,
     topClients,
+    grossProfit,
+    profitMargin,
+    totalLaborRevenue,
+    totalPartsRevenue,
+    totalPartsCost,
+    monthlyProfit,
   };
 }
 
@@ -359,12 +452,19 @@ export default async function ReportesPage({
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-4">
         <KpiCard
           icon={<IconTrend />}
           label="Ingresos totales"
           value={fmt(data.totalRevenue)}
           sub="Órdenes entregadas"
+          accent
+        />
+        <KpiCard
+          icon={<IconProfit />}
+          label="Ganancia bruta"
+          value={fmt(data.grossProfit)}
+          sub={`Margen: ${data.profitMargin}%`}
           accent
         />
         <KpiCard
@@ -388,6 +488,50 @@ export default async function ReportesPage({
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Monthly profit vs revenue chart */}
+        <SectionCard title="Rentabilidad por mes (últimos 6 meses)">
+          <MonthlyProfitChart data={data.monthlyProfit} />
+          <div className="flex items-center gap-6 mt-4 pt-3 border-t border-white/5">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-sm bg-[#e94560]/30" />
+              <span className="text-gray-500 text-xs">Ingreso</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-sm bg-[#4ade80]" />
+              <span className="text-gray-500 text-xs">Ganancia</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-[#facc15]" style={{ width: 10, height: 10 }} />
+              <span className="text-gray-500 text-xs">Margen %</span>
+            </div>
+          </div>
+        </SectionCard>
+
+        {/* Cost breakdown donut */}
+        <SectionCard title="Desglose de ingresos">
+          <CostBreakdownChart
+            data={[
+              { name: "Mano de obra", value: data.totalLaborRevenue, color: "#60a5fa" },
+              { name: "Repuestos (ganancia)", value: data.totalPartsRevenue - data.totalPartsCost, color: "#4ade80" },
+              { name: "Costo de repuestos", value: data.totalPartsCost, color: "#f87171" },
+            ].filter((d) => d.value > 0)}
+          />
+          <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-white/5">
+            <div className="text-center">
+              <p className="text-gray-500 text-xs">Mano de obra</p>
+              <p className="text-blue-400 font-semibold text-sm mt-0.5">{fmt(data.totalLaborRevenue)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-500 text-xs">Venta repuestos</p>
+              <p className="text-white font-semibold text-sm mt-0.5">{fmt(data.totalPartsRevenue)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-gray-500 text-xs">Costo repuestos</p>
+              <p className="text-red-400 font-semibold text-sm mt-0.5">{fmt(data.totalPartsCost)}</p>
+            </div>
+          </div>
+        </SectionCard>
+
         {/* Monthly revenue bar chart */}
         <SectionCard title="Ingresos por mes (últimos 6 meses)">
           <MonthlyRevenueChart data={data.monthlyRevenue} />
