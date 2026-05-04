@@ -4,24 +4,14 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { updateInvoiceStatus } from "../actions";
 import type { InvoiceStatus } from "@/types/database";
+import PaymentModal from "./PaymentModal";
 
 interface Props {
   invoiceId: string;
   currentStatus: InvoiceStatus;
+  invoiceTotal: number;
+  totalPaid: number;
 }
-
-const NEXT_ACTION: Partial<Record<InvoiceStatus, { label: string; next: InvoiceStatus; style: string }>> = {
-  draft: {
-    label: "Marcar como enviada",
-    next: "sent",
-    style: "bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 hover:border-blue-500/50",
-  },
-  sent: {
-    label: "Registrar pago",
-    next: "paid",
-    style: "bg-green-500/10 border border-green-500/30 text-green-300 hover:bg-green-500/20 hover:border-green-500/50",
-  },
-};
 
 function IconSpinner() {
   return (
@@ -48,17 +38,28 @@ function IconSend() {
   );
 }
 
-export default function StatusActions({ invoiceId, currentStatus }: Props) {
-  const action = NEXT_ACTION[currentStatus];
+function IconCurrency() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  );
+}
+
+export default function StatusActions({ invoiceId, currentStatus, invoiceTotal, totalPaid }: Props) {
   const [isPending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
   const router = useRouter();
 
-  if (!action) return null;
+  const remaining = invoiceTotal - totalPaid;
+  const hasPartialPayment = totalPaid > 0 && currentStatus !== "paid";
 
-  function handleClick() {
+  if (currentStatus === "paid") return null;
+
+  function handleSend() {
     startTransition(async () => {
-      await updateInvoiceStatus(invoiceId, action!.next);
+      await updateInvoiceStatus(invoiceId, "sent");
       setDone(true);
       setTimeout(() => {
         setDone(false);
@@ -68,18 +69,43 @@ export default function StatusActions({ invoiceId, currentStatus }: Props) {
   }
 
   return (
-    <button
-      onClick={handleClick}
-      disabled={isPending || done}
-      className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-60 print:hidden ${action.style}`}
-    >
-      {isPending ? (
-        <><IconSpinner /> Guardando...</>
-      ) : done ? (
-        <><IconCheck /> Listo</>
-      ) : (
-        <>{action.next === "sent" ? <IconSend /> : <IconCheck />} {action.label}</>
+    <>
+      <div className="flex items-center gap-2 print:hidden">
+        {currentStatus === "draft" && (
+          <button
+            onClick={handleSend}
+            disabled={isPending || done}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-60 bg-blue-500/10 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 hover:border-blue-500/50"
+          >
+            {isPending ? (
+              <><IconSpinner /> Guardando...</>
+            ) : done ? (
+              <><IconCheck /> Listo</>
+            ) : (
+              <><IconSend /> Marcar como enviada</>
+            )}
+          </button>
+        )}
+
+        {(currentStatus === "sent" || currentStatus === "draft") && (
+          <button
+            onClick={() => setShowPayment(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors bg-green-500/10 border border-green-500/30 text-green-300 hover:bg-green-500/20 hover:border-green-500/50"
+          >
+            <IconCurrency />
+            {hasPartialPayment ? `Registrar pago (pendiente)` : "Registrar pago"}
+          </button>
+        )}
+      </div>
+
+      {showPayment && (
+        <PaymentModal
+          invoiceId={invoiceId}
+          invoiceTotal={invoiceTotal}
+          totalPaid={totalPaid}
+          onClose={() => setShowPayment(false)}
+        />
       )}
-    </button>
+    </>
   );
 }

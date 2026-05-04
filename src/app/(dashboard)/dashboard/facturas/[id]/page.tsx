@@ -90,13 +90,16 @@ export default async function FacturaDetailPage({
       : workOrder.vehicle
     : null;
 
-  // Parse items JSONB
-  const items: InvoiceItem[] = Array.isArray(invoice.items)
-    ? (invoice.items as InvoiceItem[])
-    : [];
+  // Parse items JSONB — separate regular items from payment records
+  const allItems = Array.isArray(invoice.items) ? (invoice.items as Record<string, unknown>[]) : [];
+  const paymentItems = allItems.filter((i) => i.type === "payment");
+  const regularItems: InvoiceItem[] = allItems.filter((i) => i.type !== "payment") as unknown as InvoiceItem[];
 
+  const items = regularItems;
   const laborItems = items.filter((i) => i.type === "labor");
   const partItems = items.filter((i) => !i.type || i.type === "part");
+
+  const totalPaid = paymentItems.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
 
   const invoiceNumber = invoice.id.slice(0, 8).toUpperCase();
   const shopName = shopConfig?.name ?? "TallerPro";
@@ -134,7 +137,7 @@ export default async function FacturaDetailPage({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <StatusActions invoiceId={invoice.id} currentStatus={invoice.status as import("@/types/database").InvoiceStatus} />
+          <StatusActions invoiceId={invoice.id} currentStatus={invoice.status as import("@/types/database").InvoiceStatus} invoiceTotal={invoice.total ?? 0} totalPaid={totalPaid} />
           <WhatsAppInvoiceButton
             clientName={client?.full_name ?? null}
             clientPhone={client?.phone ?? null}
@@ -347,9 +350,74 @@ export default async function FacturaDetailPage({
                 <span className="text-white print:text-gray-900">Total</span>
                 <span className="text-[#e94560] print:text-gray-900">{fmt(invoice.total)}</span>
               </div>
+              {totalPaid > 0 && (
+                <>
+                  <div className="flex justify-between text-sm pt-1">
+                    <span className="text-green-400 print:text-green-700">Pagado</span>
+                    <span className="text-green-400 print:text-green-700">- {fmt(totalPaid)}</span>
+                  </div>
+                  {invoice.status !== "paid" && (
+                    <div className="flex justify-between text-sm font-semibold border-t border-white/10 pt-2 print:border-gray-200">
+                      <span className="text-yellow-400 print:text-yellow-700">Saldo pendiente</span>
+                      <span className="text-yellow-400 print:text-yellow-700">{fmt((invoice.total ?? 0) - totalPaid)}</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Payment history */}
+        {paymentItems.length > 0 && (
+          <div className="px-8 py-6 border-t border-white/5 print:border-t print:border-gray-200 print:px-0">
+            <p className="text-gray-500 text-xs uppercase tracking-wide font-medium mb-3 print:text-gray-400">
+              Historial de pagos
+            </p>
+            <div className="space-y-2">
+              {paymentItems.map((p, i) => {
+                const methodLabels: Record<string, string> = {
+                  cash: "Efectivo", card: "Tarjeta", transfer: "Transferencia",
+                  check: "Cheque", other: "Otro",
+                };
+                const methodIcons: Record<string, string> = {
+                  cash: "💵", card: "💳", transfer: "🏦", check: "📄", other: "📋",
+                };
+                const pm = String(p.payment_method ?? "other");
+                const pDate = p.payment_date
+                  ? new Date(String(p.payment_date)).toLocaleDateString("es-MX", {
+                      day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+                    })
+                  : "—";
+                return (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between bg-green-500/5 border border-green-500/10 rounded-lg px-4 py-3 print:bg-green-50 print:border-green-200"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{methodIcons[pm] ?? "📋"}</span>
+                      <div>
+                        <p className="text-white text-sm font-medium print:text-gray-900">
+                          {methodLabels[pm] ?? pm}
+                        </p>
+                        <p className="text-gray-500 text-xs print:text-gray-500">
+                          {pDate}
+                          {p.payment_reference ? ` · Ref: ${p.payment_reference}` : ""}
+                        </p>
+                        {p.payment_notes ? (
+                          <p className="text-gray-600 text-xs mt-0.5">{String(p.payment_notes)}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <span className="text-green-400 font-semibold text-sm print:text-green-700">
+                      {fmt(Number(p.total) || 0)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Footer note */}
         <div
@@ -359,7 +427,9 @@ export default async function FacturaDetailPage({
           <p className="text-gray-600 text-xs text-center print:text-gray-400">
             {invoice.status === "paid"
               ? "Esta factura ha sido pagada. Gracias por su preferencia."
-              : "Por favor realice el pago a la brevedad. Gracias por confiar en nosotros."}
+              : totalPaid > 0
+                ? `Pago parcial recibido. Saldo pendiente: ${fmt((invoice.total ?? 0) - totalPaid)}.`
+                : "Por favor realice el pago a la brevedad. Gracias por confiar en nosotros."}
           </p>
         </div>
       </div>
