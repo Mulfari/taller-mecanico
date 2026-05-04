@@ -78,7 +78,7 @@ export async function getNotificationsAction(): Promise<Notification[]> {
 
 export type SearchResult = {
   id: string;
-  category: "cliente" | "vehiculo" | "orden" | "inventario";
+  category: "cliente" | "vehiculo" | "orden" | "inventario" | "cotizacion" | "factura" | "cita" | "mecanico";
   title: string;
   subtitle: string;
   href: string;
@@ -87,31 +87,59 @@ export type SearchResult = {
 export async function globalSearchAction(query: string): Promise<SearchResult[]> {
   if (!query || query.trim().length < 2) return [];
   const q = query.trim();
+  const escaped = q.replace(/[%_]/g, "\\$&");
   const supabase = await createClient();
 
-  const [clients, vehicles, orders, inventory] = await Promise.all([
+  // Check if user is searching by OT-ID (e.g. "OT-AB12" or just "AB12")
+  const otMatch = q.match(/^(?:OT-?)?([A-Fa-f0-9]{4,8})$/i);
+
+  const [clients, vehicles, orders, inventory, quotes, invoices, appointments, mechanics] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name, email, phone")
       .eq("role", "client")
-      .or(`full_name.ilike.%${q}%,email.ilike.%${q}%`)
-      .limit(4),
+      .or(`full_name.ilike.%${escaped}%,email.ilike.%${escaped}%`)
+      .limit(3),
     supabase
       .from("vehicles")
       .select("id, brand, model, year, plate, owner_id")
-      .or(`brand.ilike.%${q}%,model.ilike.%${q}%,plate.ilike.%${q}%`)
-      .limit(4),
+      .or(`brand.ilike.%${escaped}%,model.ilike.%${escaped}%,plate.ilike.%${escaped}%`)
+      .limit(3),
     supabase
       .from("work_orders")
       .select("id, status, description, vehicle:vehicles!work_orders_vehicle_id_fkey(brand, model, year)")
-      .or(`description.ilike.%${q}%`)
+      .or(`description.ilike.%${escaped}%${otMatch ? `,id.ilike.${otMatch[1]}%` : ""}`)
       .order("created_at", { ascending: false })
-      .limit(4),
+      .limit(3),
     supabase
       .from("inventory")
       .select("id, name, sku, category, quantity")
-      .or(`name.ilike.%${q}%,sku.ilike.%${q}%`)
-      .limit(4),
+      .or(`name.ilike.%${escaped}%,sku.ilike.%${escaped}%`)
+      .limit(3),
+    supabase
+      .from("quotes")
+      .select("id, total, status, valid_until, client:profiles!quotes_client_id_fkey(full_name), vehicle:vehicles!quotes_vehicle_id_fkey(brand, model, year)")
+      .or(`status.ilike.%${escaped}%,id.ilike.%${escaped}%`)
+      .order("created_at", { ascending: false })
+      .limit(3),
+    supabase
+      .from("invoices")
+      .select("id, total, status, client:profiles!invoices_client_id_fkey(full_name), work_order:work_orders!invoices_work_order_id_fkey(id)")
+      .or(`status.ilike.%${escaped}%,id.ilike.%${escaped}%`)
+      .order("created_at", { ascending: false })
+      .limit(3),
+    supabase
+      .from("appointments")
+      .select("id, date, time_slot, service_type, status, client:profiles!appointments_client_id_fkey(full_name), vehicle:vehicles!appointments_vehicle_id_fkey(brand, model)")
+      .or(`service_type.ilike.%${escaped}%`)
+      .order("date", { ascending: false })
+      .limit(3),
+    supabase
+      .from("profiles")
+      .select("id, full_name, email, phone")
+      .eq("role", "mechanic")
+      .or(`full_name.ilike.%${escaped}%,email.ilike.%${escaped}%`)
+      .limit(3),
   ]);
 
   const STATUS_LABELS: Record<string, string> = {
@@ -120,6 +148,26 @@ export async function globalSearchAction(query: string): Promise<SearchResult[]>
     repairing: "En reparación",
     ready: "Listo",
     delivered: "Entregado",
+  };
+
+  const QUOTE_STATUS: Record<string, string> = {
+    draft: "Borrador",
+    sent: "Enviada",
+    accepted: "Aceptada",
+    rejected: "Rechazada",
+  };
+
+  const INVOICE_STATUS: Record<string, string> = {
+    draft: "Borrador",
+    sent: "Enviada",
+    paid: "Pagada",
+  };
+
+  const APPT_STATUS: Record<string, string> = {
+    pending: "Pendiente",
+    confirmed: "Confirmada",
+    completed: "Completada",
+    cancelled: "Cancelada",
   };
 
   const results: SearchResult[] = [];
@@ -164,6 +212,54 @@ export async function globalSearchAction(query: string): Promise<SearchResult[]>
       title: i.name,
       subtitle: [i.sku && `SKU: ${i.sku}`, i.category, `${i.quantity} uds.`].filter(Boolean).join(" · "),
       href: `/dashboard/inventario/${i.id}`,
+    });
+  }
+
+  for (const qt of quotes.data ?? []) {
+    const client = qt.client as unknown as { full_name: string | null } | null;
+    const vehicle = qt.vehicle as unknown as { brand: string; model: string; year: number } | null;
+    const vehicleLabel = vehicle ? `${vehicle.brand} ${vehicle.model} ${vehicle.year}` : "";
+    results.push({
+      id: qt.id,
+      category: "cotizacion",
+      title: `COT-${qt.id.slice(0, 6).toUpperCase()}`,
+      subtitle: [QUOTE_STATUS[qt.status] ?? qt.status, client?.full_name, vehicleLabel].filter(Boolean).join(" · "),
+      href: `/dashboard/cotizaciones/${qt.id}`,
+    });
+  }
+
+  for (const inv of invoices.data ?? []) {
+    const client = inv.client as unknown as { full_name: string | null } | null;
+    const wo = inv.work_order as unknown as { id: string } | null;
+    results.push({
+      id: inv.id,
+      category: "factura",
+      title: `FAC-${inv.id.slice(0, 6).toUpperCase()}`,
+      subtitle: [INVOICE_STATUS[inv.status] ?? inv.status, client?.full_name, wo ? `OT-${wo.id.slice(0, 6).toUpperCase()}` : null, inv.total ? `$${Number(inv.total).toLocaleString("es-MX")}` : null].filter(Boolean).join(" · "),
+      href: `/dashboard/facturas/${inv.id}`,
+    });
+  }
+
+  for (const ap of appointments.data ?? []) {
+    const client = ap.client as unknown as { full_name: string | null } | null;
+    const vehicle = ap.vehicle as unknown as { brand: string; model: string } | null;
+    const dateLabel = new Date(ap.date + "T00:00:00").toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+    results.push({
+      id: ap.id,
+      category: "cita",
+      title: `${ap.service_type} — ${dateLabel} ${ap.time_slot}`,
+      subtitle: [APPT_STATUS[ap.status] ?? ap.status, client?.full_name, vehicle ? `${vehicle.brand} ${vehicle.model}` : null].filter(Boolean).join(" · "),
+      href: `/dashboard/citas/${ap.id}`,
+    });
+  }
+
+  for (const m of mechanics.data ?? []) {
+    results.push({
+      id: m.id,
+      category: "mecanico",
+      title: m.full_name ?? m.email,
+      subtitle: m.phone ? `${m.email} · ${m.phone}` : m.email,
+      href: `/dashboard/mecanicos/${m.id}`,
     });
   }
 
