@@ -98,6 +98,30 @@ function LogoutButton() {
   );
 }
 
+function IconWrench() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 004.486-6.336l-3.276 3.277a3.004 3.004 0 01-2.25-2.25l3.276-3.276a4.5 4.5 0 00-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085" />
+    </svg>
+  );
+}
+
+function IconReceipt() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 14.25l6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0c1.1.128 1.907 1.077 1.907 2.185z" />
+    </svg>
+  );
+}
+
+function IconQuote() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    </svg>
+  );
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface Stats {
@@ -105,6 +129,155 @@ interface Stats {
   activeOrders: number;
   totalOrders: number;
   upcomingAppointments: number;
+}
+
+interface ActivityItem {
+  id: string;
+  type: "order" | "appointment" | "quote" | "invoice";
+  title: string;
+  subtitle: string;
+  status: string;
+  statusColor: string;
+  href: string;
+  date: string;
+}
+
+// ── Activity helpers ──────────────────────────────────────────────────────
+
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  received: "Recibido",
+  diagnosing: "En diagnóstico",
+  repairing: "En reparación",
+  ready: "Listo para retirar",
+  delivered: "Entregado",
+};
+
+const ORDER_STATUS_COLORS: Record<string, string> = {
+  received: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+  diagnosing: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  repairing: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  ready: "bg-green-500/20 text-green-300 border-green-500/30",
+  delivered: "bg-gray-600/20 text-gray-500 border-gray-600/30",
+};
+
+const APPT_STATUS_LABELS: Record<string, string> = {
+  pending: "Pendiente",
+  confirmed: "Confirmada",
+  completed: "Completada",
+  cancelled: "Cancelada",
+};
+
+const APPT_STATUS_COLORS: Record<string, string> = {
+  pending: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  confirmed: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  completed: "bg-green-500/20 text-green-300 border-green-500/30",
+  cancelled: "bg-gray-600/20 text-gray-500 border-gray-600/30",
+};
+
+const QUOTE_STATUS_LABELS: Record<string, string> = {
+  draft: "Borrador",
+  sent: "Enviada",
+  accepted: "Aceptada",
+  rejected: "Rechazada",
+};
+
+const QUOTE_STATUS_COLORS: Record<string, string> = {
+  draft: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+  sent: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  accepted: "bg-green-500/20 text-green-300 border-green-500/30",
+  rejected: "bg-red-500/20 text-red-400 border-red-500/30",
+};
+
+const INVOICE_STATUS_LABELS: Record<string, string> = {
+  draft: "Borrador",
+  sent: "Emitida",
+  paid: "Pagada",
+};
+
+const INVOICE_STATUS_COLORS: Record<string, string> = {
+  draft: "bg-gray-500/20 text-gray-300 border-gray-500/30",
+  sent: "bg-blue-500/20 text-blue-300 border-blue-500/30",
+  paid: "bg-green-500/20 text-green-300 border-green-500/30",
+};
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "ahora";
+  if (mins < 60) return `hace ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `hace ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "ayer";
+  if (days < 7) return `hace ${days} días`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 4) return `hace ${weeks} sem`;
+  return new Date(dateStr).toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
+}
+
+function ActivityIcon({ type }: { type: ActivityItem["type"] }) {
+  const icons: Record<string, React.ReactNode> = {
+    order: <IconWrench />,
+    appointment: <IconCalendar />,
+    quote: <IconQuote />,
+    invoice: <IconReceipt />,
+  };
+  const colors: Record<string, string> = {
+    order: "bg-primary/10 text-primary border-primary/20",
+    appointment: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    quote: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    invoice: "bg-green-500/10 text-green-400 border-green-500/20",
+  };
+  return (
+    <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${colors[type]}`}>
+      {icons[type]}
+    </div>
+  );
+}
+
+function ActivityFeed({ items }: { items: ActivityItem[] }) {
+  if (items.length === 0) {
+    return (
+      <div className="bg-secondary border border-white/10 rounded-xl p-6 text-center">
+        <p className="text-gray-500 text-sm">No hay actividad reciente.</p>
+        <p className="text-gray-600 text-xs mt-1">Agendá una cita o solicitá una cotización para empezar.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-secondary border border-white/10 rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+        <h2 className="text-white font-semibold text-sm uppercase tracking-wide">Actividad reciente</h2>
+        <span className="text-gray-600 text-xs">{items.length} evento{items.length !== 1 ? "s" : ""}</span>
+      </div>
+      <div className="divide-y divide-white/5">
+        {items.map((item) => (
+          <Link
+            key={`${item.type}-${item.id}`}
+            href={item.href}
+            className="flex items-center gap-3 px-5 py-3.5 hover:bg-white/[0.03] transition-colors group"
+          >
+            <ActivityIcon type={item.type} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-gray-200 text-sm font-medium group-hover:text-white transition-colors truncate">
+                  {item.title}
+                </p>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${item.statusColor}`}>
+                  {item.status}
+                </span>
+              </div>
+              <p className="text-gray-500 text-xs mt-0.5 truncate">{item.subtitle}</p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-gray-600 text-xs whitespace-nowrap">{timeAgo(item.date)}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 const inputClass =
@@ -116,6 +289,7 @@ export default function CuentaPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [activity, setActivity] = useState<ActivityItem[]>([]);
 
   // Profile edit state
   const [fullName, setFullName] = useState("");
@@ -138,7 +312,11 @@ export default function CuentaPage() {
     const [
       { data: vehicles },
       { data: orders },
-      { data: appointments },
+      { data: upcomingAppts },
+      { data: recentOrders },
+      { data: recentAppts },
+      { data: recentQuotes },
+      { data: recentInvoices },
     ] = await Promise.all([
       supabase.from("vehicles").select("id").eq("owner_id", userId),
       supabase
@@ -151,14 +329,104 @@ export default function CuentaPage() {
         .eq("client_id", userId)
         .gte("date", new Date().toISOString().slice(0, 10))
         .in("status", ["pending", "confirmed"]),
+      supabase
+        .from("work_orders")
+        .select("id, status, description, created_at, vehicle:vehicles(brand, model, year)")
+        .eq("client_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("appointments")
+        .select("id, status, service_type, date, time_slot, created_at")
+        .eq("client_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("quotes")
+        .select("id, status, total, created_at")
+        .eq("client_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("invoices")
+        .select("id, status, total, created_at")
+        .eq("client_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(5),
     ]);
 
     setStats({
       vehicles: vehicles?.length ?? 0,
       activeOrders: (orders ?? []).filter((o) => o.status !== "delivered").length,
       totalOrders: orders?.length ?? 0,
-      upcomingAppointments: appointments?.length ?? 0,
+      upcomingAppointments: upcomingAppts?.length ?? 0,
     });
+
+    const items: ActivityItem[] = [];
+
+    for (const o of recentOrders ?? []) {
+      const v = Array.isArray(o.vehicle) ? o.vehicle[0] : o.vehicle;
+      const vehicleLabel = v ? `${v.brand} ${v.model} ${v.year}` : "";
+      items.push({
+        id: o.id,
+        type: "order",
+        title: `Orden OT-${o.id.slice(0, 6).toUpperCase()}`,
+        subtitle: o.description || vehicleLabel || "Orden de trabajo",
+        status: ORDER_STATUS_LABELS[o.status] ?? o.status,
+        statusColor: ORDER_STATUS_COLORS[o.status] ?? "bg-gray-500/20 text-gray-300 border-gray-500/30",
+        href: `/mis-ordenes/${o.id}`,
+        date: o.created_at,
+      });
+    }
+
+    for (const a of recentAppts ?? []) {
+      const dateLabel = new Date(a.date + "T00:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
+      items.push({
+        id: a.id,
+        type: "appointment",
+        title: `Cita — ${a.service_type}`,
+        subtitle: `${dateLabel} a las ${a.time_slot}`,
+        status: APPT_STATUS_LABELS[a.status] ?? a.status,
+        statusColor: APPT_STATUS_COLORS[a.status] ?? "bg-gray-500/20 text-gray-300 border-gray-500/30",
+        href: `/mis-citas/${a.id}`,
+        date: a.created_at,
+      });
+    }
+
+    for (const q of recentQuotes ?? []) {
+      const totalLabel = q.total != null && q.total > 0
+        ? `$${q.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`
+        : "Sin monto";
+      items.push({
+        id: q.id,
+        type: "quote",
+        title: `Cotización COT-${q.id.slice(0, 6).toUpperCase()}`,
+        subtitle: totalLabel,
+        status: QUOTE_STATUS_LABELS[q.status] ?? q.status,
+        statusColor: QUOTE_STATUS_COLORS[q.status] ?? "bg-gray-500/20 text-gray-300 border-gray-500/30",
+        href: `/mis-cotizaciones/${q.id}`,
+        date: q.created_at,
+      });
+    }
+
+    for (const inv of recentInvoices ?? []) {
+      const totalLabel = inv.total != null && inv.total > 0
+        ? `$${inv.total.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`
+        : "Sin monto";
+      items.push({
+        id: inv.id,
+        type: "invoice",
+        title: `Factura FAC-${inv.id.slice(0, 6).toUpperCase()}`,
+        subtitle: totalLabel,
+        status: INVOICE_STATUS_LABELS[inv.status] ?? inv.status,
+        statusColor: INVOICE_STATUS_COLORS[inv.status] ?? "bg-gray-500/20 text-gray-300 border-gray-500/30",
+        href: `/mis-facturas/${inv.id}`,
+        date: inv.created_at,
+      });
+    }
+
+    items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    setActivity(items.slice(0, 10));
   }, []);
 
   useEffect(() => {
@@ -343,6 +611,9 @@ export default function CuentaPage() {
             ))}
           </div>
         )}
+
+        {/* Activity feed */}
+        <ActivityFeed items={activity} />
 
         {/* Profile form */}
         <div className="bg-secondary border border-white/10 rounded-xl p-6">
