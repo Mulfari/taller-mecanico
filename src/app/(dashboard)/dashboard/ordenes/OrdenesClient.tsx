@@ -59,6 +59,14 @@ function IconKanban() {
   );
 }
 
+function IconDownload() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+    </svg>
+  );
+}
+
 // ── Constants ──────────────────────────────────────────────────────────────
 
 const STATUS_LABELS: Record<WorkOrderStatus, string> = {
@@ -415,6 +423,66 @@ function getDateRangeStart(range: DateRange): Date | null {
   }
 }
 
+function escapeCsvField(value: string): string {
+  if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+function exportOrdersCsv(orders: WorkOrderListItem[]) {
+  const headers = [
+    "ID",
+    "Cliente",
+    "Vehículo",
+    "Placa",
+    "Mecánico",
+    "Estado",
+    "Descripción",
+    "Costo Estimado",
+    "Costo Final",
+    "Fecha Recibido",
+    "Fecha Entrega Estimada",
+    "Fecha Entregado",
+  ];
+
+  const rows = orders.map((o) => [
+    `OT-${o.id.slice(0, 6).toUpperCase()}`,
+    o.client?.full_name ?? "",
+    o.vehicle ? `${o.vehicle.brand} ${o.vehicle.model} ${o.vehicle.year}` : "",
+    o.vehicle?.plate ?? "",
+    o.mechanic?.full_name ?? "",
+    STATUS_LABELS[o.status],
+    o.description ?? "",
+    o.estimated_cost != null ? String(o.estimated_cost) : "",
+    o.final_cost != null ? String(o.final_cost) : "",
+    o.received_at
+      ? new Date(o.received_at).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" })
+      : "",
+    o.estimated_delivery
+      ? new Date(o.estimated_delivery + "T00:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" })
+      : "",
+    o.delivered_at
+      ? new Date(o.delivered_at).toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" })
+      : "",
+  ]);
+
+  const csv =
+    "﻿" +
+    [headers, ...rows].map((row) => row.map(escapeCsvField).join(",")).join("\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const today = new Date().toISOString().slice(0, 10);
+  a.download = `ordenes-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export default function OrdenesClient({
   orders: initialOrders,
   initialFilter = "all",
@@ -685,6 +753,18 @@ export default function OrdenesClient({
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${realtimeConnected ? "bg-green-400 animate-pulse" : "bg-gray-600"}`} />
             <span className="hidden sm:inline">{realtimeConnected ? "En vivo" : "Conectando…"}</span>
           </span>
+
+          {/* Export CSV */}
+          <button
+            onClick={() => exportOrdersCsv(filtered)}
+            disabled={filtered.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:border-white/20 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+            title="Exportar órdenes filtradas a CSV"
+            aria-label="Exportar CSV"
+          >
+            <IconDownload />
+            <span className="hidden sm:inline">Exportar</span>
+          </button>
 
           {/* View toggle */}
           <div className="flex items-center bg-[#16213e] border border-white/10 rounded-lg p-0.5 ml-auto sm:ml-0">
