@@ -10,6 +10,9 @@ interface SearchParams extends Record<string, string | undefined> {
   categoria?: string
   marca?: string
   compatible_con?: string
+  modelo?: string
+  anio_min?: string
+  anio_max?: string
   precio_min?: string
   precio_max?: string
   pagina?: string
@@ -37,6 +40,25 @@ export default async function RepuestosPage({
   if (params.categoria) query = query.eq("category", params.categoria)
   if (params.marca) query = query.eq("brand", params.marca)
   if (params.compatible_con) query = query.ilike("compatible_brands", `%${params.compatible_con}%`)
+  if (params.modelo) {
+    query = query.or(`name.ilike.%${params.modelo}%,compatible_brands.ilike.%${params.modelo}%`)
+  }
+  if (params.anio_min && params.anio_max) {
+    const minYear = parseInt(params.anio_min, 10)
+    const maxYear = parseInt(params.anio_max, 10)
+    if (!isNaN(minYear) && !isNaN(maxYear) && maxYear >= minYear) {
+      const yearFilters = []
+      for (let y = minYear; y <= Math.min(maxYear, minYear + 30); y++) {
+        yearFilters.push(`name.ilike.%${y}%`)
+        yearFilters.push(`compatible_brands.ilike.%${y}%`)
+      }
+      query = query.or(yearFilters.join(","))
+    }
+  } else if (params.anio_min) {
+    query = query.or(`name.ilike.%${params.anio_min}%,compatible_brands.ilike.%${params.anio_min}%`)
+  } else if (params.anio_max) {
+    query = query.or(`name.ilike.%${params.anio_max}%,compatible_brands.ilike.%${params.anio_max}%`)
+  }
   if (params.precio_min) query = query.gte("sell_price", parseFloat(params.precio_min))
   if (params.precio_max) query = query.lte("sell_price", parseFloat(params.precio_max))
 

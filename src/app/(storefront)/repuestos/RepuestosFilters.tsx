@@ -12,6 +12,9 @@ interface Props {
     categoria?: string
     marca?: string
     compatible_con?: string
+    modelo?: string
+    anio_min?: string
+    anio_max?: string
     precio_min?: string
     precio_max?: string
     pagina?: string
@@ -29,6 +32,9 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
       if (currentParams.categoria) params.set("categoria", currentParams.categoria)
       if (currentParams.marca) params.set("marca", currentParams.marca)
       if (currentParams.compatible_con) params.set("compatible_con", currentParams.compatible_con)
+      if (currentParams.modelo) params.set("modelo", currentParams.modelo)
+      if (currentParams.anio_min) params.set("anio_min", currentParams.anio_min)
+      if (currentParams.anio_max) params.set("anio_max", currentParams.anio_max)
       if (currentParams.precio_min) params.set("precio_min", currentParams.precio_min)
       if (currentParams.precio_max) params.set("precio_max", currentParams.precio_max)
 
@@ -52,6 +58,9 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
     currentParams.categoria ||
     currentParams.marca ||
     currentParams.compatible_con ||
+    currentParams.modelo ||
+    currentParams.anio_min ||
+    currentParams.anio_max ||
     currentParams.precio_min ||
     currentParams.precio_max
 
@@ -210,6 +219,91 @@ export default function RepuestosFilters({ categorias, marcas, compatibleMarcas,
           </div>
         </div>
       )}
+
+      {/* Modelo de vehículo */}
+      <div
+        className="rounded-xl border border-white/5 p-4"
+        style={{ backgroundColor: "var(--color-secondary)" }}
+      >
+        <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">
+          Modelo de vehículo
+        </h3>
+        <div className="relative">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10m10 0h4m-4 0H9m-5 0H3"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Ej: Corolla, Civic, F-150..."
+            defaultValue={currentParams.modelo ?? ""}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                updateParam("modelo", (e.target as HTMLInputElement).value.trim())
+              }
+            }}
+            onBlur={(e) => {
+              const val = e.target.value.trim()
+              if (val !== (currentParams.modelo ?? "")) {
+                updateParam("modelo", val)
+              }
+            }}
+            className="w-full pl-9 pr-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors"
+            style={{ backgroundColor: "#0f172a" }}
+          />
+        </div>
+      </div>
+
+      {/* Año del vehículo */}
+      <div
+        className="rounded-xl border border-white/5 p-4"
+        style={{ backgroundColor: "var(--color-secondary)" }}
+      >
+        <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">
+          Año del vehículo
+        </h3>
+        <div className="flex gap-2 items-center">
+          <input
+            type="number"
+            placeholder="Desde"
+            defaultValue={currentParams.anio_min ?? ""}
+            onBlur={(e) => updateParam("anio_min", e.target.value)}
+            min={1970}
+            max={new Date().getFullYear() + 1}
+            className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors"
+            style={{ backgroundColor: "#0f172a" }}
+          />
+          <span className="text-gray-500 text-sm flex-shrink-0">—</span>
+          <input
+            type="number"
+            placeholder="Hasta"
+            defaultValue={currentParams.anio_max ?? ""}
+            onBlur={(e) => updateParam("anio_max", e.target.value)}
+            min={1970}
+            max={new Date().getFullYear() + 1}
+            className="w-full px-3 py-2 rounded-lg text-sm text-white placeholder-gray-500 border border-white/10 focus:border-primary/50 focus:outline-none transition-colors"
+            style={{ backgroundColor: "#0f172a" }}
+          />
+        </div>
+        <p className="text-gray-500 text-xs mt-2">
+          Filtra repuestos compatibles con el rango de años
+        </p>
+      </div>
 
       {/* Rango de precio */}
       <div
