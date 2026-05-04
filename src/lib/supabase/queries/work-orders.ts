@@ -83,8 +83,28 @@ export async function getDashboardMetrics() {
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+  const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59).toISOString();
 
-  const [activeOrders, pendingAppointments, vehiclesForSale, lowStockItems, monthlyDelivered] = await Promise.all([
+  const dayOfMonth = now.getDate();
+  const prevMonthSameDay = new Date(now.getFullYear(), now.getMonth() - 1, dayOfMonth);
+  if (prevMonthSameDay.getMonth() !== (now.getMonth() + 11) % 12) {
+    prevMonthSameDay.setDate(0);
+  }
+  const prevMonthPartialEnd = prevMonthSameDay.toISOString();
+
+  const [
+    activeOrders,
+    pendingAppointments,
+    vehiclesForSale,
+    lowStockItems,
+    monthlyDelivered,
+    prevMonthDelivered,
+    currentMonthOrders,
+    prevMonthOrders,
+    currentMonthAppointments,
+    prevMonthAppointments,
+  ] = await Promise.all([
     supabase
       .from("work_orders")
       .select("id", { count: "exact", head: true })
@@ -97,7 +117,6 @@ export async function getDashboardMetrics() {
       .from("vehicles_for_sale")
       .select("id", { count: "exact", head: true })
       .eq("status", "available"),
-    // column-to-column comparison requires fetching rows; count client-side
     supabase
       .from("inventory")
       .select("id, quantity, min_stock"),
@@ -106,6 +125,30 @@ export async function getDashboardMetrics() {
       .select("final_cost, estimated_cost")
       .eq("status", "delivered")
       .gte("delivered_at", monthStart),
+    supabase
+      .from("work_orders")
+      .select("final_cost, estimated_cost")
+      .eq("status", "delivered")
+      .gte("delivered_at", prevMonthStart)
+      .lte("delivered_at", prevMonthPartialEnd),
+    supabase
+      .from("work_orders")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", monthStart),
+    supabase
+      .from("work_orders")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", prevMonthStart)
+      .lte("created_at", prevMonthPartialEnd),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", monthStart),
+    supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", prevMonthStart)
+      .lte("created_at", prevMonthPartialEnd),
   ]);
 
   const lowStockCount = (lowStockItems.data ?? []).filter(
@@ -117,12 +160,28 @@ export async function getDashboardMetrics() {
     0
   );
 
+  const prevRevenue = (prevMonthDelivered.data ?? []).reduce(
+    (sum, o) => sum + (o.final_cost ?? o.estimated_cost ?? 0),
+    0
+  );
+
   return {
     activeOrders: activeOrders.count ?? 0,
     pendingAppointments: pendingAppointments.count ?? 0,
     vehiclesForSale: vehiclesForSale.count ?? 0,
     lowStockItems: lowStockCount,
     monthlyRevenue,
+    trends: {
+      revenue: { current: monthlyRevenue, previous: prevRevenue },
+      orders: {
+        current: currentMonthOrders.count ?? 0,
+        previous: prevMonthOrders.count ?? 0,
+      },
+      appointments: {
+        current: currentMonthAppointments.count ?? 0,
+        previous: prevMonthAppointments.count ?? 0,
+      },
+    },
   };
 }
 

@@ -103,6 +103,11 @@ function IconCurrencyDollar() {
   );
 }
 
+interface TrendData {
+  current: number;
+  previous: number;
+}
+
 interface MetricCardProps {
   label: string;
   value: number | string;
@@ -111,9 +116,52 @@ interface MetricCardProps {
   bgClass: string;
   note?: string;
   href?: string;
+  trend?: TrendData;
 }
 
-function MetricCard({ label, value, icon, accentClass, bgClass, note, href }: MetricCardProps) {
+function TrendBadge({ trend }: { trend: TrendData }) {
+  if (trend.previous === 0 && trend.current === 0) return null;
+
+  let pct: number;
+  let isUp: boolean;
+
+  if (trend.previous === 0) {
+    pct = 100;
+    isUp = true;
+  } else {
+    pct = Math.round(((trend.current - trend.previous) / trend.previous) * 100);
+    isUp = pct >= 0;
+  }
+
+  if (pct === 0) return null;
+
+  const absPct = Math.abs(pct);
+  const displayPct = absPct > 999 ? "999+" : String(absPct);
+
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 text-xs font-medium px-1.5 py-0.5 rounded-md ${
+        isUp
+          ? "bg-green-500/15 text-green-400"
+          : "bg-red-500/15 text-red-400"
+      }`}
+      title={`${isUp ? "+" : ""}${pct}% vs mismo período mes anterior`}
+    >
+      <svg
+        className={`w-3 h-3 ${isUp ? "" : "rotate-180"}`}
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+      </svg>
+      {displayPct}%
+    </span>
+  );
+}
+
+function MetricCard({ label, value, icon, accentClass, bgClass, note, href, trend }: MetricCardProps) {
   const inner = (
     <>
       <div className={`shrink-0 w-12 h-12 rounded-lg flex items-center justify-center ${bgClass} ${accentClass}`}>
@@ -121,7 +169,10 @@ function MetricCard({ label, value, icon, accentClass, bgClass, note, href }: Me
       </div>
       <div className="min-w-0">
         <p className="text-gray-400 text-sm leading-none mb-1">{label}</p>
-        <p className={`text-3xl font-bold leading-none ${accentClass}`}>{value}</p>
+        <div className="flex items-center gap-2">
+          <p className={`text-3xl font-bold leading-none ${accentClass}`}>{value}</p>
+          {trend && <TrendBadge trend={trend} />}
+        </div>
         {note && <p className="text-gray-500 text-xs mt-1.5">{note}</p>}
       </div>
     </>
@@ -182,6 +233,7 @@ export default async function DashboardPage() {
       bgClass: "bg-green-500/10",
       note: "órdenes entregadas este mes",
       href: "/dashboard/reportes",
+      trend: metrics.trends.revenue,
     },
     {
       label: "Órdenes Activas",
@@ -191,6 +243,7 @@ export default async function DashboardPage() {
       bgClass: "bg-[#e94560]/10",
       note: "en proceso hoy",
       href: "/dashboard/ordenes",
+      trend: metrics.trends.orders,
     },
     {
       label: "Citas Pendientes",
@@ -200,6 +253,7 @@ export default async function DashboardPage() {
       bgClass: "bg-blue-500/10",
       note: "para hoy y mañana",
       href: "/dashboard/citas",
+      trend: metrics.trends.appointments,
     },
     {
       label: "Vehículos en Venta",
