@@ -323,6 +323,7 @@ export default function OrdenesClient({
   const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
   const [activeFilter, setActiveFilter] = useState<WorkOrderStatus | "all">(initialFilter);
+  const [mechanicFilter, setMechanicFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"list" | "kanban">("list");
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
@@ -416,9 +417,24 @@ export default function OrdenesClient({
 
   const q = search.trim().toLowerCase();
 
+  const mechanics = Array.from(
+    new Map(
+      orders
+        .filter((o) => o.mechanic?.id)
+        .map((o) => [o.mechanic!.id, o.mechanic!.full_name ?? "Sin nombre"])
+    )
+  ).sort((a, b) => a[1].localeCompare(b[1]));
+
   const filtered = orders.filter((o) => {
     const matchesStatus = view === "kanban" || activeFilter === "all" || o.status === activeFilter;
     if (!matchesStatus) return false;
+    if (mechanicFilter !== "all") {
+      if (mechanicFilter === "none") {
+        if (o.mechanic?.id) return false;
+      } else {
+        if (o.mechanic?.id !== mechanicFilter) return false;
+      }
+    }
     if (!q) return true;
     return (
       o.client?.full_name?.toLowerCase().includes(q) ||
@@ -461,6 +477,28 @@ export default function OrdenesClient({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Mechanic filter */}
+          {mechanics.length > 0 && (
+            <select
+              value={mechanicFilter}
+              onChange={(e) => setMechanicFilter(e.target.value)}
+              className="bg-[#16213e] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors appearance-none pr-8"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                backgroundRepeat: "no-repeat",
+                backgroundPosition: "right 0.5rem center",
+                backgroundSize: "1rem",
+              }}
+              aria-label="Filtrar por mecánico"
+            >
+              <option value="all">Todos los mecánicos</option>
+              <option value="none">Sin mecánico asignado</option>
+              {mechanics.map(([id, name]) => (
+                <option key={id} value={id}>{name}</option>
+              ))}
+            </select>
+          )}
+
           {/* Filter tabs — only in list view */}
           {view === "list" && FILTER_TABS.map((tab) => {
             const count = countFor(tab.key);
