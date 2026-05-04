@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     const userNotes = body.notes ? `Notas: ${body.notes}` : null;
     const fullNotes = [contactInfo, vehicleInfo, userNotes].filter(Boolean).join("\n");
 
-    const { error } = await supabase.from("appointments").insert({
+    const { data: inserted, error } = await supabase.from("appointments").insert({
       client_id: null,
       vehicle_id: body.vehicle_id ?? null,
       date: body.date,
@@ -71,10 +71,10 @@ export async function POST(req: NextRequest) {
       service_type: body.service_type,
       status: "pending",
       notes: fullNotes,
-    });
+    }).select("id").single();
 
     if (error) throw error;
-    return NextResponse.json({ ok: true }, { status: 201 });
+    return NextResponse.json({ ok: true, id: inserted.id }, { status: 201 });
   } catch (err) {
     console.error("POST /api/citas:", err);
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 });

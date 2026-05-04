@@ -426,6 +426,7 @@ function CitasPageInner() {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [createdId, setCreatedId] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [bookedSlots, setBookedSlots] = useState<Record<string, string[]>>({});
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -574,6 +575,8 @@ function CitasPageInner() {
       return;
     }
 
+    const resData = await res.json();
+    if (resData.id) setCreatedId(resData.id);
     setSubmitted(true);
   }
 
@@ -595,12 +598,26 @@ function CitasPageInner() {
             Tu cita ha sido registrada para el <span className="text-white font-medium">{dateLabel}</span> a las <span className="text-white font-medium">{selectedSlot}</span>.
           </p>
           <p className="text-gray-500 text-sm mb-8">Te contactaremos al {form.phone} para confirmar.</p>
-          <button
-            onClick={() => { setSubmitted(false); setForm(EMPTY_FORM); setSelectedDate(null); setSelectedSlot(null); }}
-            className="inline-flex items-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
-          >
-            Agendar otra cita
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            {createdId && (
+              <a
+                href={`/api/citas/${createdId}/ics`}
+                download
+                className="inline-flex items-center justify-center gap-2 border border-white/10 hover:border-white/20 text-gray-300 hover:text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Agregar al calendario
+              </a>
+            )}
+            <button
+              onClick={() => { setSubmitted(false); setCreatedId(null); setForm(EMPTY_FORM); setSelectedDate(null); setSelectedSlot(null); }}
+              className="inline-flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white text-sm font-medium px-6 py-3 rounded-lg transition-colors"
+            >
+              Agendar otra cita
+            </button>
+          </div>
         </div>
       </main>
     );

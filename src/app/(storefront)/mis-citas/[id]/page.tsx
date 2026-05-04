@@ -313,6 +313,18 @@ export default async function MisCitasDetailPage({
           {canCancel && !isPast && (
             <CancelButton appointmentId={appt.id} />
           )}
+          {!isPast && (status === "pending" || status === "confirmed") && (
+            <a
+              href={`/api/citas/${appt.id}/ics`}
+              download
+              className="flex-1 inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-semibold text-white transition-colors text-sm bg-primary hover:bg-primary-hover"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Agregar al calendario
+            </a>
+          )}
           {(status === "completed" || status === "cancelled" || isPast) && (
             <Link
               href="/citas"
