@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import AppointmentActions from "./AppointmentActions";
+import WhatsAppReminderButton from "./WhatsAppReminderButton";
 import type { AppointmentStatus } from "@/types/database";
 
 export const metadata = { title: "Detalle de cita — TallerPro" };
@@ -129,15 +130,23 @@ export default async function CitaDetallePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: appt } = await supabase
-    .from("appointments")
-    .select(`
-      id, date, time_slot, service_type, status, notes, created_at,
-      client:profiles!appointments_client_id_fkey(id, full_name, email, phone),
-      vehicle:vehicles!appointments_vehicle_id_fkey(id, brand, model, year, plate, color, mileage)
-    `)
-    .eq("id", id)
-    .maybeSingle();
+  const [{ data: appt }, { data: shopConfig }] = await Promise.all([
+    supabase
+      .from("appointments")
+      .select(`
+        id, date, time_slot, service_type, status, notes, created_at,
+        client:profiles!appointments_client_id_fkey(id, full_name, email, phone),
+        vehicle:vehicles!appointments_vehicle_id_fkey(id, brand, model, year, plate, color, mileage)
+      `)
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("shop_config")
+      .select("name")
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   if (!appt) notFound();
 
@@ -202,6 +211,16 @@ export default async function CitaDetallePage({
             </p>
           </div>
         </div>
+        {status !== "completed" && status !== "cancelled" && (
+          <WhatsAppReminderButton
+            clientName={client?.full_name ?? null}
+            clientPhone={client?.phone ?? null}
+            appointmentDate={appt.date}
+            appointmentTime={appt.time_slot}
+            serviceType={appt.service_type}
+            shopName={shopConfig?.name ?? "TallerPro"}
+          />
+        )}
       </div>
 
       {/* Date & service highlight */}
