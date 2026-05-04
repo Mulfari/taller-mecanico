@@ -18,6 +18,7 @@ import {
 } from "../actions";
 import PrintButton from "./PrintButton";
 import WhatsAppButton from "./WhatsAppButton";
+import PrintableWorkOrder from "./PrintableWorkOrder";
 
 const STATUS_STEPS: WorkOrderStatus[] = ["received", "diagnosing", "repairing", "ready", "delivered"];
 
@@ -658,6 +659,12 @@ const INVOICE_STATUS_COLORS: Record<string, string> = {
   paid: "bg-green-500/20 text-green-300",
 };
 
+interface ShopConfig {
+  name: string;
+  phone: string | null;
+  address: string | null;
+}
+
 export default function OrdenDetalleClient({
   order: initialOrder,
   mechanics = [],
@@ -666,6 +673,7 @@ export default function OrdenDetalleClient({
   linkedInvoice = null,
   orderPhotos = [],
   clientRating = null,
+  shopConfig = null,
 }: {
   order: WorkOrderWithRelations;
   mechanics?: Mechanic[];
@@ -674,6 +682,7 @@ export default function OrdenDetalleClient({
   linkedInvoice?: LinkedInvoice | null;
   orderPhotos?: OrderPhoto[];
   clientRating?: { rating: number; comment: string | null; clientName: string; createdAt: string } | null;
+  shopConfig?: ShopConfig | null;
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<WorkOrderStatus>(initialOrder.status);
@@ -1440,6 +1449,44 @@ export default function OrdenDetalleClient({
           loading={isPending}
         />
       )}
+
+      <PrintableWorkOrder
+        order={{
+          id: initialOrder.id,
+          status,
+          description: initialOrder.description,
+          diagnosis: initialOrder.diagnosis,
+          estimated_cost: initialOrder.estimated_cost,
+          final_cost: initialOrder.final_cost,
+          received_at: initialOrder.received_at,
+          estimated_delivery: initialOrder.estimated_delivery,
+          delivered_at: initialOrder.delivered_at,
+          items: items.map((i) => ({
+            id: i.id,
+            type: i.type,
+            description: i.description,
+            quantity: i.quantity,
+            unit_price: i.unit_price,
+            total: i.total,
+          })),
+          client: {
+            full_name: initialOrder.client?.full_name ?? null,
+            email: initialOrder.client?.email ?? "",
+            phone: initialOrder.client?.phone ?? null,
+          },
+          vehicle: {
+            brand: initialOrder.vehicle?.brand ?? "",
+            model: initialOrder.vehicle?.model ?? "",
+            year: initialOrder.vehicle?.year ?? 0,
+            plate: initialOrder.vehicle?.plate ?? null,
+            color: initialOrder.vehicle?.color ?? null,
+            vin: initialOrder.vehicle?.vin ?? null,
+            mileage: initialOrder.vehicle?.mileage ?? null,
+          },
+          mechanic: initialOrder.mechanic ? { full_name: initialOrder.mechanic.full_name } : null,
+        }}
+        shopConfig={shopConfig}
+      />
     </div>
   );
 }

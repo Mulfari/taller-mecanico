@@ -10,7 +10,7 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
   const [order, supabase] = await Promise.all([getWorkOrderById(id), createClient()]);
   if (!order) notFound();
 
-  const [{ data: mechanicRows }, { data: inventoryRows }, { data: historyRows }, { data: invoiceRow }, { data: photoFiles }, { data: ratingRow }] = await Promise.all([
+  const [{ data: mechanicRows }, { data: inventoryRows }, { data: historyRows }, { data: invoiceRow }, { data: photoFiles }, { data: ratingRow }, { data: shopConfigRow }] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name")
@@ -38,6 +38,12 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
       .from("work_order_ratings")
       .select("id, rating, comment, created_at, client_id, profiles:profiles!work_order_ratings_client_id_fkey(full_name)")
       .eq("work_order_id", id)
+      .maybeSingle(),
+    supabase
+      .from("shop_config")
+      .select("name, phone, address")
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle(),
   ]);
 
@@ -70,6 +76,10 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
     .filter((f) => f.name && /\.(jpe?g|png|webp|gif)$/i.test(f.name))
     .map((f) => ({ name: f.name, url: `${storageBase}/${f.name}`, createdAt: f.created_at ?? "" }));
 
+  const shopConfig = shopConfigRow
+    ? (shopConfigRow as { name: string; phone: string | null; address: string | null })
+    : null;
+
   const ratingAny = ratingRow as Record<string, unknown> | null;
   const clientRating = ratingAny
     ? {
@@ -83,5 +93,5 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
       }
     : null;
 
-  return <OrdenDetalleClient order={order} mechanics={mechanics} inventoryItems={inventoryItems} vehicleHistory={vehicleHistory} linkedInvoice={linkedInvoice} orderPhotos={orderPhotos} clientRating={clientRating} />;
+  return <OrdenDetalleClient order={order} mechanics={mechanics} inventoryItems={inventoryItems} vehicleHistory={vehicleHistory} linkedInvoice={linkedInvoice} orderPhotos={orderPhotos} clientRating={clientRating} shopConfig={shopConfig} />;
 }
