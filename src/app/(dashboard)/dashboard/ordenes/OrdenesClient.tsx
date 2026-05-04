@@ -313,6 +313,34 @@ function KanbanView({
 
 // ── Main component ─────────────────────────────────────────────────────────
 
+type DateRange = "all" | "today" | "week" | "month" | "year";
+
+const DATE_RANGE_LABELS: Record<DateRange, string> = {
+  all: "Todas las fechas",
+  today: "Hoy",
+  week: "Esta semana",
+  month: "Este mes",
+  year: "Este año",
+};
+
+function getDateRangeStart(range: DateRange): Date | null {
+  if (range === "all") return null;
+  const now = new Date();
+  switch (range) {
+    case "today":
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    case "week": {
+      const day = now.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() + diff);
+    }
+    case "month":
+      return new Date(now.getFullYear(), now.getMonth(), 1);
+    case "year":
+      return new Date(now.getFullYear(), 0, 1);
+  }
+}
+
 export default function OrdenesClient({
   orders: initialOrders,
   initialFilter = "all",
@@ -324,6 +352,7 @@ export default function OrdenesClient({
   const [orders, setOrders] = useState(initialOrders);
   const [activeFilter, setActiveFilter] = useState<WorkOrderStatus | "all">(initialFilter);
   const [mechanicFilter, setMechanicFilter] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<DateRange>("all");
   const [search, setSearch] = useState("");
   const [view, setView] = useState<"list" | "kanban">("list");
   const [generatingInvoice, setGeneratingInvoice] = useState<string | null>(null);
@@ -425,6 +454,8 @@ export default function OrdenesClient({
     )
   ).sort((a, b) => a[1].localeCompare(b[1]));
 
+  const dateRangeStart = getDateRangeStart(dateRange);
+
   const filtered = orders.filter((o) => {
     const matchesStatus = view === "kanban" || activeFilter === "all" || o.status === activeFilter;
     if (!matchesStatus) return false;
@@ -434,6 +465,10 @@ export default function OrdenesClient({
       } else {
         if (o.mechanic?.id !== mechanicFilter) return false;
       }
+    }
+    if (dateRangeStart) {
+      const orderDate = new Date(o.received_at);
+      if (orderDate < dateRangeStart) return false;
     }
     if (!q) return true;
     return (
@@ -498,6 +533,24 @@ export default function OrdenesClient({
               ))}
             </select>
           )}
+
+          {/* Date range filter */}
+          <select
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value as DateRange)}
+            className="bg-[#16213e] border border-white/10 rounded-lg px-3 py-1.5 text-sm text-gray-300 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors appearance-none pr-8"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+              backgroundRepeat: "no-repeat",
+              backgroundPosition: "right 0.5rem center",
+              backgroundSize: "1rem",
+            }}
+            aria-label="Filtrar por fecha"
+          >
+            {(Object.keys(DATE_RANGE_LABELS) as DateRange[]).map((key) => (
+              <option key={key} value={key}>{DATE_RANGE_LABELS[key]}</option>
+            ))}
+          </select>
 
           {/* Filter tabs — only in list view */}
           {view === "list" && FILTER_TABS.map((tab) => {
