@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
@@ -138,6 +139,7 @@ function UserMenu({ user, onClose }: { user: User; onClose: () => void }) {
 }
 
 export default function StorefrontNav({ shopName, logoUrl }: Props) {
+  const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -185,15 +187,23 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-6">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-gray-300 hover:text-primary text-sm font-medium transition-colors"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm font-medium transition-colors ${
+                    isActive
+                      ? "text-primary border-b-2 border-primary pb-0.5"
+                      : "text-gray-300 hover:text-primary"
+                  }`}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* Desktop auth area */}
@@ -259,16 +269,24 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
       {menuOpen && (
         <div className="md:hidden bg-secondary border-t border-primary/20 px-4 pb-4">
           <nav className="flex flex-col gap-1 pt-2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-gray-300 hover:text-primary text-sm font-medium py-2 transition-colors"
-                onClick={() => setMenuOpen(false)}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href || pathname.startsWith(link.href + "/");
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`text-sm font-medium py-2 transition-colors ${
+                    isActive
+                      ? "text-primary border-l-2 border-primary pl-3"
+                      : "text-gray-300 hover:text-primary"
+                  }`}
+                  onClick={() => setMenuOpen(false)}
+                  aria-current={isActive ? "page" : undefined}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
             <div className="border-t border-primary/20 mt-2 pt-3 flex flex-col gap-2">
               {user ? (
                 <>
