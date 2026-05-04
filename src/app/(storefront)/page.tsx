@@ -111,6 +111,8 @@ export default async function HomePage() {
     { count: clientCount },
     { count: deliveredCount },
     { count: vehicleCount },
+    { data: testimonialRows },
+    { count: totalRatings },
   ] = await Promise.all([
     supabase
       .from("shop_config")
@@ -129,6 +131,16 @@ export default async function HomePage() {
     supabase
       .from("work_orders")
       .select("vehicle_id", { count: "exact", head: true }),
+    supabase
+      .from("work_order_ratings")
+      .select("id, rating, comment, created_at, profiles:profiles!work_order_ratings_client_id_fkey(full_name)")
+      .gte("rating", 4)
+      .not("comment", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(6),
+    supabase
+      .from("work_order_ratings")
+      .select("*", { count: "exact", head: true }),
   ]);
 
   const shopName = shopConfig?.name || "TallerPro";
@@ -186,6 +198,30 @@ export default async function HomePage() {
       photoByVehicle[p.vehicle_sale_id] = p.url;
     }
   }
+
+  const testimonials = (testimonialRows ?? []).map((r) => {
+    const profile = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+    const fullName = (profile as { full_name: string | null } | null)?.full_name ?? "Cliente";
+    const nameParts = fullName.split(" ");
+    const displayName = nameParts.length >= 2
+      ? `${nameParts[0]} ${nameParts[nameParts.length - 1][0]}.`
+      : fullName;
+    return {
+      id: r.id as string,
+      rating: r.rating as number,
+      comment: r.comment as string,
+      displayName,
+      date: new Date(r.created_at as string).toLocaleDateString("es-MX", { month: "short", year: "numeric" }),
+    };
+  });
+
+  const avgRating = (totalRatings ?? 0) > 0 && testimonialRows && testimonialRows.length > 0
+    ? (() => {
+        const sum = testimonials.reduce((s, t) => s + t.rating, 0);
+        return (sum / testimonials.length).toFixed(1);
+      })()
+    : null;
+
   return (
     <>
       {/* HERO */}
@@ -385,6 +421,89 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* TESTIMONIALS */}
+      {testimonials.length > 0 && (
+        <section className="bg-surface py-16 md:py-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
+                Lo que dicen nuestros <span className="text-primary">clientes</span>
+              </h2>
+              <p className="text-gray-400 max-w-xl mx-auto">
+                Opiniones reales de quienes confían en nosotros para el cuidado de sus vehículos.
+              </p>
+              {avgRating && (totalRatings ?? 0) > 0 && (
+                <div className="flex items-center justify-center gap-3 mt-6">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg
+                        key={star}
+                        className={`w-5 h-5 ${star <= Math.round(Number(avgRating)) ? "text-yellow-400" : "text-gray-600"}`}
+                        fill={star <= Math.round(Number(avgRating)) ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+                        />
+                      </svg>
+                    ))}
+                  </div>
+                  <span className="text-yellow-400 font-bold text-lg">{avgRating}</span>
+                  <span className="text-gray-500 text-sm">
+                    de {totalRatings} calificacion{(totalRatings ?? 0) !== 1 ? "es" : ""}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {testimonials.map((t) => (
+                <div
+                  key={t.id}
+                  className="bg-secondary border border-white/5 rounded-xl p-6 flex flex-col hover:border-primary/30 transition-colors"
+                >
+                  <div className="flex items-center gap-1 mb-3">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <svg
+                        key={star}
+                        className={`w-4 h-4 ${star <= t.rating ? "text-yellow-400" : "text-gray-600"}`}
+                        fill={star <= t.rating ? "currentColor" : "none"}
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+                        />
+                      </svg>
+                    ))}
+                  </div>
+                  <p className="text-gray-300 text-sm leading-relaxed flex-1">
+                    &ldquo;{t.comment}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-3 mt-4 pt-4 border-t border-white/5">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-sm font-bold">
+                      {t.displayName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-white text-sm font-medium">{t.displayName}</p>
+                      <p className="text-gray-500 text-xs">{t.date}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* CTA BANNER */}
       <section className="bg-primary py-14">
