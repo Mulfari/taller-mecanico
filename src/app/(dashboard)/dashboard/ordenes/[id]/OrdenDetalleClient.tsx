@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import type { WorkOrderWithRelations, WorkOrderStatus, WorkOrderItemType } from "@/types/database";
 import {
   advanceWorkOrderStatus,
@@ -11,6 +13,7 @@ import {
   generateInvoiceFromWorkOrder,
   updateWorkOrderNotes,
   reassignMechanic,
+  deleteWorkOrderPhoto,
 } from "../actions";
 import PrintButton from "./PrintButton";
 import WhatsAppButton from "./WhatsAppButton";
@@ -420,6 +423,228 @@ interface LinkedInvoice {
   paid_at: string | null;
 }
 
+// ── Work Order Photos ─────────────────────────────────────────────────────
+
+interface OrderPhoto {
+  name: string;
+  url: string;
+  createdAt: string;
+}
+
+function IconCamera() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+  );
+}
+
+function IconUpload() {
+  return (
+    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+    </svg>
+  );
+}
+
+function IconSpinner() {
+  return (
+    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+    </svg>
+  );
+}
+
+function WorkOrderPhotos({ orderId, initialPhotos }: { orderId: string; initialPhotos: OrderPhoto[] }) {
+  const [photos, setPhotos] = useState<OrderPhoto[]>(initialPhotos);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deletingName, setDeletingName] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<number | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFiles(files: FileList) {
+    setUploading(true);
+    setUploadError(null);
+    const supabase = createClient();
+    const newPhotos: OrderPhoto[] = [];
+
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const path = `work-orders/${orderId}/${fileName}`;
+
+      const { error: upErr } = await supabase.storage
+        .from("shop-assets")
+        .upload(path, file, { upsert: false });
+
+      if (upErr) {
+        setUploadError("Error al subir una o más fotos.");
+        continue;
+      }
+
+      const { data: urlData } = supabase.storage.from("shop-assets").getPublicUrl(path);
+      newPhotos.push({ name: fileName, url: urlData.publicUrl, createdAt: new Date().toISOString() });
+    }
+
+    setPhotos((prev) => [...prev, ...newPhotos]);
+    setUploading(false);
+  }
+
+  async function handleDelete(photo: OrderPhoto) {
+    setDeletingName(photo.name);
+    try {
+      await deleteWorkOrderPhoto(orderId, photo.name);
+      setPhotos((prev) => prev.filter((p) => p.name !== photo.name));
+    } catch {
+      setUploadError("No se pudo eliminar la foto.");
+    }
+    setDeletingName(null);
+  }
+
+  return (
+    <div className="bg-[#16213e] border border-white/10 rounded-xl p-5 space-y-4 print:hidden">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-gray-400">
+          <IconCamera />
+          <p className="text-xs uppercase tracking-wide font-medium">
+            Fotos del trabajo
+            {photos.length > 0 && <span className="ml-1.5 text-gray-600 normal-case">({photos.length})</span>}
+          </p>
+        </div>
+        <button
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="inline-flex items-center gap-2 bg-[#e94560] hover:bg-[#c73652] disabled:opacity-60 text-white text-xs font-medium px-3 py-1.5 rounded-lg transition-colors"
+        >
+          {uploading ? <><IconSpinner /> Subiendo…</> : <><IconUpload /> Agregar fotos</>}
+        </button>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(e) => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ""; }}
+        />
+      </div>
+
+      {uploadError && (
+        <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{uploadError}</p>
+      )}
+
+      {photos.length === 0 ? (
+        <div
+          className="border-2 border-dashed border-white/10 rounded-xl p-8 text-center cursor-pointer hover:border-[#e94560]/40 transition-colors"
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+          aria-label="Subir fotos"
+        >
+          <div className="flex justify-center text-gray-600 mb-2"><IconCamera /></div>
+          <p className="text-gray-500 text-sm">Arrastrá fotos aquí o hacé clic para seleccionar</p>
+          <p className="text-gray-600 text-xs mt-1">Documentá el estado del vehículo: recepción, diagnóstico, reparación</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          {photos.map((photo, i) => (
+            <div key={photo.name} className="relative group aspect-video rounded-lg overflow-hidden border border-white/10">
+              <Image
+                src={photo.url}
+                alt={`Foto ${i + 1} de la orden`}
+                fill
+                className="object-cover cursor-pointer"
+                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                onClick={() => setLightbox(i)}
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-colors flex items-center justify-center">
+                <button
+                  onClick={() => handleDelete(photo)}
+                  disabled={deletingName === photo.name}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-lg disabled:opacity-50"
+                  aria-label="Eliminar foto"
+                >
+                  {deletingName === photo.name ? <IconSpinner /> : <IconTrash />}
+                </button>
+              </div>
+            </div>
+          ))}
+          <div
+            className="aspect-video rounded-lg border-2 border-dashed border-white/10 flex items-center justify-center cursor-pointer hover:border-[#e94560]/40 transition-colors"
+            onClick={() => inputRef.current?.click()}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => { e.preventDefault(); if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files); }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === "Enter" && inputRef.current?.click()}
+            aria-label="Agregar más fotos"
+          >
+            <span className="text-gray-600 text-2xl leading-none">+</span>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightbox !== null && photos[lightbox] && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+          <div className="relative max-w-4xl max-h-[85vh] w-full" onClick={(e) => e.stopPropagation()}>
+            <Image
+              src={photos[lightbox].url}
+              alt={`Foto ${lightbox + 1}`}
+              width={1200}
+              height={800}
+              className="object-contain w-full h-full max-h-[85vh] rounded-lg"
+            />
+            <button
+              onClick={() => setLightbox(null)}
+              className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-colors"
+              aria-label="Cerrar"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            {lightbox > 0 && (
+              <button
+                onClick={() => setLightbox(lightbox - 1)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-colors"
+                aria-label="Foto anterior"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+            )}
+            {lightbox < photos.length - 1 && (
+              <button
+                onClick={() => setLightbox(lightbox + 1)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/80 text-white p-2 rounded-full transition-colors"
+                aria-label="Foto siguiente"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+            )}
+            <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/60 text-white text-xs px-3 py-1 rounded-full">
+              {lightbox + 1} / {photos.length}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const INVOICE_STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
   sent: "Enviada",
@@ -438,12 +663,14 @@ export default function OrdenDetalleClient({
   inventoryItems = [],
   vehicleHistory = [],
   linkedInvoice = null,
+  orderPhotos = [],
 }: {
   order: WorkOrderWithRelations;
   mechanics?: Mechanic[];
   inventoryItems?: InventoryOption[];
   vehicleHistory?: VehicleHistoryItem[];
   linkedInvoice?: LinkedInvoice | null;
+  orderPhotos?: OrderPhoto[];
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<WorkOrderStatus>(initialOrder.status);
@@ -452,6 +679,7 @@ export default function OrdenDetalleClient({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [description, setDescription] = useState(initialOrder.description ?? "");
   const [diagnosis, setDiagnosis] = useState(initialOrder.diagnosis ?? "");
   const [estimatedCost, setEstimatedCost] = useState(
     initialOrder.estimated_cost != null ? String(initialOrder.estimated_cost) : ""
@@ -561,6 +789,7 @@ export default function OrdenDetalleClient({
     setError(null);
     try {
       await updateWorkOrderNotes(initialOrder.id, {
+        description: description || undefined,
         diagnosis: diagnosis || undefined,
         estimated_cost: estimatedCost ? parseFloat(estimatedCost) : undefined,
         final_cost: finalCost ? parseFloat(finalCost) : undefined,
@@ -604,7 +833,7 @@ export default function OrdenDetalleClient({
                 {STATUS_LABELS[status]}
               </span>
             </div>
-            <p className="text-gray-500 text-sm mt-0.5 truncate max-w-sm">{initialOrder.description}</p>
+            <p className="text-gray-500 text-sm mt-0.5 truncate max-w-sm">{description || initialOrder.description}</p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 print:hidden">
@@ -901,10 +1130,17 @@ export default function OrdenDetalleClient({
               />
             </div>
             <div className="space-y-1.5">
-              <p className="text-gray-500 text-xs font-medium">Descripción del problema</p>
-              <p className="text-gray-300 text-sm leading-relaxed bg-[#1a1a2e] rounded-lg px-3 py-2.5 border border-white/5">
-                {initialOrder.description || <span className="text-gray-600 italic">Sin descripción.</span>}
-              </p>
+              <label htmlFor="description" className="block text-gray-500 text-xs font-medium">
+                Descripción del problema
+              </label>
+              <textarea
+                id="description"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe el problema reportado por el cliente…"
+                className="w-full bg-[#1a1a2e] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-[#e94560]/60 focus:ring-1 focus:ring-[#e94560]/30 transition-colors resize-none"
+              />
             </div>
           </div>
         </div>
@@ -1000,6 +1236,9 @@ export default function OrdenDetalleClient({
           </div>
         )}
       </div>
+
+      {/* Photos */}
+      <WorkOrderPhotos orderId={initialOrder.id} initialPhotos={orderPhotos} />
 
       {/* Linked invoice */}
       {linkedInvoice && (
