@@ -3,6 +3,11 @@ import { Suspense } from "react";
 import Link from "next/link";
 import PeriodFilter from "./PeriodFilter";
 import ExportReporteButton from "./ExportReporteButton";
+import {
+  MonthlyRevenueChart,
+  OrdersByStatusChart,
+  TopServicesChart,
+} from "./ReporteCharts";
 
 export const metadata = { title: "Reportes — TallerPro" };
 
@@ -308,8 +313,20 @@ export default async function ReportesPage({
   const since = periodToSince(period);
   const data = await getReportData(since);
 
-  const maxMonthly = Math.max(...data.monthlyRevenue.map((m) => m.amount), 1);
-  const maxService = data.topServices[0]?.[1] ?? 1;
+  // Prepare chart data
+  const statusChartData = Object.entries(data.statusCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([status, count]) => ({
+      status,
+      label: STATUS_LABELS[status] ?? status,
+      count,
+      color: STATUS_COLORS[status] ?? "bg-gray-400",
+    }));
+
+  const servicesChartData = data.topServices.map(([service, count]) => ({
+    service,
+    count,
+  }));
 
   return (
     <div className="space-y-6">
@@ -373,78 +390,17 @@ export default async function ReportesPage({
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Monthly revenue bar chart */}
         <SectionCard title="Ingresos por mes (últimos 6 meses)">
-          <div className="space-y-3">
-            {data.monthlyRevenue.map((m) => (
-              <div key={m.label} className="flex items-center gap-3">
-                <span className="text-gray-500 text-xs w-12 shrink-0 text-right">{m.label}</span>
-                <div className="flex-1 bg-white/5 rounded-full h-5 overflow-hidden">
-                  <div
-                    className="h-full bg-[#e94560] rounded-full transition-all"
-                    style={{ width: `${(m.amount / maxMonthly) * 100}%` }}
-                  />
-                </div>
-                <span className="text-gray-300 text-xs w-24 shrink-0 text-right font-mono">
-                  {fmt(m.amount)}
-                </span>
-              </div>
-            ))}
-            {data.monthlyRevenue.every((m) => m.amount === 0) && (
-              <p className="text-gray-600 text-sm text-center py-4">Sin datos de ingresos aún</p>
-            )}
-          </div>
+          <MonthlyRevenueChart data={data.monthlyRevenue} />
         </SectionCard>
 
         {/* Orders by status */}
         <SectionCard title="Órdenes por estado">
-          {Object.keys(data.statusCounts).length === 0 ? (
-            <p className="text-gray-600 text-sm text-center py-4">Sin órdenes en este período</p>
-          ) : (
-            <div className="space-y-3">
-              {Object.entries(data.statusCounts)
-                .sort((a, b) => b[1] - a[1])
-                .map(([status, count]) => {
-                  const pct = Math.round((count / data.totalOrders) * 100);
-                  return (
-                    <div key={status} className="flex items-center gap-3">
-                      <span className="text-gray-400 text-xs w-28 shrink-0">
-                        {STATUS_LABELS[status] ?? status}
-                      </span>
-                      <div className="flex-1 bg-white/5 rounded-full h-5 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full ${STATUS_COLORS[status] ?? "bg-gray-400"}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="text-gray-300 text-xs w-16 shrink-0 text-right">
-                        {count} ({pct}%)
-                      </span>
-                    </div>
-                  );
-                })}
-            </div>
-          )}
+          <OrdersByStatusChart data={statusChartData} />
         </SectionCard>
 
         {/* Top services */}
         <SectionCard title="Servicios más solicitados">
-          {data.topServices.length === 0 ? (
-            <p className="text-gray-600 text-sm text-center py-4">Sin citas en este período</p>
-          ) : (
-            <div className="space-y-3">
-              {data.topServices.map(([service, count]) => (
-                <div key={service} className="flex items-center gap-3">
-                  <span className="text-gray-400 text-xs flex-1 truncate">{service}</span>
-                  <div className="w-32 bg-white/5 rounded-full h-4 overflow-hidden">
-                    <div
-                      className="h-full bg-blue-400 rounded-full"
-                      style={{ width: `${(count / maxService) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-gray-300 text-xs w-8 shrink-0 text-right">{count}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <TopServicesChart data={servicesChartData} />
         </SectionCard>
 
         {/* Mechanic performance */}
