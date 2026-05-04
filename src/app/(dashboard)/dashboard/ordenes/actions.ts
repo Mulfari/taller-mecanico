@@ -317,9 +317,28 @@ export async function duplicateWorkOrder(orderId: string): Promise<string> {
       .insert(rows);
 
     if (itemsError) throw new Error(itemsError.message);
+
+    // Deduct inventory stock for duplicated parts
+    const partItems = items.filter((i) => i.type === "part" && i.inventory_id);
+    for (const part of partItems) {
+      const { data: inv } = await supabase
+        .from("inventory")
+        .select("quantity")
+        .eq("id", part.inventory_id!)
+        .single();
+
+      if (inv) {
+        const newQty = Math.max(0, inv.quantity - part.quantity);
+        await supabase
+          .from("inventory")
+          .update({ quantity: newQty })
+          .eq("id", part.inventory_id!);
+      }
+    }
   }
 
   revalidatePath("/dashboard/ordenes");
+  revalidatePath("/dashboard/inventario");
   revalidatePath("/dashboard");
 
   return newOrder.id;
