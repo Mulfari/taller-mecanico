@@ -10,7 +10,7 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
   const [order, supabase] = await Promise.all([getWorkOrderById(id), createClient()]);
   if (!order) notFound();
 
-  const [{ data: mechanicRows }, { data: inventoryRows }, { data: historyRows }, { data: invoiceRow }, { data: photoFiles }] = await Promise.all([
+  const [{ data: mechanicRows }, { data: inventoryRows }, { data: historyRows }, { data: invoiceRow }, { data: photoFiles }, { data: ratingRow }] = await Promise.all([
     supabase
       .from("profiles")
       .select("id, full_name")
@@ -34,6 +34,11 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
       .eq("work_order_id", id)
       .maybeSingle(),
     supabase.storage.from("shop-assets").list(`work-orders/${id}`, { sortBy: { column: "created_at", order: "asc" } }),
+    supabase
+      .from("work_order_ratings")
+      .select("id, rating, comment, created_at, client_id, profiles:profiles!work_order_ratings_client_id_fkey(full_name)")
+      .eq("work_order_id", id)
+      .maybeSingle(),
   ]);
 
   const mechanics = (mechanicRows ?? []) as { id: string; full_name: string | null }[];
@@ -65,5 +70,18 @@ export default async function OrdenDetallePage({ params }: { params: Promise<{ i
     .filter((f) => f.name && /\.(jpe?g|png|webp|gif)$/i.test(f.name))
     .map((f) => ({ name: f.name, url: `${storageBase}/${f.name}`, createdAt: f.created_at ?? "" }));
 
-  return <OrdenDetalleClient order={order} mechanics={mechanics} inventoryItems={inventoryItems} vehicleHistory={vehicleHistory} linkedInvoice={linkedInvoice} orderPhotos={orderPhotos} />;
+  const ratingAny = ratingRow as Record<string, unknown> | null;
+  const clientRating = ratingAny
+    ? {
+        rating: ratingAny.rating as number,
+        comment: (ratingAny.comment as string | null),
+        clientName:
+          (Array.isArray(ratingAny.profiles)
+            ? (ratingAny.profiles[0] as { full_name: string | null } | undefined)?.full_name
+            : (ratingAny.profiles as { full_name: string | null } | null)?.full_name) ?? "Cliente",
+        createdAt: ratingAny.created_at as string,
+      }
+    : null;
+
+  return <OrdenDetalleClient order={order} mechanics={mechanics} inventoryItems={inventoryItems} vehicleHistory={vehicleHistory} linkedInvoice={linkedInvoice} orderPhotos={orderPhotos} clientRating={clientRating} />;
 }

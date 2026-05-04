@@ -228,6 +228,20 @@ create table shop_config (
 create unique index shop_config_single_row on shop_config ((true));
 
 -- ============================================================
+-- TABLA: work_order_ratings
+-- ============================================================
+
+create table work_order_ratings (
+  id             uuid primary key default uuid_generate_v4(),
+  work_order_id  uuid not null references work_orders(id) on delete cascade,
+  client_id      uuid not null references profiles(id) on delete cascade,
+  rating         smallint not null check (rating >= 1 and rating <= 5),
+  comment        text,
+  created_at     timestamptz not null default now(),
+  constraint work_order_ratings_unique unique (work_order_id)
+);
+
+-- ============================================================
 -- INDICES
 -- ============================================================
 
@@ -271,6 +285,10 @@ create index idx_invoices_client_id     on invoices(client_id);
 create index idx_invoices_work_order_id on invoices(work_order_id);
 create index idx_invoices_status        on invoices(status);
 
+-- work_order_ratings
+create index idx_work_order_ratings_order_id  on work_order_ratings(work_order_id);
+create index idx_work_order_ratings_client_id on work_order_ratings(client_id);
+
 -- ============================================================
 -- ROW LEVEL SECURITY (RLS)
 -- ============================================================
@@ -283,6 +301,7 @@ alter table inventory         enable row level security;
 alter table appointments      enable row level security;
 alter table vehicles_for_sale enable row level security;
 alter table vehicle_photos    enable row level security;
+alter table work_order_ratings enable row level security;
 alter table quotes            enable row level security;
 alter table invoices          enable row level security;
 alter table shop_config       enable row level security;
@@ -519,4 +538,40 @@ create policy "shop_config: admin write"
 
 create policy "shop_config: admin update"
   on shop_config for update
+  using (auth_role() = 'admin');
+
+-- ------------------------------------------------------------
+-- work_order_ratings
+-- ------------------------------------------------------------
+
+-- Clientes y admins pueden ver calificaciones
+create policy "work_order_ratings: read"
+  on work_order_ratings for select
+  using (
+    client_id = auth.uid()
+    or auth_role() in ('mechanic', 'admin')
+  );
+
+-- Solo el cliente dueno de la orden puede calificar
+create policy "work_order_ratings: client insert"
+  on work_order_ratings for insert
+  with check (
+    client_id = auth.uid()
+    and exists (
+      select 1 from work_orders wo
+      where wo.id = work_order_id
+        and wo.client_id = auth.uid()
+        and wo.status = 'delivered'
+    )
+  );
+
+-- Cliente puede actualizar su propia calificacion
+create policy "work_order_ratings: client update"
+  on work_order_ratings for update
+  using (client_id = auth.uid())
+  with check (client_id = auth.uid());
+
+-- Solo admin puede eliminar calificaciones
+create policy "work_order_ratings: admin delete"
+  on work_order_ratings for delete
   using (auth_role() = 'admin');

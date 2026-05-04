@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import PrintButton from "./PrintButton";
+import ClientRating from "@/components/storefront/ClientRating";
 
 export const metadata = { title: "Orden de trabajo — TallerPro" };
 
@@ -128,7 +129,7 @@ export default async function MisOrdenesDetailPage({
   } = await supabase.auth.getUser();
   if (!user) redirect(`/login?next=/mis-ordenes/${id}`);
 
-  const [{ data: order }, { data: shopConfig }] = await Promise.all([
+  const [{ data: order }, { data: shopConfig }, { data: ratingData }] = await Promise.all([
     supabase
       .from("work_orders")
       .select(
@@ -147,6 +148,12 @@ export default async function MisOrdenesDetailPage({
       .select("name, phone, address")
       .order("created_at", { ascending: true })
       .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("work_order_ratings")
+      .select("id, rating, comment, created_at")
+      .eq("work_order_id", id)
+      .eq("client_id", user.id)
       .maybeSingle(),
   ]);
 
@@ -443,6 +450,15 @@ export default async function MisOrdenesDetailPage({
               </div>
             )}
           </div>
+        )}
+
+        {/* Client rating — only for delivered orders */}
+        {status === "delivered" && (
+          <ClientRating
+            workOrderId={order.id}
+            clientId={user.id}
+            existingRating={ratingData ?? null}
+          />
         )}
 
         {/* Footer actions */}
