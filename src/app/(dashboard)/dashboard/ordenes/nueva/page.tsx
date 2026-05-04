@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getClients, getMechanics, getVehiclesByClient } from "@/lib/supabase/queries/work-orders";
+import { getInventory } from "@/lib/supabase/queries/inventory";
 import NuevaOrdenForm from "./NuevaOrdenForm";
 
 export const metadata = { title: "Nueva Orden — TallerPro" };
@@ -18,15 +19,28 @@ export default async function NuevaOrdenPage({
   searchParams: Promise<{ client?: string; vehicle?: string; mechanic?: string }>;
 }) {
   const { client: defaultClientId, vehicle: defaultVehicleId, mechanic: defaultMechanicId } = await searchParams;
-  const [clients, mechanics] = await Promise.all([getClients(), getMechanics()]);
+  const [clients, mechanics, inventoryItems] = await Promise.all([
+    getClients(),
+    getMechanics(),
+    getInventory(),
+  ]);
 
-  // Pre-fetch vehicles for all clients so the client component can filter without extra requests
   const vehiclesByClient: Record<string, Awaited<ReturnType<typeof getVehiclesByClient>>> = {};
   await Promise.all(
     clients.map(async (c) => {
       vehiclesByClient[c.id] = await getVehiclesByClient(c.id);
     })
   );
+
+  const inventoryForForm = inventoryItems.map((i) => ({
+    id: i.id,
+    name: i.name,
+    sku: i.sku,
+    category: i.category,
+    brand: i.brand,
+    sell_price: i.sell_price,
+    quantity: i.quantity,
+  }));
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -48,6 +62,7 @@ export default async function NuevaOrdenPage({
         clients={clients}
         mechanics={mechanics}
         vehiclesByClient={vehiclesByClient}
+        inventoryItems={inventoryForForm}
         defaultClientId={defaultClientId}
         defaultVehicleId={defaultVehicleId}
         defaultMechanicId={defaultMechanicId}
