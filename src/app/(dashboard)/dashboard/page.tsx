@@ -9,8 +9,10 @@ import {
   getReadyOrders,
   getPendingQuotes,
   getUpcomingDeliveries,
+  getOverdueOrders,
   type PendingQuote,
   type UpcomingDelivery,
+  type OverdueOrder,
 } from "@/lib/supabase/queries/work-orders";
 
 export const metadata: Metadata = { title: "Panel Principal — TallerPro" };
@@ -154,7 +156,7 @@ export default async function DashboardPage() {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
 
-  const [metrics, recentOrders, upcomingAppointments, lowStockItems, readyOrders, pendingQuotes, upcomingDeliveries] = await Promise.all([
+  const [metrics, recentOrders, upcomingAppointments, lowStockItems, readyOrders, pendingQuotes, upcomingDeliveries, overdueOrders] = await Promise.all([
     getDashboardMetrics(),
     getRecentOrders(5),
     getUpcomingAppointments(5),
@@ -162,6 +164,7 @@ export default async function DashboardPage() {
     getReadyOrders(5),
     getPendingQuotes(6),
     getUpcomingDeliveries(5, 8),
+    getOverdueOrders(8),
   ]);
 
   const fmtRevenue = (n: number) => {
@@ -495,6 +498,93 @@ export default async function DashboardPage() {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Overdue orders alert */}
+      {overdueOrders.length > 0 && (
+        <div className="bg-[#16213e] border border-red-500/30 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h2 className="text-white font-semibold text-base">Órdenes atrasadas</h2>
+              <span className="text-xs bg-red-500/20 text-red-300 px-2 py-0.5 rounded-full font-medium">
+                {overdueOrders.length}
+              </span>
+            </div>
+            <Link href="/dashboard/ordenes" className="text-[#e94560] text-sm hover:underline">
+              Ver todas →
+            </Link>
+          </div>
+          <div className="overflow-x-auto -mx-1">
+            <table className="w-full text-sm min-w-[560px]">
+              <thead>
+                <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/5">
+                  <th className="text-left pb-3 px-1 font-medium">OT / Cliente</th>
+                  <th className="text-left pb-3 px-1 font-medium">Vehículo</th>
+                  <th className="text-left pb-3 px-1 font-medium">Estado</th>
+                  <th className="text-left pb-3 px-1 font-medium">Mecánico</th>
+                  <th className="text-left pb-3 px-1 font-medium">Atraso</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {overdueOrders.map((order: OverdueOrder) => (
+                  <tr key={order.id} className="hover:bg-white/[0.03] transition-colors group">
+                    <td className="py-3 px-1">
+                      <Link href={`/dashboard/ordenes/${order.id}`} className="block">
+                        <p className="text-red-400 font-mono text-xs group-hover:underline">
+                          OT-{order.id.slice(0, 6).toUpperCase()}
+                        </p>
+                        <p className="text-white font-medium mt-0.5">
+                          {order.client?.full_name ?? "—"}
+                        </p>
+                      </Link>
+                    </td>
+                    <td className="py-3 px-1">
+                      <Link href={`/dashboard/ordenes/${order.id}`} className="block text-gray-300">
+                        {order.vehicle
+                          ? `${order.vehicle.brand} ${order.vehicle.model} ${order.vehicle.year}`
+                          : <span className="text-gray-600">—</span>}
+                        {order.vehicle?.plate && (
+                          <p className="text-gray-500 text-xs mt-0.5">{order.vehicle.plate}</p>
+                        )}
+                      </Link>
+                    </td>
+                    <td className="py-3 px-1">
+                      <Link href={`/dashboard/ordenes/${order.id}`} className="block">
+                        <StatusBadge
+                          label={ORDER_STATUS_LABELS[order.status as WorkOrderStatus]}
+                          color={ORDER_STATUS_COLORS[order.status as WorkOrderStatus]}
+                        />
+                      </Link>
+                    </td>
+                    <td className="py-3 px-1">
+                      <Link href={`/dashboard/ordenes/${order.id}`} className="block text-gray-400 text-xs">
+                        {order.mechanic?.full_name ?? <span className="text-gray-600">Sin asignar</span>}
+                      </Link>
+                    </td>
+                    <td className="py-3 px-1">
+                      <Link href={`/dashboard/ordenes/${order.id}`} className="block">
+                        <span className={`text-sm font-bold ${order.days_overdue >= 3 ? "text-red-400" : "text-orange-400"}`}>
+                          {order.days_overdue === 1
+                            ? "1 día"
+                            : `${order.days_overdue} días`}
+                        </span>
+                        <p className="text-gray-600 text-xs mt-0.5">
+                          Entrega: {new Date(order.estimated_delivery + "T00:00:00").toLocaleDateString("es-MX", {
+                            day: "2-digit",
+                            month: "short",
+                          })}
+                        </p>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

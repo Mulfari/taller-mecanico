@@ -237,6 +237,46 @@ export interface PendingQuote {
   vehicle: { brand: string; model: string; year: number; plate: string | null } | null;
 }
 
+export interface OverdueOrder {
+  id: string;
+  estimated_delivery: string;
+  status: string;
+  description: string | null;
+  days_overdue: number;
+  client: { id: string; full_name: string | null } | null;
+  vehicle: { brand: string; model: string; year: number; plate: string | null } | null;
+  mechanic: { id: string; full_name: string | null } | null;
+}
+
+export async function getOverdueOrders(limit = 10): Promise<OverdueOrder[]> {
+  const supabase = await createClient();
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+
+  const { data, error } = await supabase
+    .from("work_orders")
+    .select(`
+      id, estimated_delivery, status, description,
+      client:profiles!work_orders_client_id_fkey(id, full_name),
+      vehicle:vehicles!work_orders_vehicle_id_fkey(brand, model, year, plate),
+      mechanic:profiles!work_orders_mechanic_id_fkey(id, full_name)
+    `)
+    .not("estimated_delivery", "is", null)
+    .lt("estimated_delivery", yesterday)
+    .in("status", ["received", "diagnosing", "repairing", "ready"])
+    .order("estimated_delivery", { ascending: true })
+    .limit(limit);
+
+  if (error) throw error;
+
+  const now = Date.now();
+  return ((data ?? []) as unknown as OverdueOrder[]).map((o) => ({
+    ...o,
+    days_overdue: Math.ceil(
+      (now - new Date(o.estimated_delivery + "T00:00:00").getTime()) / 86400000
+    ),
+  }));
+}
+
 export async function getPendingQuotes(limit = 6): Promise<PendingQuote[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
