@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
+import ClientNotificationBell from "./ClientNotificationBell";
 
 const navLinks = [
   { href: "/servicios", label: "Servicios" },
@@ -211,6 +212,8 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
             {authLoading ? (
               <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
             ) : user ? (
+              <>
+              <ClientNotificationBell />
               <div className="relative" data-user-menu>
                 <button
                   onClick={() => setUserMenuOpen((v) => !v)}
@@ -230,6 +233,7 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
                   <UserMenu user={user} onClose={() => setUserMenuOpen(false)} />
                 )}
               </div>
+              </>
             ) : (
               <>
                 <Link
@@ -290,11 +294,14 @@ export default function StorefrontNav({ shopName, logoUrl }: Props) {
             <div className="border-t border-primary/20 mt-2 pt-3 flex flex-col gap-2">
               {user ? (
                 <>
-                  <div className="flex items-center gap-2 py-1">
-                    <span className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-xs font-bold shrink-0">
-                      {initials}
-                    </span>
-                    <span className="text-gray-300 text-sm truncate">{displayName}</span>
+                  <div className="flex items-center justify-between py-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary text-xs font-bold shrink-0">
+                        {initials}
+                      </span>
+                      <span className="text-gray-300 text-sm truncate">{displayName}</span>
+                    </div>
+                    <ClientNotificationBell />
                   </div>
                   <Link href="/cuenta" className="text-gray-300 hover:text-white text-sm py-1.5 transition-colors" onClick={() => setMenuOpen(false)}>Mi cuenta</Link>
                   <Link href="/mis-vehiculos" className="text-gray-300 hover:text-white text-sm py-1.5 transition-colors" onClick={() => setMenuOpen(false)}>Mis vehículos</Link>
