@@ -2,6 +2,9 @@ import { createClient } from "@/lib/supabase/server"
 import Link from "next/link"
 import Image from "next/image"
 import VehiculosFilters from "./VehiculosFilters"
+import VehiculosPagination from "./VehiculosPagination"
+
+const PAGE_SIZE = 12
 
 interface SearchParams extends Record<string, string | undefined> {
   marca?: string
@@ -10,6 +13,8 @@ interface SearchParams extends Record<string, string | undefined> {
   anio_min?: string
   anio_max?: string
   transmision?: string
+  orden?: string
+  pagina?: string
 }
 
 export default async function VehiculosPage({
@@ -19,6 +24,9 @@ export default async function VehiculosPage({
 }) {
   const params = await searchParams
   const supabase = await createClient()
+
+  const page = Math.max(1, parseInt(params.pagina ?? "1", 10))
+  const offset = (page - 1) * PAGE_SIZE
 
   let query = supabase
     .from("vehicles_for_sale")
@@ -34,7 +42,22 @@ export default async function VehiculosPage({
   if (params.anio_max) query = query.lte("year", parseInt(params.anio_max, 10))
   if (params.transmision) query = query.eq("transmission", params.transmision)
 
-  const { data: vehiculos, count } = await query.order("created_at", { ascending: false })
+  const sortMap: Record<string, { column: string; ascending: boolean }> = {
+    recientes: { column: "created_at", ascending: false },
+    precio_asc: { column: "price", ascending: true },
+    precio_desc: { column: "price", ascending: false },
+    anio_desc: { column: "year", ascending: false },
+    anio_asc: { column: "year", ascending: true },
+    km_asc: { column: "mileage", ascending: true },
+    km_desc: { column: "mileage", ascending: false },
+  }
+  const sort = sortMap[params.orden ?? ""] ?? sortMap.recientes
+
+  const { data: vehiculos, count } = await query
+    .order(sort.column, { ascending: sort.ascending })
+    .range(offset, offset + PAGE_SIZE - 1)
+
+  const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE)
 
   // Fetch main photo for each vehicle
   const vehicleIds = vehiculos?.map((v) => v.id) ?? []
@@ -168,6 +191,16 @@ export default async function VehiculosPage({
                 </svg>
                 <p className="text-gray-400 text-lg">No se encontraron vehículos</p>
                 <p className="text-gray-500 text-sm mt-1">Intentá con otros filtros</p>
+              </div>
+            )}
+
+            {totalPages > 1 && (
+              <div className="mt-10">
+                <VehiculosPagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  currentParams={params}
+                />
               </div>
             )}
           </main>

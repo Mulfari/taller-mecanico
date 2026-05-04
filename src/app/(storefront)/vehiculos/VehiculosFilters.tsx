@@ -13,6 +13,8 @@ interface Props {
     anio_min?: string
     anio_max?: string
     transmision?: string
+    orden?: string
+    pagina?: string
   }
 }
 
@@ -29,9 +31,13 @@ export default function VehiculosFilters({ marcas, transmisiones, currentParams 
       if (currentParams.anio_min) params.set("anio_min", currentParams.anio_min)
       if (currentParams.anio_max) params.set("anio_max", currentParams.anio_max)
       if (currentParams.transmision) params.set("transmision", currentParams.transmision)
+      if (currentParams.orden) params.set("orden", currentParams.orden)
 
       if (value) params.set(key, value)
       else params.delete(key)
+
+      // Reset to page 1 when filters change (except when changing page itself)
+      if (key !== "pagina") params.delete("pagina")
 
       router.push(`${pathname}?${params.toString()}`)
     },
@@ -116,6 +122,24 @@ export default function VehiculosFilters({ marcas, transmisiones, currentParams 
           </div>
         </div>
       )}
+
+      <div className="rounded-xl border border-white/5 p-4" style={cardStyle}>
+        <h3 className="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Ordenar por</h3>
+        <select
+          value={currentParams.orden ?? "recientes"}
+          onChange={(e) => updateParam("orden", e.target.value)}
+          className={inputClass}
+          style={inputStyle}
+        >
+          <option value="recientes">Más recientes</option>
+          <option value="precio_asc">Precio: menor a mayor</option>
+          <option value="precio_desc">Precio: mayor a menor</option>
+          <option value="anio_desc">Año: más nuevo</option>
+          <option value="anio_asc">Año: más antiguo</option>
+          <option value="km_asc">Kilometraje: menor</option>
+          <option value="km_desc">Kilometraje: mayor</option>
+        </select>
+      </div>
 
       {hasFilters && (
         <button
