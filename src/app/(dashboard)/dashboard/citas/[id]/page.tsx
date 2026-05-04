@@ -218,7 +218,14 @@ export default async function CitaDetallePage({
       </div>
 
       {/* Actions */}
-      <AppointmentActions appointmentId={appt.id} status={status} />
+      <AppointmentActions
+        appointmentId={appt.id}
+        status={status}
+        currentDate={appt.date}
+        currentTimeSlot={appt.time_slot}
+        currentServiceType={appt.service_type}
+        currentNotes={appt.notes}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {/* Client */}
