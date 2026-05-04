@@ -918,6 +918,14 @@ export default function InventarioClient({ initialItems }: { initialItems: Inven
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard/inventario/recibir"
+            className="shrink-0 inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 hover:bg-green-500/20 hover:border-green-500/40 text-green-400 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            title="Registrar entrada de mercadería al inventario"
+          >
+            <IconDownload />
+            Recibir mercadería
+          </Link>
           {alertCount > 0 && (
             <Link
               href="/dashboard/inventario/reposicion"

@@ -96,6 +96,34 @@ export async function adjustStock(id: string, delta: number) {
   return newQty;
 }
 
+export async function receiveBulkStock(
+  items: Array<{ id: string; quantity: number }>
+): Promise<number> {
+  const supabase = await createClient();
+  let updated = 0;
+
+  for (const item of items) {
+    if (item.quantity <= 0) continue;
+    const { data, error: fetchError } = await supabase
+      .from("inventory")
+      .select("quantity")
+      .eq("id", item.id)
+      .single();
+    if (fetchError || !data) continue;
+
+    const newQty = (data.quantity ?? 0) + item.quantity;
+    const { error } = await supabase
+      .from("inventory")
+      .update({ quantity: newQty })
+      .eq("id", item.id);
+    if (!error) updated++;
+  }
+
+  revalidatePath("/dashboard/inventario");
+  revalidatePath("/dashboard/inventario/recibir");
+  return updated;
+}
+
 export async function bulkUpsertInventoryItems(
   rows: Array<{
     name: string;
