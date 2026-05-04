@@ -265,6 +265,66 @@ export async function deleteWorkOrderPhoto(orderId: string, fileName: string) {
   revalidatePath(`/dashboard/ordenes/${orderId}`);
 }
 
+export async function duplicateWorkOrder(orderId: string): Promise<string> {
+  const supabase = await createClient();
+
+  const { data: original, error: orderError } = await supabase
+    .from("work_orders")
+    .select("client_id, vehicle_id, mechanic_id, description, estimated_cost, work_order_items(*)")
+    .eq("id", orderId)
+    .single();
+
+  if (orderError || !original) throw new Error("Orden no encontrada");
+
+  const { data: newOrder, error: insertError } = await supabase
+    .from("work_orders")
+    .insert({
+      client_id: original.client_id,
+      vehicle_id: original.vehicle_id,
+      mechanic_id: original.mechanic_id,
+      status: "received" as WorkOrderStatus,
+      description: original.description,
+      estimated_cost: original.estimated_cost,
+      received_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !newOrder) throw new Error(insertError?.message ?? "Error al duplicar la orden");
+
+  const items = (original.work_order_items ?? []) as {
+    type: WorkOrderItemType;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+    inventory_id: string | null;
+  }[];
+
+  if (items.length > 0) {
+    const rows = items.map((i) => ({
+      work_order_id: newOrder.id,
+      type: i.type,
+      description: i.description,
+      quantity: i.quantity,
+      unit_price: i.unit_price,
+      total: i.total,
+      inventory_id: i.inventory_id,
+    }));
+
+    const { error: itemsError } = await supabase
+      .from("work_order_items")
+      .insert(rows);
+
+    if (itemsError) throw new Error(itemsError.message);
+  }
+
+  revalidatePath("/dashboard/ordenes");
+  revalidatePath("/dashboard");
+
+  return newOrder.id;
+}
+
 export async function generateInvoiceFromWorkOrder(orderId: string): Promise<string> {
   const supabase = await createClient();
 

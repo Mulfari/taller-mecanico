@@ -14,6 +14,7 @@ import {
   updateWorkOrderNotes,
   reassignMechanic,
   deleteWorkOrderPhoto,
+  duplicateWorkOrder,
 } from "../actions";
 import PrintButton from "./PrintButton";
 import WhatsAppButton from "./WhatsAppButton";
@@ -679,6 +680,7 @@ export default function OrdenDetalleClient({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [description, setDescription] = useState(initialOrder.description ?? "");
   const [diagnosis, setDiagnosis] = useState(initialOrder.diagnosis ?? "");
   const [estimatedCost, setEstimatedCost] = useState(
@@ -818,6 +820,18 @@ export default function OrdenDetalleClient({
     }
   }
 
+  async function handleDuplicate() {
+    setDuplicating(true);
+    setError(null);
+    try {
+      const newId = await duplicateWorkOrder(initialOrder.id);
+      router.push(`/dashboard/ordenes/${newId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al duplicar la orden");
+      setDuplicating(false);
+    }
+  }
+
   return (
     <div className="space-y-6 max-w-5xl">
       {/* Header */}
@@ -837,6 +851,29 @@ export default function OrdenDetalleClient({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 print:hidden">
+          <button
+            onClick={handleDuplicate}
+            disabled={duplicating || isPending}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 disabled:opacity-60 disabled:cursor-not-allowed text-gray-300 text-sm font-medium transition-colors"
+            title="Duplicar orden"
+          >
+            {duplicating ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                Duplicando…
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m0 0a2.625 2.625 0 115.25 0H15" />
+                </svg>
+                Duplicar
+              </>
+            )}
+          </button>
           <WhatsAppButton
             clientName={initialOrder.client.full_name}
             clientPhone={initialOrder.client.phone}
