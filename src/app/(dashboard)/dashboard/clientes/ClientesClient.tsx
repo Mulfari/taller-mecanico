@@ -215,12 +215,14 @@ export default function ClientesClient({ clients }: { clients: ClientWithStats[]
 
       <div className="bg-[#16213e] border border-white/10 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[640px]">
+          <table className="w-full text-sm min-w-[860px]">
             <thead>
               <tr className="text-gray-500 text-xs uppercase tracking-wide border-b border-white/5">
                 <th className="text-left py-3 px-4 font-medium">Cliente</th>
                 <th className="text-left py-3 px-4 font-medium">Teléfono</th>
                 <th className="text-center py-3 px-4 font-medium">Vehículos</th>
+                <th className="text-center py-3 px-4 font-medium">Órdenes</th>
+                <th className="text-right py-3 px-4 font-medium">Ingresos</th>
                 <th className="text-left py-3 px-4 font-medium">Última visita</th>
                 <th className="text-left py-3 px-4 font-medium">Cliente desde</th>
                 <th className="py-3 px-4" />
@@ -229,7 +231,7 @@ export default function ClientesClient({ clients }: { clients: ClientWithStats[]
             <tbody className="divide-y divide-white/5">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-gray-500">
+                  <td colSpan={8} className="py-12 text-center text-gray-500">
                     {search ? "No se encontraron clientes con esa búsqueda." : "No hay clientes registrados aún."}
                   </td>
                 </tr>
@@ -252,6 +254,20 @@ export default function ClientesClient({ clients }: { clients: ClientWithStats[]
                         <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/10 text-gray-300 text-xs font-medium">
                           {client.vehicle_count}
                         </span>
+                      </Link>
+                    </td>
+                    <td className="py-3.5 px-4 text-center">
+                      <Link href={`/dashboard/clientes/${client.id}`} className="block">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-white/10 text-gray-300 text-xs font-medium">
+                          {client.total_orders}
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="py-3.5 px-4 text-right">
+                      <Link href={`/dashboard/clientes/${client.id}`} className="block text-white font-medium text-xs whitespace-nowrap">
+                        {client.total_revenue > 0
+                          ? `$${client.total_revenue.toLocaleString("es-MX", { minimumFractionDigits: 2 })}`
+                          : <span className="text-gray-600">—</span>}
                       </Link>
                     </td>
                     <td className="py-3.5 px-4">
